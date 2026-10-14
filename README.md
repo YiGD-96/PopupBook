@@ -21,7 +21,7 @@ npm run preview
 - 책 영역의 세로 휠·가로 트랙패드 입력으로 한 장씩 이동합니다. 전환 중 입력과 휠 관성은 잠그며, 모달 및 확대 제스처는 페이지 넘김에서 제외합니다.
 - 다음·이전 버튼, 상단 장 표시와 책갈피 목록을 함께 제공합니다.
 - 구좌 당근밭 / 제주 마을 골목 / 해안 등대, 장마다 독립 종이 레이어 5개.
-- GSAP 타임라인으로 접기 → 책장 넘김 → 리소스 로드 → 차례로 펼치기.
+- 사물을 좌우 책장에 고정해 종이의 곡면·회전과 함께 움직입니다. 다음 장의 사물은 책장 뒷면에서 이어지고, 덮이는 마지막 구간에만 접힙니다. 첫 진입에서만 차례로 펼치는 연출을 사용합니다.
 - 당근 반응, 감귤나무 대사, 등대 빛, 장별 HTML 대응 버튼.
 - 이전·다음, 엔딩, 재시작, 음소거, 화질, 모션 감소.
 - 다음 장 리소스 프리로드, 로딩 안내, 리소스 오류 시 재시도.
@@ -37,11 +37,12 @@ React 19 + TypeScript + Vite + Three.js / React Three Fiber / Drei + GSAP + Zust
 - `src/story.ts`: 세 장의 콘텐츠, 상태와 설정, 사용자 요청 이후 합성 효과음.
 - `src/assets.ts`: 텍스처 캐시, 장별 로드·다음 장 프리로드·실패 캐시 정리.
 - `src/paperGeometry.ts`: 힌지 고정, 종이 휘어짐, 앞·뒷면 기하.
+- `src/paperAttachments.ts`: 책장별 일러스트 분할과 곡면에 붙은 사물의 위치·방향 계산.
 - `src/useBookGestures.ts`, `src/turnInput.ts`: 드래그 캡처·취소, 휠 누적·관성 차단.
 - `src/reader.css`: 책을 중심에 배치하는 반응형 독서 화면.
 - `public/art`: 직접 제작한 SVG 종이 일러스트. `create-art.mjs`로 재생성.
 - `create-pages.mjs`: 여섯 개의 페이지 양면 인쇄 텍스처 제작.
-- `tests/page-turn.test.mjs`: `node --experimental-strip-types --test tests/page-turn.test.mjs`로 종이 기하·입력 로직 검사.
+- `tests/page-turn.test.mjs`, `tests/paper-attachments.test.mjs`: `node --experimental-strip-types --test tests/*.test.mjs`로 종이 기하·입력·사물 부착 로직 검사(Node.js 22.18+).
 - `QA.md`: 검증 결과와 실기기 검증이 필요한 부분.
 
 ## 에셋 및 라이선스
