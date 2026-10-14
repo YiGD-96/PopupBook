@@ -16,5 +16,5 @@ export function attachedPaperPose(x:number,y:number,z:number,progress:number,dir
 export function pageReveal(progress:number,start:number,end:number){const t=Math.max(0,Math.min(1,(progress-start)/(end-start)));return t*t*(3-2*t);}
 export function popupFoldAngle(progress:number,incoming=false){
  const p=Math.max(0,Math.min(1,progress));
- return -Math.PI/2*(incoming?1-p:p);
+ return -Math.PI/2*(incoming?1-p:Math.min(p/.7,1));
 }
