@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { splitPaperArt, attachedPaperPose, pageReveal } from '../src/paperAttachments.ts';
+import { splitPaperArt, attachedPaperPose, pageReveal, popupFoldAngle } from '../src/paperAttachments.ts';
 const near=(a,b)=>assert.ok(Math.abs(a-b)<1e-8,`${a} ≠ ${b}`);
 test('wide scenery is split at the binding without duplicating or cropping interior art',()=>{const left=splitPaperArt(0,7.1,'left'),right=splitPaperArt(0,7.1,'right');near(left.width+right.width,7.1);near(left.u1,right.u0);near(left.center+left.width/2,0);near(right.center-right.width/2,0);});
 test('small objects remain attached to their actual page',()=>{assert.equal(splitPaperArt(.7,1.05,'left'),null);assert.ok(splitPaperArt(.7,1.05,'right'));assert.equal(splitPaperArt(-1.05,.8,'right'),null);assert.ok(splitPaperArt(-1.05,.8,'left'));});
@@ -8,3 +8,12 @@ test('objects begin upright at their original anchor in both directions',()=>{co
 test('objects travel with the bent sheet and turn under the reverse face',()=>{const start=attachedPaperPose(.7,.28,.95,0,1,1),mid=attachedPaperPose(.7,.28,.95,.5,1,1),end=attachedPaperPose(.7,.28,.95,1,1,1);assert.ok(mid.position[1]>start.position[1]+.4);assert.ok(mid.normal[0]<-.8);near(end.position[0],-.7);near(end.normal[1],-1);});
 test('incoming objects emerge upright on the back of a completed sheet',()=>{const next=attachedPaperPose(-1.5,.27,1.55,1,1,-1),previous=attachedPaperPose(1.6,.26,.3,1,-1,1);near(next.position[0],-1.5);near(next.position[1],.288);near(next.normal[1],1);near(previous.position[0],1.6);near(previous.normal[1],1);});
 test('partial turn and cancellation restore the identical attachment pose',()=>{const initial=attachedPaperPose(.7,.28,.95,0,1,1);for(const p of [.1,.5,.8])attachedPaperPose(.7,.28,.95,p,1,1);assert.deepEqual(attachedPaperPose(.7,.28,.95,0,1,1),initial);near(pageReveal(0,.5,.95),0);near(pageReveal(1,.5,.95),1);});
+test('popups fold in direct proportion to the page closing, including early dragging',()=>{
+ for(const p of [0,.1,.25,.5,.75,1])near(popupFoldAngle(p),-Math.PI/2*p);
+ near(popupFoldAngle(-.2),0);near(popupFoldAngle(1.2),-Math.PI/2);
+});
+test('reverse-face popups unfold by the same amount and scrubbing restores the angle',()=>{
+ for(const p of [0,.2,.5,.8,1])near(popupFoldAngle(p)+popupFoldAngle(p,true),-Math.PI/2);
+ for(const p of [.6,.4,.2,0])near(popupFoldAngle(p),-Math.PI/2*p);
+ near(popupFoldAngle(0),0);near(popupFoldAngle(1,true),0);
+});

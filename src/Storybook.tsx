@@ -6,7 +6,7 @@ import gsap from 'gsap';
 import { loadTexture, loadScene, preloadScene, readyScene } from './assets';
 import { type Director, type Layer, scenes, useStory, playSound } from './story';
 import { createPaperGeometry, updatePaperGeometry } from './paperGeometry';
-import { attachedPaperPose, pageReveal, splitPaperArt, type PaperPiece } from './paperAttachments';
+import { attachedPaperPose, pageReveal, popupFoldAngle, splitPaperArt, type PaperPiece } from './paperAttachments';
 type Turn={from:number;to:number;direction:1|-1;incoming:Record<string,Texture>;restoreDialog:boolean};
 function Camera(){
  const {camera,size}=useThree();const isCover=useStory(s=>s.phase==='COVER'||s.phase==='INIT');const moving=useStory(s=>s.phase==='DRAGGING_PAGE'||s.phase==='TURNING_PAGE');const reduce=useStory(s=>s.reduceMotion);
@@ -22,8 +22,9 @@ function PaperLayer({layer,piece,texture,hinges,onClick,turn,progress,incoming=f
   const root=anchor.current;root.visible=true;
   if(turn){
    const p=progress.current.value;const movingSide=turn.direction===1?'right':'left';const ridesSheet=incoming?piece.side!==movingSide:piece.side===movingSide;
-   if(ridesSheet){const face:1|-1=piece.side==='right'?1:-1;const pose=attachedPaperPose(piece.center,layer.position[1],layer.position[2],p,turn.direction,face);root.position.set(...pose.position);root.rotation.z=pose.rotation;ref.current.rotation.x=incoming?0:-Math.PI/2*pageReveal(p,.75,1);root.visible=incoming?p>.35:p<.99999;}
-   else {root.position.set(piece.center,layer.position[1]+.018,layer.position[2]);root.rotation.z=0;const reveal=incoming?pageReveal(p,.5,.95):1-pageReveal(p,.45,.92);ref.current.rotation.x=-Math.PI/2*(1-reveal);root.visible=reveal>.0001;}
+   if(ridesSheet){const face:1|-1=piece.side==='right'?1:-1;const pose=attachedPaperPose(piece.center,layer.position[1],layer.position[2],p,turn.direction,face);root.position.set(...pose.position);root.rotation.z=pose.rotation;root.visible=incoming?p>.35:p<.99999;}
+   else {root.position.set(piece.center,layer.position[1]+.018,layer.position[2]);root.rotation.z=0;const reveal=incoming?pageReveal(p,.5,.95):1-pageReveal(p,.45,.92);root.visible=reveal>.0001;}
+   ref.current.rotation.x=popupFoldAngle(p,incoming);
   }else{root.position.set(piece.center,layer.position[1]+.018,layer.position[2]);root.rotation.z=0;}
   mesh.current.rotation.z=layer.id==='carrot'&&!reduce&&phase==='EXPLORING'?Math.sin(clock.elapsedTime*1.5)*.025:0;
  });
