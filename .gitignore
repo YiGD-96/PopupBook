@@ -3,3 +3,7 @@ dist/
 .sites-runtime/
 *.tsbuildinfo
 qa/
+.vercel/
+.env
+.env.*
+!.env.example
