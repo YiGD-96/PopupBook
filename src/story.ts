@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-export type Phase = 'INIT'|'COVER'|'OPENING_BOOK'|'LOADING_PAGE'|'OPENING_POPUP'|'EXPLORING'|'CLOSING_POPUP'|'TURNING_PAGE'|'ENDING'|'ERROR';
+export type Phase = 'INIT'|'COVER'|'OPENING_BOOK'|'LOADING_PAGE'|'OPENING_POPUP'|'EXPLORING'|'DRAGGING_PAGE'|'CLOSING_POPUP'|'TURNING_PAGE'|'ENDING'|'ERROR';
 export type Quality = 'auto'|'low'|'high';
 export type Layer = { id:string; src:string; position:[number,number,number]; size:[number,number]; interactive?:boolean };
 export const scenes = [
@@ -31,4 +31,4 @@ export function playSound(kind:'page'|'hello') {
  if(useStory.getState().muted)return;
  try { const AudioCtx=window.AudioContext??(window as unknown as {webkitAudioContext:typeof AudioContext}).webkitAudioContext; const ctx=new AudioCtx();const gain=ctx.createGain();gain.connect(ctx.destination);gain.gain.setValueAtTime(.035,ctx.currentTime);gain.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+.4); const osc=ctx.createOscillator();osc.type='sine';osc.frequency.setValueAtTime(kind==='hello'?523:280,ctx.currentTime);osc.frequency.exponentialRampToValueAtTime(kind==='hello'?784:140,ctx.currentTime+.3);osc.connect(gain);osc.start();osc.stop(ctx.currentTime+.4);osc.onended=()=>void ctx.close(); }catch(e){console.info('Sound unavailable',e);}
 }
-export interface Director {start:()=>void;go:(chapter:number)=>void;finish:()=>void;restart:()=>void;interact:()=>void;retry:()=>void}
+export interface Director {start:()=>void;go:(chapter:number)=>void;finish:()=>void;restart:()=>void;interact:()=>void;retry:()=>void;previewTurn:(direction:1|-1,progress:number)=>boolean;settleTurn:(commit:boolean)=>void}

@@ -16,6 +16,10 @@ npm run preview
 ## 체험 범위
 
 - 입체 표지와 시작 버튼, 표지 펼침.
+- 책을 연 뒤에는 화면 전체를 사용하는 독서 모드로 전환합니다. 종이 양면 인쇄, 페이지 두께, 책갈피 리본과 접힘 그림자를 포함합니다.
+- 좌우 드래그로 책장을 직접 움직이며, 짧은 드래그는 취소되고 충분한 이동·빠른 스와이프는 완료됩니다. 터치의 세로 이동과 드래그를 구분합니다.
+- 책 영역의 세로 휠·가로 트랙패드 입력으로 한 장씩 이동합니다. 전환 중 입력과 휠 관성은 잠그며, 모달 및 확대 제스처는 페이지 넘김에서 제외합니다.
+- 다음·이전 버튼, 상단 장 표시와 책갈피 목록을 함께 제공합니다.
 - 구좌 당근밭 / 제주 마을 골목 / 해안 등대, 장마다 독립 종이 레이어 5개.
 - GSAP 타임라인으로 접기 → 책장 넘김 → 리소스 로드 → 차례로 펼치기.
 - 당근 반응, 감귤나무 대사, 등대 빛, 장별 HTML 대응 버튼.
@@ -24,7 +28,7 @@ npm run preview
 - WebGL 미지원·컨텍스트 유실 시 일러스트 모드. `?view=paper`로 직접 확인 가능.
 - 한국어 DOM 텍스트, 포커스 표시, 모달 포커스 순환, Tab / Enter / 방향키.
 
-React 19 + TypeScript + Vite + Three.js / React Three Fiber / Drei + GSAP + Zustand를 사용합니다. 호환 버전은 `package-lock.json`에 잠갔습니다. 렌더 엔진은 별도 청크로 분리했습니다. 정교한 종이 물리와 페이지 곡률은 구현 범위 밖입니다.
+React 19 + TypeScript + Vite + Three.js / React Three Fiber / Drei + GSAP + Zustand를 사용합니다. 호환 버전은 `package-lock.json`에 잠갔습니다. 렌더 엔진은 별도 청크로 분리했습니다. 책장은 세분화한 메시를 연속 곡선으로 변형해 휘어집니다. 정교한 종이 물리와 기계식 V-fold는 구현 범위 밖입니다.
 
 ## 코드 구성
 
@@ -32,7 +36,12 @@ React 19 + TypeScript + Vite + Three.js / React Three Fiber / Drei + GSAP + Zust
 - `src/Storybook.tsx`: 3D 책, 바닥 힌지와 팝업, 단일 전환 타임라인 소유자.
 - `src/story.ts`: 세 장의 콘텐츠, 상태와 설정, 사용자 요청 이후 합성 효과음.
 - `src/assets.ts`: 텍스처 캐시, 장별 로드·다음 장 프리로드·실패 캐시 정리.
+- `src/paperGeometry.ts`: 힌지 고정, 종이 휘어짐, 앞·뒷면 기하.
+- `src/useBookGestures.ts`, `src/turnInput.ts`: 드래그 캡처·취소, 휠 누적·관성 차단.
+- `src/reader.css`: 책을 중심에 배치하는 반응형 독서 화면.
 - `public/art`: 직접 제작한 SVG 종이 일러스트. `create-art.mjs`로 재생성.
+- `create-pages.mjs`: 여섯 개의 페이지 양면 인쇄 텍스처 제작.
+- `tests/page-turn.test.mjs`: `node --experimental-strip-types --test tests/page-turn.test.mjs`로 종이 기하·입력 로직 검사.
 - `QA.md`: 검증 결과와 실기기 검증이 필요한 부분.
 
 ## 에셋 및 라이선스
@@ -41,4 +50,4 @@ React 19 + TypeScript + Vite + Three.js / React Three Fiber / Drei + GSAP + Zust
 
 ## 프로토타입 검증의 한계
 
-모바일은 데스크톱 브라우저의 화면 크기 변경으로 확인했습니다. Android/iOS 실기기, 저사양 PC, 느린 네트워크, 의도적인 다운로드 실패·WebGL 컨텍스트 유실은 아직 검증하지 않았습니다. 표지/장 넘김은 단순 회전 모델이며, 최종 고아슈 아트와 교육용 사실 콘텐츠 검수는 후속 작업입니다. 서버·로그인·결제는 없습니다.
+모바일은 데스크톱 브라우저의 화면 크기 변경으로 확인했습니다. Android/iOS 실기기, 저사양 PC, 느린 네트워크, 의도적인 다운로드 실패·WebGL 컨텍스트 유실은 아직 검증하지 않았습니다. 표지는 회전 모델, 책장은 곡선 변형 모델입니다. 최종 고아슈 아트와 교육용 사실 콘텐츠 검수는 후속 작업입니다. 서버·로그인·결제는 없습니다.
