@@ -17,8 +17,9 @@ npm run preview
 
 GitHub 저장소와 Vercel을 연결하는 배포 방법은 [DEPLOYMENT.md](DEPLOYMENT.md)를 참고하세요. 저장소 최상위에 이 프로젝트의 파일을 올리면 Vercel의 Root Directory는 `./`입니다.
 
-- 입체 표지와 시작 버튼, 표지 펼침.
-- 책을 연 뒤에는 화면 전체를 사용하는 독서 모드로 전환합니다. 종이 양면 인쇄, 페이지 두께, 책갈피 리본과 접힘 그림자를 포함합니다.
+- 첫 화면부터 책을 중심에 배치합니다. 표지를 보여 주며 첫 장을 준비한 뒤 클릭 없이 자동으로 펼칩니다. 설정·소개 창을 열면 자동 시작을 기다립니다.
+- 첫 장의 이미지 디코딩·GPU 텍스처 업로드·셰이더 준비를 펼침 전에 완료합니다. 업로드를 프레임별로 나누고, 정지한 책의 그림자는 재사용합니다.
+- 화면 전체를 사용하는 독서 모드에 종이 양면 인쇄, 페이지 두께, 책갈피 리본과 접힘 그림자를 포함합니다.
 - 좌우 드래그로 책장을 직접 움직이며, 짧은 드래그는 취소되고 충분한 이동·빠른 스와이프는 완료됩니다. 터치의 세로 이동과 드래그를 구분합니다.
 - 책 영역의 세로 휠·가로 트랙패드 입력으로 한 장씩 이동합니다. 전환 중 입력과 휠 관성은 잠그며, 모달 및 확대 제스처는 페이지 넘김에서 제외합니다.
 - 다음·이전 버튼, 상단 장 표시와 책갈피 목록을 함께 제공합니다.
@@ -38,13 +39,14 @@ React 19 + TypeScript + Vite + Three.js / React Three Fiber / Drei + GSAP + Zust
 - `src/Storybook.tsx`: 3D 책, 바닥 힌지와 팝업, 단일 전환 타임라인 소유자.
 - `src/story.ts`: 세 장의 콘텐츠, 상태와 설정, 사용자 요청 이후 합성 효과음.
 - `src/assets.ts`: 텍스처 캐시, 장별 로드·다음 장 프리로드·실패 캐시 정리.
+- `src/bookPreparation.ts`: 첫 장 텍스처의 단계별 GPU 업로드, 셰이더 준비, 취소된 초기화 차단.
 - `src/paperGeometry.ts`: 힌지 고정, 종이 휘어짐, 앞·뒷면 기하.
 - `src/paperAttachments.ts`: 책장별 일러스트 분할과 곡면에 붙은 사물의 위치·방향 계산.
 - `src/useBookGestures.ts`, `src/turnInput.ts`: 드래그 캡처·취소, 휠 누적·관성 차단.
 - `src/reader.css`: 책을 중심에 배치하는 반응형 독서 화면.
 - `public/art`: 직접 제작한 SVG 종이 일러스트. `create-art.mjs`로 재생성.
 - `create-pages.mjs`: 여섯 개의 페이지 양면 인쇄 텍스처 제작.
-- `tests/page-turn.test.mjs`, `tests/paper-attachments.test.mjs`: `node --experimental-strip-types --test tests/*.test.mjs`로 종이 기하·입력·사물 부착 로직 검사(Node.js 22.18+).
+- `tests/*.test.mjs`: `node --experimental-strip-types --test tests/*.test.mjs`로 종이 기하·입력·사물 부착·초기 렌더 준비 로직 검사(Node.js 22.18+).
 - `QA.md`: 검증 결과와 실기기 검증이 필요한 부분.
 
 ## 에셋 및 라이선스
