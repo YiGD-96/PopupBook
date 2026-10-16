@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-export type Phase = 'INIT'|'COVER'|'CLOSED'|'OPENING_BOOK'|'CLOSING_BOOK'|'LOADING_PAGE'|'OPENING_POPUP'|'EXPLORING'|'DRAGGING_PAGE'|'CLOSING_POPUP'|'TURNING_PAGE'|'ENDING'|'ERROR';
+export type Phase = 'INIT'|'COVER'|'LOADING_PAGE'|'OPENING_POPUP'|'EXPLORING'|'DRAGGING_PAGE'|'CLOSING_POPUP'|'TURNING_PAGE'|'ENDING'|'ERROR';
 export type Layer = { id:string; src:string; position:[number,number,number]; size:[number,number]; interactive?:boolean };
 export const scenes = [
  {id:'gujwa',title:'당근밭의 아침',place:'제주 구좌',english:'A MORNING IN GUJWA',intro:'햇살이 내려앉은 당근밭.\n작은 당근 친구와 첫 인사를 나눠요.',dialog:'“안녕! 나는 당근이야. 오늘은 조금 천천히 걸어볼까? 바람이 들려주는 이야기를 함께 들어봐.”',label:'당근 친구에게 인사하기',hint:'당근 친구를 톡, 눌러보세요',color:'#96a780',layers:[
@@ -44,4 +44,4 @@ export function playSound(kind:'page'|'hello') {
  };
  if(audioContext?.state==='running')emit();else if(audioUnlock)void audioUnlock.then(emit);
 }
-export interface Director {start:()=>void;reveal:()=>void;close:()=>void;go:(chapter:number)=>void;finish:()=>void;restart:()=>void;interact:()=>void;retry:()=>void;previewTurn:(direction:1|-1,progress:number)=>boolean;settleTurn:(commit:boolean)=>void}
+export interface Director {reveal:()=>void;go:(chapter:number)=>void;finish:()=>void;interact:()=>void;retry:()=>void;previewTurn:(direction:1|-1,progress:number)=>boolean;settleTurn:(commit:boolean)=>void}

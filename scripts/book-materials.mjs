@@ -3,7 +3,7 @@ export async function makeBookMaterials({createCanvas,loadImage,sharp,fs,path,pr
  const destination=path.join(project,'public/book-materials');await fs.mkdir(destination,{recursive:true});
  let seed=97016;
  const random=()=>{seed=(Math.imul(1664525,seed)+1013904223)>>>0;return seed/4294967296;};
- async function save(name,canvas){const bytes=await sharp(canvas.toBuffer('image/png')).webp({quality:94,effort:5}).toBuffer();await fs.writeFile(path.join(destination,`${name}.webp`),bytes);return loadImage(bytes);}
+ async function save(name,canvas){if(name==='cloth'||name==='cover-edge')return loadImage(canvas.toBuffer('image/png'));const bytes=await sharp(canvas.toBuffer('image/png')).webp({quality:94,effort:5}).toBuffer();await fs.writeFile(path.join(destination,`${name}.webp`),bytes);return loadImage(bytes);}
  function surface(w,h,color,strength=4,cloth=true){
   const canvas=createCanvas(w,h),ctx=canvas.getContext('2d');ctx.fillStyle=color;ctx.fillRect(0,0,w,h);
   const data=ctx.getImageData(0,0,w,h);
@@ -16,8 +16,10 @@ export async function makeBookMaterials({createCanvas,loadImage,sharp,fs,path,pr
   ctx.putImageData(data,0,0);return canvas;
  }
  const textures={};
- textures.cloth=await save('cloth',surface(768,1024,'#c68870',3.4));
- textures['cloth-side']=await save('cloth-side',surface(768,1024,'#ac705b',3));
+ // cloth and cover-edge are no longer shipped, but are still drawn so the seeded noise of later textures stays identical.
+ const cloth=surface(768,1024,'#c68870',3.4);textures.cloth=await save('cloth',cloth);
+ // The same cloth as the board faces: the case is one wrapped cloth, and the edges darken only through the baked light.
+ textures['cloth-side']=await save('cloth-side',surface(768,1024,'#c68870',3));
  const edge=surface(1024,128,'#b77b64',3);
  const ec=edge.getContext('2d');
  for(let y=0;y<128;y++){
@@ -58,5 +60,16 @@ export async function makeBookMaterials({createCanvas,loadImage,sharp,fs,path,pr
   cc.fillStyle=`rgba(255,223,180,${.08+random()*.12})`;cc.fillRect(x,y,1+random()*4,.5+random());
  }
  textures.cover=await save('cover',cover);
+ // Inside of a board: the cloth turned over the edge, with the endpaper pasted down inside it (board 3.5 × 5.02).
+ const inside=createCanvas(700,1004),ic=inside.getContext('2d'),turnIn=44;ic.drawImage(cloth,0,0,700,1004);
+ ic.drawImage(endpaper,0,0,1024,1344,turnIn,turnIn,700-turnIn*2,1004-turnIn*2);
+ ic.strokeStyle='rgba(96,58,40,.28)';ic.lineWidth=1.5;ic.strokeRect(turnIn+.75,turnIn+.75,700-turnIn*2-1.5,1004-turnIn*2-1.5);
+ ic.strokeStyle='rgba(255,238,214,.35)';ic.lineWidth=1;ic.strokeRect(turnIn-1.5,turnIn-1.5,700-turnIn*2+3,1004-turnIn*2+3);
+ textures.inside=await save('inside',inside);
+ // Soft floor shadow for one board half (5.2 × 6.42 world units around the 3.8 × 5.02 board), baked instead of a live shadow pass.
+ const shadow=createCanvas(416,512),sc=shadow.getContext('2d');
+ const footprint=(grow,blur,alpha)=>{const w=304+grow*2,h=400+grow*2;sc.save();sc.shadowColor=`rgba(78,56,36,${alpha})`;sc.shadowBlur=blur;sc.shadowOffsetX=4000;sc.fillStyle='#000';sc.fillRect((416-w)/2-4000,(512-h)/2,w,h);sc.restore();};
+ footprint(10,44,.34);footprint(-2,10,.42);
+ textures.shadow=await save('shadow',shadow);
  return textures;
 }

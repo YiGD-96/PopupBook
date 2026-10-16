@@ -25,17 +25,19 @@
 3. 표지는 이미지가 실제로 표시된 뒤 **약 1초** 유지한다. 이전 요구인 2초는 폐기됐다.
 4. 시작 표지는 살짝 비스듬해서 책등·두께가 보이는 양장본이다. 펼친 뒤 독서 구도는 좌우로 돌아가지 않은 고정 정면 구도다.
 5. 책이 눕는 동작과 표지가 열리는 동작은 **겹쳐서 진행**한다. 눕기를 다 끝낸 뒤 열리는 순차 연출을 원하지 않는다.
-6. 약 10장의 책장을 넘기는 시작 연출 뒤 현재의 첫 풍경이 펼쳐진다. 이 시작 연출은 미리 만든 영상으로 재생한다.
+6. **6장**의 책장을 넘기는 시작 연출 뒤 현재의 첫 풍경이 펼쳐진다(10장에서 줄이고 4장 분량 0.56초를 단축). 넘어가는 책장에는 제주 여행 일기 글과 작은 그림이 쓰여 있다. 이 시작 연출은 미리 만든 영상으로 재생한다.
 7. 책이 거의 펼쳐지고 풍경의 사물이 올라오는 시점과 상단 메뉴·화살표·대사 등장 시점을 맞춘다.
-8. 책은 화면에서 크게 보이되, PC에서 화면 맨 아래에 붙지 않도록 여백을 둔다.
+8. 책은 화면에서 크게 보이되(1280×720에서 앞쪽 폭 약 950px), PC에서 화면 맨 아래에 붙지 않도록 약 44px 여백을 둔다. 장 넘김 중 사물이 화면 위로 잘리지 않는 범위에서 가장 크게 잡았다. 모바일은 가로폭에 맞춘다.
 9. 큰 `CHAPTER` 패널은 제거했다. 현재 장은 상단 헤더의 작은 `01 / 03` 및 제목으로 표시한다. 모바일에서는 제목을 숨기고 장 번호를 남긴다.
-10. 페이지 이동 UI는 **좌우 화살표 두 개**로 단순화한다. 중복 이전·다음 버튼, 장별 점 표시, 책갈피 목록, 드래그 안내를 되살리지 않는다.
+10. 페이지 이동 UI는 **좌우 화살표 두 개**로 단순화한다. 1장에서 왼쪽 화살표는 비활성이다. 마지막 장의 마무리 팝업에서도 왼쪽 화살표·방향키·드래그·휠로 이전 장에 돌아갈 수 있고, 이때 오른쪽 화살표는 숨긴다. 중복 이전·다음 버튼, 장별 점 표시, 책갈피 목록, 드래그 안내를 되살리지 않는다.
 11. 드래그/스와이프·휠/트랙패드·키보드 방향키로도 넘길 수 있어야 한다. 짧은 드래그는 취소되고 충분한 이동이나 빠른 스와이프는 완료된다.
 12. 사물은 책장에 붙어 페이지와 함께 넘어간다. 책장 진행도에 비례해 눕고 다시 일어나며, 드래그 취소 시 원래 자세로 돌아간다. 현재 장의 사물은 넘김 **70%에서 완전히 접힌다**.
-13. 첫 장에서 왼쪽 화살표로 책을 닫을 수 있다. 닫힌 상태를 유지하고, ‘책 다시 펼치기’를 눌러 연다. 단순 다시 펼치기에서는 10장 시작 영상을 반복하지 않는다. 엔딩의 재시작은 표지부터 전체 인트로를 다시 진행한다.
+13. **1장에서 책을 닫아 표지로 돌아가는 장면은 없앴다**(사용자 요청). 닫힘·다시 펼치기 상태와 코드도 제거했다. 엔딩의 ‘다시 여행하기’는 표지부터 전체 인트로를 다시 진행한다.
 14. ‘나에게 맞는 여행’ 설정은 제거했다. 일반 움직임·선명한 화질·효과음 켜짐으로 고정한다. 움직임 줄이기·화질 선택·음소거 설정 UI는 없다.
 15. 페이지를 넘기는 동안 카메라 줌인·줌아웃이 없어야 한다.
 16. **실시간 그림자와 조명은 제거한다.** 천 결, 제본 홈, 판지 모서리, 종이 단면 등은 미리 만든 이미지와 실제 두께로 표현한다.
+17. (2026-10-16 Claude) 입체감은 회전 없이 **원근 카메라(화각 30°, 고도 약 19°)**와 구워 둔 표현으로 낸다: 책장 곡면(책 홈으로 꺼졌다 부풀어 오름), 정점 색 기반 책 홈 음영, 종이 블록 측면, 바닥 그림자 이미지(`book-shadow`), 팝업 카드 알파를 낮은 밉맵에서 읽는 그림자 띠. 모두 추가 렌더 패스·실시간 조명 없이 처리한다. 배경은 책이 떠 보이도록 리넨 톤 `#ece6d6`.
+18. 책장 측면(종이 단면)은 맨 위 책장에서 블록 바닥까지 한 장의 벽이라 블록과 책장 사이에 경계선이 없다. 펼친 책에서는 종이 묶음 바닥이 `FORE_EDGE_PULL`(0.1)만큼 바깥으로 퍼져 측면이 위로 갈수록 좁아진다(닫힌 책에서는 반듯). 맨 위 인쇄 책장은 원래 크기라 그림·팝업·그림자 위치가 그대로다. 블록은 그 안쪽에 숨는 채움재다. 펼친 표지는 양장본 형태다: 얇은 판지(두께 0.1)에 둥근 바깥 모서리·둥근 천 테두리, 판지와 같은 두께로 이어지는 책등과 접힘 홈, 표지 안쪽의 천 테두리+면지(`book-inside`), 가운데 홈 바로 오른쪽(넘어가지 않는 묶음, x=0.35) 종이 사이에서 나와 판지 위를 지나 바닥으로 흘러내린 가름끈(헤드밴드는 펼칠 때 겹쳐서 제거). 책등 띠에는 판지 가장자리 옆 경첩 홈이 있다(띠 끝에서 잰 거리로 정해 닫힌 표지와 펼친 책에서 같은 자리, 홈 바닥은 음영으로 더 어둡게). 음영은 모두 정점 색으로 구워 텍스처+정점색 셰이더 하나를 공유한다. 판지 테두리·책등 천(`cloth-side`)은 표지 안쪽 천과 같은 바탕색이라 한 장의 천으로 감싼 것처럼 보이고, 밝기 차이는 구운 음영으로만 낸다.
 
 가장 중요한 사용자 피드백은 “첫 진입과 책이 완전히 열리기 전까지 끊김이 심하고 동작이 부자연스럽다”였다. 새로운 사실감 표현을 추가하더라도 초기 렌더 비용을 다시 늘리지 않는 것이 중요하다.
 
@@ -44,11 +46,11 @@
 ```text
 표지 이미지 표시
   → 실제 표시 후 1초 대기
-  → 무음 MP4 자동 재생 (4.6초, 60fps)
+  → 무음 MP4 자동 재생 (4.04초, 60fps)
       ├─ 0~1.4초: 책 기울기 변화
       ├─ 0.12~1.55초: 표지 개방 (기울기 변화와 중첩)
-      ├─ 중간: 10장 넘김
-      └─ 2.8초부터: 풍경 상승 + 상단 메뉴/화살표/대사 공개
+      ├─ 1.0~2.32초: 글이 쓰인 6장 넘김
+      └─ 2.24초부터: 풍경 상승 + 상단 메뉴/화살표/대사 공개
   → 영상 종료 시점에 3D 모듈 로드 및 Canvas 생성
   → 마지막 영상 프레임을 유지하며 실제 책 준비
   → 준비된 첫 장을 완전히 펼친 자세로 적용
@@ -57,8 +59,8 @@
 ```
 
 - **영상 재생 중에는 Three.js 엔진 초기화, WebGL 지원 확인, Canvas 생성을 시작하지 않는다.** 영상과 무거운 GPU 준비가 경쟁하며 끊기던 문제를 피하기 위한 구조다.
-- UI는 영상 2.8초를 기준으로 나타나지만 실제 책 준비 전 화살표 입력은 잠긴다. `timeupdate` 간격 때문에 브라우저에서 실제 공개는 약 2.91~2.92초로 관측됐다.
-- 영상 마지막 프레임과 실제 책의 카메라·치수·재질·자세를 맞춘다. 첫 장을 보여줄 때 실시간 팝업 상승을 한 번 더 반복하지 않는다.
+- UI는 영상 2.24초를 기준으로 나타나지만 실제 책 준비 전 화살표 입력은 잠긴다. `timeupdate` 간격 때문에 실제 공개는 수십 ms 늦을 수 있다.
+- 영상은 실제 책과 **같은 3D 부품·재질·카메라**로 촬영한다(`src/film.tsx`). 마지막 프레임과 실제 책의 평균 차이는 0.82/255였다. 실제 책은 처음부터 펼친 상태로만 만들어지고(닫힌 표지·표지 텍스처를 로드하지 않음) `reveal`은 상태 전환만 한다.
 - 자동 재생이 거절되면 ‘책 펼치기’ 버튼을 표시한다. 영상 오류 때는 정적 펼침 이미지로 이어서 실제 책을 준비한다.
 - 효과음은 켜짐으로 설정돼 있어도 브라우저 정책상 최초 클릭·터치·키 입력으로 오디오가 활성화돼야 한다. 입력 전 자동 인트로는 무음이다. 기존 AudioContext를 재사용한다.
 - WebGL 미지원/컨텍스트 유실에는 일러스트 모드가 있다. `?view=paper`로 직접 확인할 수 있다.
@@ -85,7 +87,7 @@ npm run build
 npm run preview
 
 # 자동 검사 (별도의 npm test 스크립트는 없음)
-node --experimental-strip-types --test tests/art-source.test.mjs tests/book-view.test.mjs tests/book-preparation.test.mjs tests/intro-playback.test.mjs tests/page-turn.test.mjs tests/paper-attachments.test.mjs
+node --experimental-strip-types --test tests/art-source.test.mjs tests/book-geometry.test.mjs tests/book-view.test.mjs tests/book-preparation.test.mjs tests/intro-playback.test.mjs tests/page-turn.test.mjs tests/paper-attachments.test.mjs
 ```
 
 사용자가 이미 5173 포트에서 보고 있다면 기존 서버를 임의로 종료하지 않는다. 독립 검증이 필요하면 빈 포트에서 `npm run dev -- --port 5174 --strictPort`처럼 실행한다.
@@ -99,21 +101,24 @@ Windows 환경에서 `npm.ps1` 실행 정책 문제가 있다면 `npm.cmd`를 �
 | 파일 | 역할과 수정 시 유의점 |
 |---|---|
 | `src/App.tsx` | 전체 UI, 인트로/상단 UI 표시, 실제 책 마운트 시점, 모달, 재시작, 일러스트 폴백. `introVisible`, `chromeVisible`, `sceneMounted` 흐름을 먼저 파악한다. |
-| `src/Intro.tsx` | 표지 표시 시점의 타이머, 영상 재생, 2.8초 UI 공개, 종료/오류 처리, 재생 통계. |
-| `src/introPlayback.ts` | 표지 유지 시간과 영상/UI 공개 상수, 영상 종료와 실제 장면 준비 조건. |
-| `src/Storybook.tsx` | 지연 로드되는 실제 3D 책, 판지/종이 블록, 장면 준비, 단일 GSAP 타임라인, `reveal`/닫기/넘김. |
+| `src/Intro.tsx` | 표지 표시 시점의 타이머, 영상 재생, 2.24초 UI 공개, 종료/오류 처리, 재생 통계. |
+| `src/introPlayback.ts` | 표지 유지 시간, 인트로 책장 수·간격, 그로부터 계산되는 UI 공개/영상 길이, 영상 종료와 실제 장면 준비 조건. |
+| `src/Storybook.tsx` | 지연 로드되는 실제 3D 책(항상 펼친 상태), 장면 준비, 단일 GSAP 타임라인, `reveal`/넘김, 마무리 팝업에서 뒤로 넘기기. |
+| `src/bookParts.tsx` | 실제 책과 인트로 영상이 공유하는 부품: 판지, 책등, 종이 블록, 가름끈, 바닥 그림자, 인쇄 책장, 넘어가는 책장, 팝업 그림자. |
+| `src/bookGeometry.ts` | 양장본 형상(둥근 판지, 접히는 책등 띠, 블록, 가름끈)과 고정 조명 굽기(`bakeLight`). |
+| `src/film.tsx`, `film.html` | 인트로 영상 촬영용 개발 전용 페이지(프로덕션 빌드 제외). 기울어진 책→표지 개방→6장 넘김→풍경 상승을 시간 t의 함수로 구성한다. 표지는 **앞표지+왼쪽 책장 묶음+첫 책장이 한 덩어리로 경첩을 돌아** 펼쳐지고(닫힌 상태는 두 묶음이 포개짐), 닫힌 책장은 평평했다가 펼치며 부풀어 오른다. 책등은 `createSpineGeometry(fold)` 한 장의 띠가 닫힌 C자에서 펼친 모양으로 이어서 접히며, fold=1이 실제 책의 책등과 같다. 가름끈은 처음부터 있어 펼치는 순간 새로 생기는 부분이 없다. 넘어가는 책장의 여행 일기 글도 여기서 그린다. |
 | `src/story.ts` | 세 장 콘텐츠, Zustand 상태, Director 인터페이스, 효과음. |
 | `src/assets.ts` | 이미지 디코딩과 텍스처 캐시, 장별 로드/프리로드, 실패 캐시 정리. |
 | `src/artSource.ts` | 런타임 이미지 경로. 알려진 장면/페이지는 WebP, `book-*`는 제본 재질로 연결한다. |
 | `src/bookPreparation.ts` | 단계별 GPU 업로드, 셰이더 컴파일, 숨겨진 렌더 준비, 취소/언마운트 확인. |
 | `src/bookView.ts` | 영상과 실제 책의 공통 구도·카메라·반응형 줌 계산. |
-| `src/bookStructure.ts` | 판지/종이 블록 치수, 표지 힌지와 인쇄면 위치. |
+| `src/bookStructure.ts` | 판지·책등·종이 블록 치수, 바닥/팝업 그림자 값. |
 | `src/paperGeometry.ts` | 일반 페이지 넘김의 곡면 종이 메시. 인트로는 이 실시간 메시로 재생하지 않는다. |
 | `src/paperAttachments.ts` | 그림 좌우 분할, 곡면에 부착된 사물의 자세, 접힘 진행도. |
 | `src/useBookGestures.ts`, `src/turnInput.ts` | 드래그 캡처/취소, 스와이프 판단, 휠 단위 변환, 관성 입력 차단. |
 | `src/styles.css` → `src/reader.css` → `src/cinematic.css` | `main.tsx`에서 이 순서로 읽는다. 최신 인트로·책 크기·헤더 배치는 마지막 `cinematic.css`의 영향을 받는다. |
-| `scripts/render-intro.mjs` | 표지·영상·스토리보드·메타데이터를 만드는 오프라인 렌더러. |
-| `scripts/book-materials.mjs` | 천 결·표지·모서리·종이 단면·면지 재질 생성. |
+| `scripts/render-intro.mjs` | Vite 개발 서버+headless Chrome에서 `film.html`을 프레임 단위로 캡처해 영상·스틸·스토리보드·메타데이터를 만든다(약 30초). |
+| `scripts/book-materials.mjs` | 표지·책등 천·표지 안쪽·종이 단면·면지·바닥 그림자 재질 생성. |
 | `tests/*.test.mjs` | 기하, 입력, 사물 부착, 초기 준비, 인트로 타이밍, 에셋/구도 일치 검사. |
 
 장면은 ① 구좌 당근밭 ‘당근밭의 아침’ ② 제주 마을 ‘골목에 머무는 오후’ ③ 해안 등대 ‘바다가 건네는 인사’다. 장마다 종이 레이어 5개가 있고 당근·감귤나무·등대의 상호작용이 있다.
@@ -123,24 +128,34 @@ Windows 환경에서 `npm.ps1` 실행 정책 문제가 있다면 `npm.cmd`를 �
 ```text
 src/introPlayback.ts
   COVER_HOLD_MS = 1000
-  INTRO_UI_AT = 2.8
-  INTRO_DURATION = 4.6
+  INTRO_PAGE_COUNT = 6, INTRO_PAGES_START = 1, INTRO_PAGE_STAGGER = 0.14, INTRO_PAGE_TURN = 0.62
+  INTRO_UI_AT = 2.24       (마지막 책장 착지 직전, 위 값에서 계산)
+  INTRO_DURATION = 4.04    (UI 공개 + 1.8초)
 
 src/bookView.ts
-  BOOK_FRAME_WIDTH = 8
-  BOOK_FRAME_HEIGHT = 7.6
-  BOOK_TARGET_Y = 1.95
-  BOOK_CAMERA_POSITION = [0, 8.7, 12]
-  bookZoom(w, h) = min(w / 8, h / 7.6)
+  BOOK_FRAME_WIDTH = 8.8          (원근으로 넓어진 책 앞쪽이 모바일 폭에 들어가도록)
+  BOOK_FRAME_HEIGHT = 6.6         (장 넘김 중 등대 꼭대기가 잘리지 않는 값)
+  BOOK_TARGET_Y = 1.421
+  BOOK_CAMERA_POSITION = [0, 5.431, 11.645]   (PerspectiveCamera, 프레임 기준 화각 30°, 고도 19°)
+  bookZoom(w, h) = min(w / 8.8, h / 6.6)  (대상 평면에서 1단위당 픽셀)
+  bookFov(w, h)  = 위 배율을 유지하는 세로 화각. 영상(968×726)은 같은 원근의 가운데 크롭이다.
+
+src/paperGeometry.ts
+  PAGE_BASE_Y = 0.13, pageRestLift(u), pageShade(u, facing)
 
 src/bookStructure.ts
-  BOOK_BOARD = { width: 3.8, depth: 5.02, thickness: 0.18, y: -0.33 }
-  BOOK_PAGES = { width: 3.57, depth: 4.78, thickness: 0.32, y: -0.07 }
-  COVER_HINGE_Y = 0.22
-  COVER_ART_Y = 0.096
+  BOOK_BOARD = { width: 3.5, depth: 5.02, thickness: 0.1, x: 1.95, y: -0.28, radius: 0.08, bevel: 0.035 }
+  BOOK_PAGES = { width: 3.536, depth: 4.742, thickness: 0.32, y: -0.07 }   (숨은 채움재, x = 0.004부터, 측면 벽 안쪽)
+  BOOK_RIBBON = { x: 0.35, width: 0.07 }
+
+src/paperGeometry.ts
+  FORE_EDGE_PULL = 0.1 (묶음 바닥이 퍼지는 양), forePull(u, swell), stackLean(t)
+  BOOK_SPINE = { halfWidth: 0.2, sag: 0.012 }   (판지 안쪽 끝 = 책등 끝, 홈은 bookGeometry.ts의 JOINT_GROOVE)
+  BOOK_FLOOR_SHADOW = { width: 4.79, depth: 6.42, y: -0.334, z: 0.12 }
+  POPUP_SHADOW = { length: 0.34, opacity: 0.36, mipBias: 2 }
 ```
 
-이 값들이 모든 참조 위치에 자동으로 동기화되는 것은 아니다. 특히 영상 생성 시간은 `scripts/render-intro.mjs`에도 정의돼 있으므로 변경 시 소스·생성물·검사를 함께 맞춘다.
+영상은 같은 소스 모듈로 촬영되므로 값을 바꾸면 `node scripts/render-intro.mjs`로 영상·스틸·메타데이터를 다시 만들고 검사를 돌린다(메타데이터와 소스가 다르면 `art-source` 검사가 실패한다).
 
 ## 6. 에셋과 영상 생성
 
@@ -150,20 +165,21 @@ src/bookStructure.ts
 |---|---|
 | `public/art/` | 편집용 원본 SVG. 일부에 무거운 `feTurbulence` 종이 필터가 있다. |
 | `public/art-raster/` | 런타임 WebP 21개, 전체 약 2.65MiB. 원본 투명도를 유지한다. |
-| `public/book-materials/` | `cover`, `cloth`, `cloth-side`, `cover-edge`, `paper-edge`, `endpaper`의 WebP 6개. |
-| `public/media/book-opening.mp4` | 현재 인트로: 960×912, 60fps, 4.6초/276프레임, H264, 약 0.76MiB. |
+| `public/book-materials/` | `cover`(영상 전용), `inside`, `cloth-side`, `paper-edge`, `endpaper`, `shadow`의 WebP 6개. 실제 책은 `cover`를 로드하지 않는다. |
+| `public/media/book-opening.mp4` | 현재 인트로: 968×726(8.8:6.6), 60fps, 4.04초/242프레임, H264, 약 0.62MiB. three.js로 촬영. |
 | `public/media/book-cover.webp`, `book-open.webp` | 인트로 첫 표지와 완료 이미지. |
 | `public/media/intro-meta.json` | 생성된 영상의 구도·카메라·치수·UI 공개 시점 기록. |
 | `public/media/intro-storyboard.jpg` | 시작 연출의 정적 비교 이미지. |
 
-카메라, 책 크기/두께, 재질, 첫 장 그림, 시작 타이밍을 바꾸면 **영상·표지·최종 이미지도 재생성**하고 실제 책 연결을 확인한다. 한쪽만 바꾸면 연결 순간 크기나 위치가 튄다. 오프라인 영상은 Canvas 기반 투영으로 만들므로 실제 3D와의 시각 비교도 필요하다.
+카메라, 책 크기/두께, 재질, 첫 장 그림, 시작 타이밍, 책장 곡면·음영·그림자 값을 바꾸면 **영상·표지·최종 이미지도 재생성**하고 실제 책 연결을 확인한다. 한쪽만 바꾸면 연결 순간 크기나 위치가 튄다. 영상은 실제 책 부품으로 촬영되므로 형태는 자동으로 일치하지만, 재생성하지 않으면 연결 순간 튄다.
 
-영상 생성에는 Node 모듈 `sharp`, `@napi-rs/canvas`와 FFmpeg가 추가로 필요하다. 이 도구들은 현재 프로젝트의 일반 의존성에 포함되지 않으며, 생성된 결과물은 이미 `public`에 들어 있다.
+영상 생성에는 Node 모듈 `sharp`, `@napi-rs/canvas`(텍스처 굽기), FFmpeg, **Chrome**(GPU가 있는 headless 촬영)이 추가로 필요하다. 책장 글은 시스템의 Gowun Batang/Noto Serif KR/바탕 글꼴로 그려진다. 이 도구들은 현재 프로젝트의 일반 의존성에 포함되지 않으며, 생성된 결과물은 이미 `public`에 들어 있다.
 
 ```powershell
 # 영상/이미지를 수정할 때만 실행한다. 경로는 작업 환경에 맞춘다.
 $env:CODEX_NODE_MODULES = 'C:\absolute\path\to\node_modules'
 $env:FFMPEG_PATH = 'C:\absolute\path\to\ffmpeg.exe'
+$env:CHROME_PATH = 'C:\Program Files\Google\Chrome\Application\chrome.exe'
 node scripts/render-intro.mjs
 ```
 
@@ -177,24 +193,34 @@ node scripts/render-intro.mjs
 - `--stills`: 표지/완료 이미지·스토리보드·메타데이터만 생성하고 동영상 인코딩은 생략한다. 이 옵션만 실행하면 기존 MP4는 갱신되지 않는다.
 - `--raster-only --all-raster`: 원본 SVG 전체의 WebP 캐시를 준비한다. **이미 존재하는 WebP는 재사용한다.** SVG를 수정했다면 해당 WebP만 의도적으로 갱신해야 한다.
 - `--materials-only`: 제본 재질까지만 생성한다. 영상과 포스터의 재생성을 대신하지 않는다.
+- `INTRO_INSPECT="0,.5,1"`(+ `INTRO_INSPECT_DIR`): 지정한 시각의 프레임만 PNG로 저장하고 영상은 건드리지 않는다. 연출을 확인할 때 쓴다.
 
 `create-art.mjs`, `create-pages.mjs`는 원본 그림/페이지를 다시 만드는 도구다. 실행하면 편집한 원본을 덮을 수 있으므로 필요한 경우에만 내용을 확인하고 실행한다.
 
 ## 7. 성능 관련 유지할 결정
 
-- 첫 진입은 가벼운 이미지와 영상으로 처리한다. 실시간 10장 넘김 인트로로 되돌리지 않는다.
+- 첫 진입은 가벼운 이미지와 영상으로 처리한다. 실시간 책장 넘김 인트로로 되돌리지 않는다.
 - 실제 책은 `lazy`로 분리한다. `vite.config.ts`에 React와 Three를 다시 한 청크로 묶는 `manualChunks`를 넣지 않는다. 과거 이 설정으로 엔진이 초기 로드에 포함됐었다.
 - Windows 경로 해결 문제 때문에 `resolve.preserveSymlinks: true`가 설정돼 있다.
-- Canvas는 `flat`, `shadows={false}`, 기본 이미지 재질을 사용하며 실시간 조명/ContactShadows가 없다. DPR은 최대 2다.
+- Canvas는 `flat`, `shadows={false}`, 기본 이미지 재질(원근 카메라)을 사용하며 실시간 조명/ContactShadows/후처리가 없다. DPR은 최대 2다. 입체감 요소(음영·그림자)는 정점 색, 이미지 한 장, 카드 텍스처 재사용 셰이더로만 처리해 추가 렌더 패스가 없다.
 - 무거운 SVG 필터를 브라우저에서 다시 처리하지 않도록 WebP 경로를 유지한다.
-- 초기 GPU 준비는 첫 장 이미지·표지/제본 재질·첫 페이지 두 면을 중심으로 분산한다. 텍스처 초기화 → `compileAsync` → 128×128 숨겨진 렌더 후 공개한다.
+- 초기 GPU 준비는 첫 장 이미지·제본 재질·첫 페이지 두 면을 중심으로 분산한다(닫힌 표지와 표지 텍스처는 없다). 텍스처 초기화 → `compileAsync` → 128×128 숨겨진 렌더 후 공개한다.
+- 텍스처는 `fetch` → `createImageBitmap(flipY)`으로 메인 스레드 밖에서 디코딩·뒤집기한 뒤 `flipY=false`로 올린다(미지원 시 기존 이미지 로더로 폴백). 이것만으로 영상 종료 후 준비 시간이 CPU 4배 제한에서 약 2.4초 → 1.6초, 일반 조건에서 약 0.93초 → 0.82초로 줄었다(headless Chrome, Intel Iris Xe, 3~4회 평균).
 - 일반 넘김은 실시간 종이 메시 변형이다. 전체 경험이 동영상인 것은 아니다. 이 구간이 느리다면 CPU 기하 갱신과 GPU 비용을 측정한 뒤 수정한다.
 - GSAP 타임라인과 초기화의 취소/세대 확인을 유지한다. React StrictMode, 빠른 재시작, 언마운트에서 중복 실행을 막아야 한다.
 - `chunkSizeWarningLimit` 증가는 성능 최적화 자체가 아니다. 실제 초기 로드와 지연 로드 여부를 확인한다.
 
 ## 8. 마지막 검증 결과와 남은 확인
 
-아래는 **인계 전 구현 작업에서 수행한 결과**다. 이번 문서 작성 과정에서 앱 테스트를 새로 실행한 결과는 아니다.
+### 2026-10-16 Claude 작업 후 (원근·양장본·6장 인트로)
+
+- 자동 검사 36개 통과, TypeScript 검사와 프로덕션 빌드 통과.
+- 영상 마지막 프레임과 실제 책: 평균 차이 0.82/255, 크게 다른 픽셀 0%.
+- headless Chrome(Intel Iris Xe)에서 커밋 a6a151b 대비 2회씩 측정: 영상 종료 후 준비 1.28→1.00초(일반), 2.55→1.90초(CPU 4배), 2.67→1.77초(모바일+CPU 4배). 장 넘김 긴 작업 합계(CPU 4배) 1.48→0.53초, 최장 프레임 0.51→0.27초. 정지 화면 p95 16.8ms·영상 누락 1~4프레임으로 동일.
+- 장 이동: 1장 왼쪽 화살표 비활성·방향키 무시, 마무리 팝업에서 화살표/방향키로 2장 복귀, 다시 마무리 진입 확인.
+- 1280×720, 390×844에서 화면 확인. 실제 기기·저사양 GPU는 아직 확인하지 않았다.
+
+### 이전 인계 시점의 결과 (참고)
 
 - 자동 검사 25개 통과, TypeScript 검사와 프로덕션 빌드 통과.
 - Windows Chromium 1280×720 및 390×844 크기에서 첫 진입, 드래그, 화살표, 닫기/다시 펼치기, 3장 진행, 엔딩/재시작을 확인했다.
@@ -223,7 +249,7 @@ node scripts/render-intro.mjs
 - 원본 PRD와 QA 스크린샷은 저장소 바깥에 있어 GitHub 복제본에 없을 수 있다. 실행 필수 파일은 실제 프로젝트 안의 소스와 `public` 에셋이다.
 - 참고 스크린샷은 상위 폴더의 `tactile-cover-preview.jpg`, `tactile-book-preview.jpg`, `tactile-mobile-preview.jpg`다. 없어도 앱은 실행된다.
 
-문서 작성 시점의 미커밋 변경에는 `App.tsx`, `Storybook.tsx`, 에셋 로더/초기 준비, 스타일, 문서, Vite 설정이 포함돼 있다. 새로 추가된 `Intro.tsx`, 구도/치수/타이밍 모듈, `cinematic.css`, 생성 스크립트, 검사 파일과 특히 **`public/art-raster/`, `public/book-materials/`, `public/media/`**도 아직 Git 미추적 상태다. 다른 컴퓨터에서 이어갈 때는 이 파일들까지 전달됐는지 확인한다. 이 MD만 옮겨서는 최신 앱이 전달되지 않는다.
+(이전 인계 당시 기록) 문서 작성 시점의 미커밋 변경에는 `App.tsx`, `Storybook.tsx`, 에셋 로더/초기 준비, 스타일, 문서, Vite 설정이 포함돼 있다. 새로 추가된 `Intro.tsx`, 구도/치수/타이밍 모듈, `cinematic.css`, 생성 스크립트, 검사 파일과 특히 **`public/art-raster/`, `public/book-materials/`, `public/media/`**도 아직 Git 미추적 상태다. 다른 컴퓨터에서 이어갈 때는 이 파일들까지 전달됐는지 확인한다. 이 MD만 옮겨서는 최신 앱이 전달되지 않는다.
 
 ## 10. Claude에서 시작할 때 사용할 요청문
 

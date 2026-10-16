@@ -3,7 +3,7 @@ import { ArrowRight, ArrowLeft, BookOpen, X, RotateCcw, MousePointer2, Check, Sp
 import { type Director, scenes, useStory, playSound, unlockAudio } from './story';
 import { useBookGestures } from './useBookGestures';
 import Intro,{type IntroReport} from './Intro';
-import {canRevealReader} from './introPlayback';
+import {canRevealReader,INTRO_PAGE_COUNT} from './introPlayback';
 import {BOOK_FRAME_WIDTH,BOOK_FRAME_HEIGHT,bookZoom} from './bookView';
 import {artSource} from './artSource';
 const Storybook = lazy(() => import('./Storybook'));
@@ -75,10 +75,10 @@ export default function App() {
   const surfaceRef=useRef<HTMLDivElement>(null);
   const paperTurn=useRef<{direction:1|-1;progress:number}|null>(null);
   const {dragging}=useBookGestures(surfaceRef,api,modal!==null||introVisible);
-  const closed=['INIT','COVER','CLOSED'].includes(phase);
-  const coverMode=!introVisible&&(closed||['OPENING_BOOK','CLOSING_BOOK'].includes(phase));
-  const intro=introVisible||closed||['OPENING_BOOK','CLOSING_BOOK'].includes(phase);
-  const busy=!['COVER','CLOSED','EXPLORING','ENDING','ERROR'].includes(phase);
+  const closed=['INIT','COVER'].includes(phase);
+  const coverMode=!introVisible&&closed;
+  const intro=introVisible||closed;
+  const busy=!['COVER','EXPLORING','ENDING','ERROR'].includes(phase);
   const ending=phase==='ENDING';
   const scene=scenes[chapter];
   const closeModal=useCallback(()=>setModal(null),[]);
@@ -91,17 +91,14 @@ export default function App() {
   }
   function staticDirector():Director {
     return {
-      start:()=>{const s=useStory.getState();if(s.phase==='CLOSED'){s.set({phase:'EXPLORING',chapter:0,dialog:false});playSound('page');}},
-      reveal:()=>{const s=useStory.getState();if(s.phase==='COVER')s.set({phase:'EXPLORING',chapter:0,dialog:false,introPagesTurned:10});},
-      close:()=>{const s=useStory.getState();if(s.phase==='EXPLORING'&&s.chapter===0){s.set({phase:'CLOSED',dialog:false});playSound('page');}},
+      reveal:()=>{const s=useStory.getState();if(s.phase==='COVER')s.set({phase:'EXPLORING',chapter:0,dialog:false,introPagesTurned:INTRO_PAGE_COUNT});},
       go:n=>{const s=useStory.getState();if(['EXPLORING','ENDING'].includes(s.phase)&&n>=0&&n<3){s.set({phase:'EXPLORING',chapter:n,dialog:false});playSound('page');}},
       finish:()=>{const s=useStory.getState();if(s.phase==='EXPLORING'&&s.chapter===2)s.set({phase:'ENDING',dialog:false});},
-      restart:()=>beginIntro(),
       interact:staticInteract,
       retry:()=>{useStory.getState().set({phase:'INIT',error:null});setFallbackAttempt(n=>n+1);},
       previewTurn:(direction,progress)=>{
         const s=useStory.getState();
-        if(!['EXPLORING','DRAGGING_PAGE'].includes(s.phase)||s.chapter+direction<0||s.chapter+direction>2)return false;
+        if(!['EXPLORING','ENDING','DRAGGING_PAGE'].includes(s.phase)||s.chapter+direction<0||s.chapter+direction>2)return false;
         paperTurn.current={direction,progress};s.set({phase:'DRAGGING_PAGE'});return true;
       },
       settleTurn:commit=>{
@@ -116,7 +113,7 @@ export default function App() {
   function onFailure(){
     setFallback(true);setEngineReady(false);
     const s=useStory.getState();
-    s.set({phase:['INIT','COVER','OPENING_BOOK'].includes(s.phase)?'INIT':s.phase==='ENDING'?'ENDING':s.phase==='CLOSED'?'CLOSED':'EXPLORING',error:null});
+    s.set({phase:['INIT','COVER'].includes(s.phase)?'INIT':s.phase==='ENDING'?'ENDING':'EXPLORING',error:null});
   }
   useEffect(()=>{
     if(!fallback||!sceneMounted)return;
@@ -157,9 +154,10 @@ export default function App() {
   useEffect(()=>{
     const keys=(e:KeyboardEvent)=>{
       if(introVisible||modal!==null||(e.target instanceof HTMLElement&&['INPUT','SELECT','TEXTAREA','BUTTON'].includes(e.target.tagName)))return;
-      const s=useStory.getState();if(s.phase!=='EXPLORING')return;
-      if(e.key==='ArrowRight'){e.preventDefault();s.chapter===2?api.current?.finish():api.current?.go(s.chapter+1);}
-      if(e.key==='ArrowLeft'){e.preventDefault();s.chapter===0?api.current?.close():api.current?.go(s.chapter-1);}
+      const s=useStory.getState();
+      // The first spread is the start of the story: there is no going back to the cover from here.
+      if(e.key==='ArrowRight'&&s.phase==='EXPLORING'){e.preventDefault();s.chapter===2?api.current?.finish():api.current?.go(s.chapter+1);}
+      if(e.key==='ArrowLeft'&&['EXPLORING','ENDING'].includes(s.phase)&&s.chapter>0){e.preventDefault();api.current?.go(s.chapter-1);}
     };
     window.addEventListener('keydown',keys);return()=>window.removeEventListener('keydown',keys);
   },[modal,introVisible]);
@@ -174,7 +172,7 @@ export default function App() {
     update();const observer=new ResizeObserver(update);observer.observe(surface);return()=>observer.disconnect();
   },[]);
 
-  const introText=phase==='INIT'?'책을 준비하고 있어요':phase==='CLOSING_BOOK'?'책을 살며시 닫아요':phase==='CLOSED'?'이 작은 여행은 언제나 여기 있어요':'당신의 작은 여행을 펼쳐요';
+  const introText=phase==='INIT'?'책을 준비하고 있어요':'당신의 작은 여행을 펼쳐요';
   return <div className={"app-shell reader-mode cinematic-reader"+(introVisible?" intro-active":"")}>
     {!introVisible&&<a className="skip-link" href="#main">이야기로 바로 가기</a>}
     {chromeVisible&&<header className="site-header">
@@ -183,7 +181,7 @@ export default function App() {
     </header>}
     <main id="main"><section className={'hero '+(intro?'is-cover':'is-open')+(ending?' is-ending':'')} aria-label="제주 팝업북">
       {chromeVisible&&<div className="hero-copy">
-        {coverMode?<div className="cover-intro"><span>A LITTLE PAPER JOURNEY</span><h1>한 장씩, 만나는 제주</h1><p role="status">{phase!=='CLOSED'&&<LoaderCircle size={14} className="spin"/>}{introText}</p>{phase==='CLOSED'&&<button className="primary-button reopen-button" onClick={()=>api.current?.start()}><BookOpen size={17}/> 책 다시 펼치기<ArrowRight size={17}/></button>}</div>:
+        {coverMode?<div className="cover-intro"><span>A LITTLE PAPER JOURNEY</span><h1>한 장씩, 만나는 제주</h1><p role="status"><LoaderCircle size={14} className="spin"/>{introText}</p></div>:
         ending?<><span className="eyebrow"><Heart size={14}/> 오늘의 작은 여행을 마치며</span><h1>제주의 바람을,<br/><span className="hand-underline">당신의 하루에.</span></h1><p className="hero-description">잠시 쉬어 간 마음이 조금 가벼워졌나요?<br/>이 작은 풍경은 언제나 여기서 기다릴게요.</p><div className="ending-stamp"><Check size={15}/> 세 가지 풍경을 모두 만났어요</div><button className="primary-button" onClick={beginIntro}><RotateCcw size={18}/> 다시 여행하기<ArrowRight size={18}/></button></>:
         <><h1 className="sr-only" aria-label={scene.title} ref={storyRef} tabIndex={-1}>{scene.title}</h1>
           <div className={'narration '+(dialog?'has-dialog':'')}><span className="narration-label">{dialog?<><Sparkles size={14}/> 풍경이 들려주는 이야기</>:<><BookOpen size={14}/> 이 장의 이야기</>}</span><p aria-live="polite">{dialog?scene.dialog:'작은 풍경에도 이야기가 숨어 있어요. 종이 위의 친구를 눌러 이야기를 들어보세요.'}</p></div>
@@ -198,9 +196,9 @@ export default function App() {
         </div>
         {!introVisible&&!audioReady&&intro&&<p className="audio-hint">소리는 화면을 터치하면 함께 시작돼요</p>}
         {busy&&!intro&&phase!=='DRAGGING_PAGE'&&<div className="scene-loading" role="status"><LoaderCircle size={16} className="spin"/>{phase==='LOADING_PAGE'?'다음 풍경을 준비해요':phase==='TURNING_PAGE'?'책장을 넘겨요':'종이 속 제주가 깨어나요'}</div>}
-        {chromeVisible&&!coverMode&&!ending&&<>
-          <button className="reader-arrow reader-prev" aria-label={chapter===0?'첫 장에서 책 닫기':'이전 책장'} title={chapter===0?'책 닫기':'이전 책장'} disabled={busy||introVisible} onClick={()=>chapter===0?api.current?.close():api.current?.go(chapter-1)}><ArrowLeft size={24}/></button>
-          <button className="reader-arrow reader-next" aria-label={chapter===2?'여행 마무리':'다음 책장'} title={chapter===2?'여행 마무리':'다음 책장'} disabled={busy||introVisible} onClick={()=>chapter===2?api.current?.finish():api.current?.go(chapter+1)}><ArrowRight size={24}/></button>
+        {chromeVisible&&!coverMode&&<>
+          <button className="reader-arrow reader-prev" aria-label="이전 책장" title="이전 책장" disabled={busy||introVisible||chapter===0} onClick={()=>api.current?.go(chapter-1)}><ArrowLeft size={24}/></button>
+          {!ending&&<button className="reader-arrow reader-next" aria-label={chapter===2?'여행 마무리':'다음 책장'} title={chapter===2?'여행 마무리':'다음 책장'} disabled={busy||introVisible} onClick={()=>chapter===2?api.current?.finish():api.current?.go(chapter+1)}><ArrowRight size={24}/></button>}
 
         </>}
         {phase==='ERROR'&&<div className="scene-error" role="alert"><p>{state.error}</p><button className="secondary-button" onClick={()=>api.current?.retry()}><RotateCcw size={16}/> 다시 시도</button></div>}
