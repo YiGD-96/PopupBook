@@ -1,0 +1,41 @@
+{
+  "width": 960,
+  "height": 912,
+  "fps": 60,
+  "duration": 4.6,
+  "worldWidth": 8,
+  "worldHeight": 7.6,
+  "targetY": 1.95,
+  "camera": [
+    0,
+    8.7,
+    12
+  ],
+  "pageCount": 10,
+  "sceneryStartsAt": 2.8,
+  "uiRevealAt": 2.8,
+  "background": "#f4f1e7",
+  "materials": {
+    "bottomCover": {
+      "width": 3.8,
+      "height": 0.18,
+      "depth": 5.02,
+      "y": -0.33
+    },
+    "paperBlock": {
+      "width": 3.57,
+      "height": 0.32,
+      "depth": 4.78,
+      "y": -0.07
+    },
+    "frontCover": {
+      "width": 3.8,
+      "height": 0.18,
+      "depth": 5.02,
+      "hingeY": 0.22,
+      "artY": 0.096
+    },
+    "source": "book-materials",
+    "shadows": false
+  }
+}

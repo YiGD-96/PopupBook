@@ -1,6 +1,5 @@
 import { create } from 'zustand';
-export type Phase = 'INIT'|'COVER'|'OPENING_BOOK'|'LOADING_PAGE'|'OPENING_POPUP'|'EXPLORING'|'DRAGGING_PAGE'|'CLOSING_POPUP'|'TURNING_PAGE'|'ENDING'|'ERROR';
-export type Quality = 'auto'|'low'|'high';
+export type Phase = 'INIT'|'COVER'|'CLOSED'|'OPENING_BOOK'|'CLOSING_BOOK'|'LOADING_PAGE'|'OPENING_POPUP'|'EXPLORING'|'DRAGGING_PAGE'|'CLOSING_POPUP'|'TURNING_PAGE'|'ENDING'|'ERROR';
 export type Layer = { id:string; src:string; position:[number,number,number]; size:[number,number]; interactive?:boolean };
 export const scenes = [
  {id:'gujwa',title:'당근밭의 아침',place:'제주 구좌',english:'A MORNING IN GUJWA',intro:'햇살이 내려앉은 당근밭.\n작은 당근 친구와 첫 인사를 나눠요.',dialog:'“안녕! 나는 당근이야. 오늘은 조금 천천히 걸어볼까? 바람이 들려주는 이야기를 함께 들어봐.”',label:'당근 친구에게 인사하기',hint:'당근 친구를 톡, 눌러보세요',color:'#96a780',layers:[
@@ -25,10 +24,24 @@ export const scenes = [
   {id:'carrot',src:'carrot',position:[-1.05,.28,1],size:[.8,1.1]}
  ] as Layer[]}
 ];
-type StoryState = {phase:Phase;chapter:number;dialog:boolean;visited:number[];muted:boolean;quality:Quality;reduceMotion:boolean;error:string|null;fps:number;set:(patch:Partial<StoryState>)=>void};
-export const useStory = create<StoryState>(set=>({phase:'INIT',chapter:0,dialog:false,visited:[],muted:true,quality:'auto',reduceMotion:window.matchMedia('(prefers-reduced-motion: reduce)').matches,error:null,fps:0,set:patch=>set(patch)}));
-export function playSound(kind:'page'|'hello') {
- if(useStory.getState().muted)return;
- try { const AudioCtx=window.AudioContext??(window as unknown as {webkitAudioContext:typeof AudioContext}).webkitAudioContext; const ctx=new AudioCtx();const gain=ctx.createGain();gain.connect(ctx.destination);gain.gain.setValueAtTime(.035,ctx.currentTime);gain.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+.4); const osc=ctx.createOscillator();osc.type='sine';osc.frequency.setValueAtTime(kind==='hello'?523:280,ctx.currentTime);osc.frequency.exponentialRampToValueAtTime(kind==='hello'?784:140,ctx.currentTime+.3);osc.connect(gain);osc.start();osc.stop(ctx.currentTime+.4);osc.onended=()=>void ctx.close(); }catch(e){console.info('Sound unavailable',e);}
+type StoryState = {phase:Phase;chapter:number;dialog:boolean;visited:number[];audioReady:boolean;introPagesTurned:number;error:string|null;fps:number;set:(patch:Partial<StoryState>)=>void};
+export const useStory = create<StoryState>(set=>({phase:'INIT',chapter:0,dialog:false,visited:[],audioReady:false,introPagesTurned:0,error:null,fps:0,set:patch=>set(patch)}));
+let audioContext:AudioContext|null=null;
+let audioUnlock:Promise<void>|null=null;
+export function unlockAudio(){
+ if(audioContext?.state==='running')return;
+ if(audioUnlock){void audioContext?.resume().catch(()=>{});return;}
+ try{
+  const AudioCtx=window.AudioContext??(window as unknown as {webkitAudioContext:typeof AudioContext}).webkitAudioContext;
+  audioContext??=new AudioCtx();
+  audioContext.onstatechange=()=>useStory.getState().set({audioReady:audioContext?.state==='running'});
+  audioUnlock=audioContext.resume().then(()=>{useStory.getState().set({audioReady:audioContext?.state==='running'});}).catch(()=>{}).finally(()=>{audioUnlock=null;});
+ }catch{ /* Audio is optional on browsers without Web Audio. */ }
 }
-export interface Director {start:()=>void;go:(chapter:number)=>void;finish:()=>void;restart:()=>void;interact:()=>void;retry:()=>void;previewTurn:(direction:1|-1,progress:number)=>boolean;settleTurn:(commit:boolean)=>void}
+export function playSound(kind:'page'|'hello') {
+ const emit=()=>{const ctx=audioContext;if(!ctx||ctx.state!=='running')return;
+  try {const gain=ctx.createGain();gain.connect(ctx.destination);gain.gain.setValueAtTime(.035,ctx.currentTime);gain.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+.4);const osc=ctx.createOscillator();osc.type='sine';osc.frequency.setValueAtTime(kind==='hello'?523:280,ctx.currentTime);osc.frequency.exponentialRampToValueAtTime(kind==='hello'?784:140,ctx.currentTime+.3);osc.connect(gain);osc.start();osc.stop(ctx.currentTime+.4);osc.onended=()=>{osc.disconnect();gain.disconnect();};}catch{ /* Keep the book usable if audio is interrupted. */ }
+ };
+ if(audioContext?.state==='running')emit();else if(audioUnlock)void audioUnlock.then(emit);
+}
+export interface Director {start:()=>void;reveal:()=>void;close:()=>void;go:(chapter:number)=>void;finish:()=>void;restart:()=>void;interact:()=>void;retry:()=>void;previewTurn:(direction:1|-1,progress:number)=>boolean;settleTurn:(commit:boolean)=>void}
