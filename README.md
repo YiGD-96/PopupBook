@@ -48,6 +48,8 @@ React 19 + TypeScript + Vite + Three.js / React Three Fiber / Drei + GSAP + Zust
 - `src/assets.ts`: 텍스처 캐시, 장별 로드·다음 장 프리로드·실패 캐시 정리.
 - `src/bookPreparation.ts`: 첫 장 텍스처의 단계별 GPU 업로드, 셰이더·실제 렌더 준비, 취소된 초기화 차단.
 - `src/Intro.tsx`, `src/introPlayback.ts`: 표지 정지 화면(영상 첫 프레임) → 영상 재생(첫 1초 표지 유지) → 준비된 실제 책으로 전환.
+- `src/analytics.ts`: GA4 이벤트(장 보기·이야기 열기/닫기·책장 넘김 방법·링크 클릭·인트로 완료·마무리)와 화면을 따라가는 주소 해시(`#farmer`, `#cooks/cook-02`, `#ending`). 해시가 붙은 주소로 들어오면 인트로 뒤 그 장·이야기가 열린다. `VITE_GA_ID`가 있을 때만 인트로가 끝난 뒤 gtag.js를 불러온다. GA4 향상된 측정의 "브라우저 기록 이벤트 기반 페이지 변경"은 꺼 두어야 페이지 조회가 두 번 세지 않는다.
+- `src/seo.ts` + `vite.config.ts`의 `book-seo` 플러그인: 빌드할 때 책 데이터로 글 버전(전체 장·이야기·레시피·자주 묻는 질문, "글로 읽기"로 열림), JSON-LD(WebSite·WebPage·책과 장·Recipe 3개·FAQPage), 메타·Open Graph·Twitter 태그를 `index.html`에 넣고 `robots.txt`·`llms.txt`·`sitemap.xml`을 만든다. 자바스크립트를 실행하지 않는 검색·AI 크롤러도 이야기 전체를 읽는다. `VITE_SITE_URL`(배포 주소)이 있어야 canonical·sitemap·절대 URL이 생긴다(`.env.example`).
 - `src/site.ts`: 매거진의 이름·표지 문구·소개 문구(그대로 옮긴 것).
 - `src/standingBook.tsx`, `src/standingLayout.ts`, `src/standingView.ts`: 세로 휴대폰에서 책을 90°로 세워 보여 주는 화면(윗장에 배경, 아랫장에 카드, 아랫장이 올라가며 넘김).
 - `src/artSource.ts`: 미리 변환한 WebP 일러스트 경로.
@@ -58,8 +60,8 @@ React 19 + TypeScript + Vite + Three.js / React Three Fiber / Drei + GSAP + Zust
 - `src/useBookGestures.ts`, `src/turnInput.ts`: 드래그 캡처·취소, 휠 누적·관성 차단.
 - `src/reader.css`: 책을 중심에 배치하는 반응형 독서 화면.
 - `src/cinematic.css`: 배너 없는 인트로와 크게 배치한 책 화면.
-- `public/art`: 직접 제작한 SVG 종이 일러스트. 세 장(밭·식탁·부엌)의 장면 카드·가게·요리·책장 그림은 `scripts/create-scenes.mjs`가 만든다(첫 버전 장면은 `_archive/`).
-- `art-src/characters`: 당근 농부·여행자·조랑말 원본 벡터. `scripts/prepare-characters.mjs`가 오림 테두리를 두른 WebP로 바꾼다(원본 SVG는 배포하지 않음).
+- `public/art`: 책장 인쇄면·인트로 일기장 종이의 SVG 원본(`scripts/create-pages.mjs`)과 파비콘. 장면 그림은 모두 `public/art-raster`의 WebP다.
+- `art-src/gpt/page-N`: GPT로 그린 장면 원본 PNG(로컬 전용, git에 포함하지 않음). `scripts/prepare-gpt-art.mjs`가 오림 테두리를 두른 WebP로 바꾼다.
 - `src/details.ts`, `src/DetailPanel.tsx`: 사물을 누르면 열리는 이야기 패널의 내용(웹 매거진 ‘당근을 따라, 구좌’ 기준)과 화면.
 - `public/art-raster`: 표시용 WebP 일러스트(원본 SVG의 투명도 유지).
 - `public/book-materials`: 표지·천 결·판지 모서리·종이 단면·면지의 미리 만든 재질.
@@ -68,8 +70,8 @@ React 19 + TypeScript + Vite + Three.js / React Three Fiber / Drei + GSAP + Zust
 - `scripts/book-materials.mjs`: 실시간 조명 없이 사용하는 제본 재질 생성 도구. 표지는 매거진 표지 위에 천 결·홈·마모를 얹고, 움직이는 표지의 프레임마다 같은 마감을 입힙니다(`intro-cache/cover-texture`, 배포하지 않음).
 - `scripts/capture-site-cover.mjs`: 매거진 첫 화면을 headless Chrome에서 책 판지 비율(세로)로 띄우고, 사이트의 애니메이션 시계를 영상 프레임 단위로 직접 넘기며 표지(그림·그늘·제목)를 캡처합니다(`intro-cache/site-cover`, 인터넷 필요). 표지를 새로 받으려면 이 스크립트 → `render-intro.mjs` 순서로 실행합니다.
 - `art-src/site`: 매거진에서 받은 로고 원본과 표지 그림 원본. 헤더 로고는 `public/media/logo.webp`, 파비콘은 매거진과 같은 `public/art/favicon.svg`.
-- `scripts/create-scenes.mjs`, `scripts/prepare-characters.mjs`: 2·3장 장면 그림과 여행자 캐릭터 텍스처 생성.
-- `scripts/prepare-gpt-art.mjs`: GPT로 그린 판(`art-src/gpt/page-N/*.png`, 지금은 1장)을 오림 테두리를 두른 WebP 카드로 변환. 1장 컨셉과 프롬프트는 `docs/page-1-concept.md`.
+- `scripts/create-pages.mjs`: 장마다 장면 색에 맞춘 책장 인쇄면 SVG 생성. `scripts/make-social.mjs`: 링크 미리보기 이미지(`og-image.jpg`)와 홈 화면 아이콘 생성.
+- `scripts/prepare-gpt-art.mjs`: GPT로 그린 판(`art-src/gpt/page-1~3/*.png`)을 오림 테두리를 두른 WebP 카드로 변환.
 - `_archive/`: 지금은 쓰지 않는 첫 버전 장면 그림·글, 옛 그림 생성기, 누적 검증 기록.
 - `tests/*.test.mjs`: `node --experimental-strip-types --test tests/*.test.mjs`로 종이 기하·입력·사물 부착·초기 렌더 준비 로직 검사(Node.js 22.18+).
 

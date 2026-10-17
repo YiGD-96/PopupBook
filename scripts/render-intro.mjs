@@ -26,14 +26,14 @@ const ffmpeg=process.env.FFMPEG_PATH||'C:/Program Files/ffmpeg-8.0.1-essentials_
 const chrome=process.env.CHROME_PATH||'C:/Program Files/Google/Chrome/Application/chrome.exe';
 const standing=process.argv.includes('--standing'),suffix=standing?'-standing':'';
 const width=Number(process.env.INTRO_WIDTH||(standing?720:968)),fps=Number(process.env.INTRO_FPS||60),crf=Number(process.env.INTRO_CRF||19);
-const media=path.join(project,'public/media');await fs.mkdir(media,{recursive:true});
+const media=path.join(project,'public/media');const review=path.join(project,'intro-cache/review');await fs.mkdir(review,{recursive:true});await fs.mkdir(media,{recursive:true});
 const raster=path.join(project,'public/art-raster');await fs.mkdir(raster,{recursive:true});
 
 // 1. Art and binding textures.
 // The art the intro film itself needs; --all-raster adds every other SVG in public/art.
 // The cover art is not an SVG: book-materials.mjs takes it from the captured magazine cover (scripts/capture-site-cover.mjs).
 // Chapter 1's scenery is painted (scripts/prepare-gpt-art.mjs), so only its pages are rasterized here.
-const priority=['intro-pages','page-0-left','page-0-right','carrot','shop-b','dish-soup'];
+const priority=['intro-pages','page-0-left','page-0-right'];
 if(!standing){
 const names=process.argv.includes('--all-raster')?[...priority,...(await fs.readdir(path.join(project,'public/art'))).filter(f=>f.endsWith('.svg')&&f!=='favicon.svg'&&!priority.includes(f.slice(0,-4))).map(f=>f.slice(0,-4))]:priority;
 for(const name of names){
@@ -84,10 +84,11 @@ try{
  // 3. Stills, storyboard, movie, metadata.
  const pageMiddle=meta.coverHold+1+(meta.pageCount-1)*.07+.31;
  for(const [name,time] of [['book-cover',0],['book-lowering',meta.coverHold+.55],['book-fan',pageMiddle],['book-rise',meta.uiRevealAt+.28],['book-open',meta.duration]])
-  await fs.writeFile(path.join(media,`${name}${suffix}.webp`),await sharp(await frame(time)).webp({quality:94}).toBuffer());
+  // Only the first and last frames ship (the intro's still and its fallback); the in-between stills and the storyboard are for review.
+  await fs.writeFile(path.join(['book-cover','book-open'].includes(name)?media:review,`${name}${suffix}.webp`),await sharp(await frame(time)).webp({quality:94}).toBuffer());
  const tiles=[['book-cover',0,0],['book-lowering',meta.width,0],['book-fan',meta.width*2,0],['book-rise',0,meta.height],['book-open',meta.width,meta.height]];
- const composite=await sharp({create:{width:meta.width*3,height:meta.height*2,channels:3,background:meta.background}}).composite(await Promise.all(tiles.map(async([name,left,top])=>({input:await fs.readFile(path.join(media,`${name}${suffix}.webp`)),left,top})))).png().toBuffer();
- await fs.writeFile(path.join(media,`intro-storyboard${suffix}.jpg`),await sharp(composite).resize(1440).jpeg({quality:90}).toBuffer());
+ const composite=await sharp({create:{width:meta.width*3,height:meta.height*2,channels:3,background:meta.background}}).composite(await Promise.all(tiles.map(async([name,left,top])=>({input:await fs.readFile(path.join(['book-cover','book-open'].includes(name)?media:review,`${name}${suffix}.webp`)),left,top})))).png().toBuffer();
+ await fs.writeFile(path.join(review,`intro-storyboard${suffix}.jpg`),await sharp(composite).resize(1440).jpeg({quality:90}).toBuffer());
  await fs.writeFile(path.join(media,`intro-meta${suffix}.json`),JSON.stringify({...meta,fps},null,2)+'\n');
  if(process.argv.includes('--stills')){console.log(`Rendered stills ${meta.width}×${meta.height}.`);}
  else{

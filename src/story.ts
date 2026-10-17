@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-export type Phase = 'INIT'|'COVER'|'LOADING_PAGE'|'OPENING_POPUP'|'EXPLORING'|'DRAGGING_PAGE'|'CLOSING_POPUP'|'TURNING_PAGE'|'ENDING'|'ERROR';
+export type Phase = 'INIT'|'COVER'|'LOADING_PAGE'|'OPENING_POPUP'|'EXPLORING'|'DRAGGING_PAGE'|'TURNING_PAGE'|'ENDING'|'ERROR';
 /** A pop-up card. `detail` makes it clickable: it opens that entry of src/details.ts in the side panel. `phone` places it in the
  *  standing book on phones (src/standingLayout.ts: x across, z depth from the binding, `lift` above the page for a card standing on
  *  another, like a dish on the table); without it the place is derived. On the open book `position[1]` is the card's foot. */
@@ -8,7 +8,7 @@ const clickable=(layer:Omit<Layer,'interactive'>&{detail:string}):Layer=>({...la
 // Three chapters following the web magazine "당근을 따라, 구좌": the farmer, the people who cook, and menus & recipes.
 // The first version's chapters are kept in _archive/scenes-v1. Sizes keep each texture's proportions (width : height).
 export const scenes = [
- {id:'farmer',title:'구좌를 길러내는 묵묵한 방식',place:'구좌의 밭',paper:'#ffe4cd',english:'01 · FARMER',intro:'검은 화산토와 겨울 바람이 키운 당근.\n밭에서 시작되는 이야기예요.',dialog:'“겨울을 제대로 맞아야 진짜 맛이 들어요.” 농부님과 당근 바구니를 눌러 보세요.',label:'농부님 이야기 보기',hint:'농부님을 톡, 눌러보세요',color:'#96a780',detail:'farmer',layers:[
+ {id:'farmer',title:'구좌를 길러내는 묵묵한 방식',paper:'#ffe4cd',english:'01 · FARMER',intro:'검은 화산토와 겨울 바람이 키운 당근.\n밭에서 시작되는 이야기예요.',dialog:'“겨울을 제대로 맞아야 진짜 맛이 들어요.” 농부님과 당근 바구니를 눌러 보세요.',label:'농부님 이야기 보기',color:'#96a780',detail:'farmer',layers:[
   // Painted layers (GPT, art-src/gpt/page-1 → scripts/prepare-gpt-art.mjs): dusk over Gujwa, back to front. Sizes keep each texture's aspect.
   {id:'back',src:'farm-back',position:[0,.24,-1.7],size:[6.9,2.72]},
   // The windbreaks stand at the very front, inside the page, and frame the scene; the field comes forward and the rest gathers in the
@@ -22,7 +22,7 @@ export const scenes = [
   clickable({id:'crate',src:'farm-crate',position:[-.92,.285,1.72],size:[1.55,1.02],detail:'harvest',phone:{x:-.75,z:2.4,size:[1.44,.95]}}),
   clickable({id:'lantern',src:'farm-lantern',position:[1.55,.285,1.7],size:[.75,1.49],detail:'night-watch',phone:{x:1.25,z:2.3,size:[.6,1.2]}})
  ] as Layer[]},
- {id:'cooks',title:'구좌를 맛보는 다채로운 방식',place:'구좌의 식탁',paper:'#fff6e3',english:'02 · PEOPLE WHO COOK',intro:'구좌 당근으로 새로운 맛을 만드는\n식당 사장님들을 만났어요.',dialog:'세 곳의 식당이 구좌 당근으로 저마다의 한 접시를 만들어요. 가게를 눌러 이야기를 펼쳐 보세요.',label:'식당 이야기 보기',hint:'가게를 톡, 눌러보세요',color:'#b89970',detail:'cook-01',layers:[
+ {id:'cooks',title:'구좌를 맛보는 다채로운 방식',paper:'#fff6e3',english:'02 · PEOPLE WHO COOK',intro:'구좌 당근으로 새로운 맛을 만드는\n식당 사장님들을 만났어요.',dialog:'세 곳의 식당이 구좌 당근으로 저마다의 한 접시를 만들어요. 가게를 눌러 이야기를 펼쳐 보세요.',label:'식당 이야기 보기',color:'#b89970',detail:'cook-01',layers:[
   // Painted layers (GPT, art-src/gpt/page-2 → scripts/prepare-gpt-art.mjs): a Gujwa seaside village in late morning, back to front.
   // The hackberry frames the scene at the front left, the basalt wall with the carrot cart at the front right; the three restaurants
   // stand in one row, each wholly on one page, so all of them show.
@@ -35,7 +35,7 @@ export const scenes = [
   {id:'traveler',src:'char-traveler',position:[-.85,.275,1.2],size:[.7,1.5],phone:{x:-.55,z:2.2,size:[.66,1.42]}},
   {id:'front',src:'village-front',position:[2.05,.285,1.85],size:[2.2,1.02],phone:{x:1.2,z:2.8,size:[2.22,1.03]}}
  ] as Layer[]},
- {id:'recipes',title:'구좌를 요리하는 가장 쉬운 방식',place:'구좌의 부엌',paper:'#ffe9d2',english:'03 · MENU & RECIPE',intro:'식당의 당근 메뉴와\n집에서 따라 하는 레시피를 모았어요.',dialog:'접시마다 메뉴와 레시피가 담겨 있어요. 궁금한 요리를 눌러 보세요.',label:'레시피 보기',hint:'요리를 톡, 눌러보세요',color:'#81a69c',detail:'recipe-01',layers:[
+ {id:'recipes',title:'구좌를 요리하는 가장 쉬운 방식',paper:'#ffe9d2',english:'03 · MENU & RECIPE',intro:'식당의 당근 메뉴와\n집에서 따라 하는 레시피를 모았어요.',dialog:'접시마다 메뉴와 레시피가 담겨 있어요. 궁금한 요리를 눌러 보세요.',label:'레시피 보기',color:'#81a69c',detail:'recipe-01',layers:[
   // Painted layers (GPT, art-src/gpt/page-3 → scripts/prepare-gpt-art.mjs): an evening kitchen, back to front. The racks stand back by
   // the wall; the table runs along the very front and the food is set out on it: each dish stands just in front of the table card with
   // its foot on the painted tabletop (about 0.6–0.83 of the table's height), a raised back row and a lower front row in its gaps. Home

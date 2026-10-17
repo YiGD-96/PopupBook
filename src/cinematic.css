@@ -8,8 +8,6 @@
 .cinematic-reader .hero .book-stage .canvas-wrap{inset:0 -6.2vw;overflow:visible}
 .cinematic-reader .hero-copy{animation:reader-arrive .45s ease-out both}
 .cinematic-reader .hero-copy>.eyebrow{top:103px}
-.cinematic-reader .hero-copy .chapter-heading{top:125px;font-size:24px}
-.cinematic-reader .hero-copy .story-intro{top:164px}
 .cinematic-reader .reader-arrow{top:50%;backdrop-filter:none;background:transparent;border:0;box-shadow:none;width:52px;height:62px;border-radius:0;color:#797862}
 .cinematic-reader .reader-arrow svg{width:28px;height:28px;stroke-width:1.25}
 .cinematic-reader .reader-arrow:disabled{opacity:.25}
@@ -31,7 +29,6 @@
 .intro-active .scene-loading{display:none}
 @keyframes reader-arrive{from{opacity:0}to{opacity:1}}
 @media(max-width:1050px) and (min-width:761px){
- .cinematic-reader .hero-copy .chapter-heading{font-size:20px}
  .cinematic-reader .site-header nav{gap:14px}
 }
 @media(max-width:760px){
@@ -147,3 +144,23 @@
  .detail-book-text{font-size:14.5px;line-height:1.9}
  .is-left>.detail-book-folio{left:22px}.is-right>.detail-book-folio{right:22px}
 }
+/* The book as text (src/seo.ts → index.html): a quiet reading page over the book, opened with "글로 읽기". */
+.book-text{position:fixed;inset:0;z-index:50;overflow-y:auto;background:#fbf6ea;color:#4a3c30;outline:none;-webkit-overflow-scrolling:touch}
+.book-text[hidden]{display:none}
+.book-text-inner{max-width:720px;margin:0 auto;padding:72px 24px 96px;font-size:16px;line-height:1.85}
+.book-text-close{position:sticky;top:16px;float:right;margin:-48px -8px 0 0;padding:9px 16px;border:1px solid #e1d4ba;border-radius:999px;background:#fffaf0;color:#5e4738;font-size:14px}
+.book-text h1{font-family:var(--serif);font-size:34px;line-height:1.35;margin:6px 0 14px;color:#186049}
+.book-text h2{font-family:var(--serif);font-size:24px;margin:56px 0 10px;padding-top:18px;border-top:1px solid #e6d9bf;color:#186049}
+.book-text article{margin-top:34px}
+.book-text h3{font-family:var(--serif);font-size:20px;margin:4px 0 6px}
+.book-text h4{font-size:14px;letter-spacing:.06em;color:#8a7a62;margin:18px 0 4px}
+.book-text-kicker{margin:0;font:600 12px Georgia,serif;letter-spacing:.14em;color:#a07254}
+.book-text blockquote{margin:14px 0;padding:10px 16px;border-left:3px solid #d98327;background:#f4e9d4;border-radius:0 10px 10px 0;font-family:var(--serif)}
+.book-text blockquote p{margin:0}
+.book-text dl{display:grid;grid-template-columns:max-content 1fr;gap:4px 16px;margin:12px 0}
+.book-text dt{font-weight:600}.book-text dd{margin:0}
+#text-faq dl{display:block}#text-faq dt{margin-top:18px}#text-faq dd{margin:4px 0 0}
+.book-text nav ol{padding-left:20px}.book-text a{color:#186049}
+.book-text footer{margin-top:64px;padding-top:18px;border-top:1px solid #e6d9bf;font-size:14px;color:#8a7a62}
+.noscript{padding:12px 24px;margin:0;background:#fff3d6;font-size:14px}
+@media(max-width:760px){.book-text-inner{padding:64px 18px 80px;font-size:15px}.book-text h1{font-size:28px}}

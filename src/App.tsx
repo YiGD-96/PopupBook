@@ -11,6 +11,7 @@ import {artSource} from './artSource';
 import DetailPanel from './DetailPanel';
 import DetailBook from './DetailBook';
 import { details } from './details';
+import { noteStory, noteTurn, parseHash, track } from './analytics';
 const Storybook = lazy(() => import('./Storybook'));
 
 class CanvasBoundary extends Component<{children:ReactNode;onError:()=>void},{failed:boolean}> {
@@ -88,7 +89,19 @@ export default function App() {
   const scene=scenes[chapter];
   const closeModal=useCallback(()=>setModal(null),[]);
   const closeDetail=useCallback(()=>useStory.getState().set({detail:null}),[]);
-  const openDetail=useCallback((id:string)=>useStory.getState().set({detail:id}),[]);
+  const openDetail=useCallback((id:string)=>{noteStory('related');useStory.getState().set({detail:id});},[]);
+  // A shared link (#cooks, #recipes/recipe-02, #ending) opens that spread or story once the intro has handed over to the book.
+  // The book as text (built into index.html by src/seo.ts): for reading without the pictures, for screen readers and for crawlers.
+  const openText=useCallback(()=>{const text=document.getElementById('book-text');if(!text)return;text.hidden=false;document.body.classList.add('text-open');text.focus();track('text_view');},[]);
+  useEffect(()=>{
+    const text=document.getElementById('book-text');if(!text)return;
+    const close=()=>{if(text.hidden)return;text.hidden=true;document.body.classList.remove('text-open');};
+    const click=(e:MouseEvent)=>{if((e.target as Element|null)?.closest('[data-close-text]'))close();};
+    const key=(e:KeyboardEvent)=>{if(e.key==='Escape')close();};
+    text.addEventListener('click',click);document.addEventListener('keydown',key);
+    return()=>{text.removeEventListener('click',click);document.removeEventListener('keydown',key);};
+  },[]);
+  const deepLink=useRef<ReturnType<typeof parseHash>|null>(parseHash(window.location.hash));const [linkTick,setLinkTick]=useState(0);
 
   function staticInteract(detail?:string){
     const s=useStory.getState();
@@ -135,12 +148,13 @@ export default function App() {
   },[fallback,fallbackAttempt,sceneMounted]);
   const finishIntro=useCallback((report:IntroReport)=>{
     setIntroReport(report);setChromeVisible(true);
+    track('intro_complete',{layout:report.standing?'standing':'open',dropped_frames:report.droppedFrames??undefined,media_failed:report.mediaFailed});
     if(new URLSearchParams(window.location.search).get('view')!=='paper'&&!supportsWebGL())setFallback(true);
     setMediaFinished(true);setSceneMounted(true);
   },[]);
   const showChrome=useCallback((time:number)=>{setChromeVisible(true);setChromeVideoTime(time);},[]);
   const beginIntro=useCallback(()=>{
-    api.current=null;setEngineReady(false);setSceneMounted(false);setMediaFinished(false);setIntroLeaving(false);setIntroVisible(true);setIntroRun(n=>n+1);setIntroReport(null);setChromeVisible(false);setChromeVideoTime(null);
+    track('restart');api.current=null;setEngineReady(false);setSceneMounted(false);setMediaFinished(false);setIntroLeaving(false);setIntroVisible(true);setIntroRun(n=>n+1);setIntroReport(null);setChromeVisible(false);setChromeVideoTime(null);
     useStory.getState().set({phase:'INIT',chapter:0,dialog:false,visited:[],error:null,introPagesTurned:0});
   },[]);
   useEffect(()=>{
@@ -159,10 +173,23 @@ export default function App() {
   },[]);
   useEffect(()=>{if(phase==='EXPLORING'&&!introVisible)storyRef.current?.focus({preventScroll:true});},[phase,introVisible]);
   useEffect(()=>{
+    const link=deepLink.current;if(!link||introVisible||phase!=='EXPLORING')return;
+    if(link.chapter!==null&&link.chapter!==chapter){noteTurn('link');api.current?.go(link.chapter);return;}
+    deepLink.current=null;
+    if(link.ending)api.current?.finish();
+    else if(link.detail){noteStory('link');useStory.getState().set({detail:link.detail});}
+  },[phase,chapter,introVisible,linkTick]);
+  useEffect(()=>{
+    // A hash typed or pasted while reading takes the reader there too.
+    const follow=()=>{deepLink.current=parseHash(window.location.hash);setLinkTick(n=>n+1);};
+    window.addEventListener('hashchange',follow);return()=>window.removeEventListener('hashchange',follow);
+  },[]);
+  useEffect(()=>{
     const keys=(e:KeyboardEvent)=>{
-      if(introVisible||modal!==null||(e.target instanceof HTMLElement&&['INPUT','SELECT','TEXTAREA','BUTTON'].includes(e.target.tagName)))return;
+      if(introVisible||modal!==null||document.body.classList.contains('text-open')||(e.target instanceof HTMLElement&&['INPUT','SELECT','TEXTAREA','BUTTON'].includes(e.target.tagName)))return;
       const s=useStory.getState();
       // The first spread is the start of the story: there is no going back to the cover from here.
+      if(['ArrowRight','ArrowLeft'].includes(e.key))noteTurn('key');
       if(e.key==='ArrowRight'&&s.phase==='EXPLORING'){e.preventDefault();s.chapter===2?api.current?.finish():api.current?.go(s.chapter+1);}
       if(e.key==='ArrowLeft'&&['EXPLORING','ENDING'].includes(s.phase)&&s.chapter>0){e.preventDefault();api.current?.go(s.chapter-1);}
     };
@@ -188,7 +215,7 @@ export default function App() {
     {!introVisible&&<a className="skip-link" href="#main">이야기로 바로 가기</a>}
     {chromeVisible&&<header className="site-header">
       <a href="/" className="brand" aria-label={SITE.name+' 홈으로'}><img className="brand-logo" src="/media/logo.webp" alt="carrot" width={87} height={26}/><span className="brand-name">{SITE.name}</span></a>
-      <div className="header-chapter" aria-label={(chapter+1)+'장 '+scene.title}><span>0{chapter+1} / 03</span><strong>{scene.title}</strong></div><nav aria-label="메인 메뉴"><button className="nav-link" onClick={()=>setModal('about')}>이야기 소개</button></nav>
+      <div className="header-chapter" aria-label={(chapter+1)+'장 '+scene.title}><span>0{chapter+1} / 03</span><strong>{scene.title}</strong></div><nav aria-label="메인 메뉴"><button className="nav-link" onClick={openText}>글로 읽기</button><button className="nav-link" onClick={()=>{setModal('about');track('about_open');}}>이야기 소개</button></nav>
     </header>}
     <main id="main"><section className={'hero '+(intro?'is-cover':'is-open')+(ending?' is-ending':'')} aria-label={SITE.title+' 팝업북'}>
       {chromeVisible&&<div className="hero-copy">
@@ -196,7 +223,7 @@ export default function App() {
         ending?<><span className="eyebrow">{SITE.label}</span><h1>{SITE.title}</h1><p className="hero-description">{SITE.tagline[0]}<br/>{SITE.tagline[1]}<span className="hand-underline">{SITE.tagline[2]}</span>{SITE.tagline[3]}</p><div className="ending-stamp"><Check size={15}/> 01 · 02 · 03 이야기를 모두 만났어요</div><a className="secondary-button ending-link" href={SITE.url} target="_blank" rel="noreferrer">웹진에서 이어 읽기<span className="sr-only"> (새 창에서 열림)</span></a><button className="primary-button" onClick={beginIntro}><RotateCcw size={18}/> 처음부터 다시 보기<ArrowRight size={18}/></button></>:
         <><h1 className="sr-only" aria-label={scene.title} ref={storyRef} tabIndex={-1}>{scene.title}</h1>
           <div className={'narration '+(dialog?'has-dialog':'')}><span className="narration-label">{dialog?<><Sparkles size={14}/> 풍경이 들려주는 이야기</>:<><BookOpen size={14}/> 이 장의 이야기</>}</span><p aria-live="polite">{dialog?scene.dialog:'그림 속 사물을 눌러 이야기를 펼쳐 보세요.'}</p></div>
-          <button className="interaction-button" disabled={phase!=='EXPLORING'||introVisible} onClick={()=>api.current?.interact()}>{state.visited.includes(chapter)?<Check size={16}/>:<MousePointer2 size={16}/>} {scene.label}</button>
+          <button className="interaction-button" disabled={phase!=='EXPLORING'||introVisible} onClick={()=>{noteStory('button');api.current?.interact();}}>{state.visited.includes(chapter)?<Check size={16}/>:<MousePointer2 size={16}/>} {scene.label}</button>
 
         </>}
       </div>}
