@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type RefObject } from 'react';
-import { Canvas, useFrame, useThree } from '@react-three/fiber';
+import { Canvas, advance, useFrame, useThree } from '@react-three/fiber';
 import { Group, Mesh, Texture, PerspectiveCamera, WebGLRenderTarget, DoubleSide } from 'three';
 import gsap from 'gsap';
 import { loadTexture, loadScene, readyScene } from './assets';
@@ -8,10 +8,11 @@ import { attachedPaperPose, pageReveal, popupFoldAngle, splitPaperArt, type Pape
 import { prepareBookRenderer } from './bookPreparation';
 import { BOOK_TARGET_Y, BOOK_CAMERA_POSITION, bookZoom, bookFov } from './bookView';
 import { INTRO_PAGE_COUNT } from './introPlayback';
+import { ResolutionGovernor } from './framePacing';
 import { StandingCase, StandingLayer } from './standingBook';
 import { isBackdrop } from './standingLayout';
 import { STANDING_CAMERA_POSITION, STANDING_QUERY, STANDING_TARGET, standingFov } from './standingView';
-import { OPEN_BOOK_MATERIALS, OpenCase, PrintedPage, TurningPage, createCardGeometry, useDisposable, type BookMaterials } from './bookParts';
+import { DeskBackdrop, DeskFog, OPEN_BOOK_MATERIALS, OpenCase, cardMaterial, sheetMaterials, warmMaterials, PrintedPage, TurningPage, createCardGeometry, useDisposable, type BookMaterials } from './bookParts';
 type Turn={from:number;to:number;direction:1|-1;incoming:Record<string,Texture>;restoreDialog:boolean};
 /** Phones held upright show the standing book (src/standingBook.tsx); the story director below is the same for both. */
 function useStanding(){
@@ -42,21 +43,25 @@ function PaperLayer({layer,piece,texture,hinges,onClick,turn,progress,incoming=f
   // Clickable cards sway a little, each on its own beat, so the reader can tell which ones open a story.
   mesh.current.rotation.z=layer.interactive&&phase==='EXPLORING'?Math.sin(clock.elapsedTime*1.5+layer.position[0]*1.7)*.025:0;
  });
- return <group ref={anchor}><group ref={ref}><mesh ref={mesh} geometry={geometry} position={[0,layer.size[1]/2,0]} onClick={!incoming&&layer.interactive?e=>{e.stopPropagation();if(phase==='EXPLORING')onClick(layer.detail);}:undefined} onPointerOver={!incoming&&layer.interactive?()=>{if(phase==='EXPLORING')document.body.style.cursor='pointer';}:undefined} onPointerOut={()=>{document.body.style.cursor='';}}><meshBasicMaterial map={texture} transparent alphaTest={.025} side={DoubleSide} depthWrite/></mesh></group></group>;
+ return <group ref={anchor}><group ref={ref}><mesh ref={mesh} geometry={geometry} material={cardMaterial(texture)} dispose={null} position={[0,layer.size[1]/2,0]} onClick={!incoming&&layer.interactive?e=>{e.stopPropagation();if(phase==='EXPLORING')onClick(layer.detail);}:undefined} onPointerOver={!incoming&&layer.interactive?()=>{if(phase==='EXPLORING')document.body.style.cursor='pointer';}:undefined} onPointerOut={()=>{document.body.style.cursor='';}}></mesh></group></group>;
 }
 function Book({onReady,onFailure}:{onReady:(director:Director)=>void;onFailure:()=>void}){
  const {gl,scene:world,camera}=useThree();const prepared=useRef(false);
  const hinges=useRef(new Map<string,Group>());const timeline=useRef<gsap.core.Timeline|null>(null);const pending=useRef<(()=>void)|null>(null);const generation=useRef(0);const mounted=useRef(true);const progress=useRef({value:0});const turnRef=useRef<Turn|null>(null);const incomingLoad=useRef<Promise<Record<string,Texture>>|null>(null);const [turn,setTurn]=useState<Turn|null>(null);
- const [materials,setMaterials]=useState<BookMaterials>({});const [textures,setTextures]=useState<Record<string,Texture>>({});const [paper,setPaper]=useState<Record<string,Texture>>({});const paperRef=useRef<Record<string,Texture>>({});const chapter=useStory(s=>s.chapter);const frameCount=useRef({count:0,start:0});
- const standing=useStanding();const standingRef=useRef(standing);standingRef.current=standing;const stand=useRef({value:1});
- useFrame(({clock})=>{frameCount.current.count++;if(clock.elapsedTime-frameCount.current.start>2){useStory.getState().set({fps:Math.round(frameCount.current.count/(clock.elapsedTime-frameCount.current.start))});frameCount.current={count:0,start:clock.elapsedTime};}});
+ const [materials,setMaterials]=useState<BookMaterials>({});const [textures,setTextures]=useState<Record<string,Texture>>({});const [,setPaperShown]=useState(0);const paperRef=useRef<Record<string,Texture>>({});const chapter=useStory(s=>s.chapter);const frameCount=useRef({count:0,start:0});
+ const standing=useStanding();const standingRef=useRef(standing);standingRef.current=standing;const stand=useRef({value:1});const lastSheet=useRef<{front:Texture;back:Texture;direction:1|-1}|null>(null);
+ // Frames drawn per second, as data-fps on the canvas wrapper (for checks); written to the element, so React re-renders nothing.
+ useFrame(({clock,gl})=>{frameCount.current.count++;if(clock.elapsedTime-frameCount.current.start>2){gl.domElement.closest('.canvas-wrap')?.setAttribute('data-fps',String(Math.round(frameCount.current.count/(clock.elapsedTime-frameCount.current.start))));frameCount.current={count:0,start:clock.elapsedTime};}});
  const animate=(fn:(tl:gsap.core.Timeline)=>void)=>new Promise<void>(resolve=>{pending.current=resolve;const tl=gsap.timeline({onComplete:()=>{timeline.current=null;pending.current=null;resolve();}});timeline.current=tl;fn(tl);});
  const renderWait=()=>new Promise<void>(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve())));
  function clearTurn(){turnRef.current=null;setTurn(null);incomingLoad.current=null;progress.current.value=0;}
  function fail(error:unknown){if(!mounted.current)return;timeline.current?.kill();pending.current?.();generation.current++;clearTurn();hinges.current.forEach(h=>h.rotation.x=0);stand.current.value=1;console.error('StoryDirector',error);useStory.getState().set({phase:'ERROR',error:error instanceof Error?error.message:'책을 펼치는 중 잠시 멈췄어요. 다시 시도해 주세요.'});}
- async function preparePaper(target=0){
+ // The printed pages are read from paperRef while rendering. `show` re-renders when pages arrive that are needed now; the preload of
+ // the next chapter (warmChapter) only fills the ref, so it does not re-render the whole book while the reader looks at a spread.
+ async function preparePaper(target=0,show=true){
   const entries=await Promise.all(['left','right'].map(async side=>{const name=`page-${target}-${side}`;return [name,paperRef.current[name]??await loadTexture(name)] as const;}));
-  if(!mounted.current)return;paperRef.current={...paperRef.current,...Object.fromEntries(entries)};setPaper(paperRef.current);
+  if(!mounted.current)return;const fresh=entries.some(([name])=>!paperRef.current[name]);
+  paperRef.current={...paperRef.current,...Object.fromEntries(entries)};if(fresh&&show)setPaperShown(n=>n+1);
  }
  // Draws the first spread once off-screen so its first visible frame does not pay for any remaining GPU setup.
  function warmFirstFrame(){
@@ -69,6 +74,8 @@ function Book({onReady,onFailure}:{onReady:(director:Director)=>void;onFailure:(
   const active=()=>mounted.current&&token===generation.current;
   if(!active())return;setTextures(firstArt);setMaterials(materialArt);
   if(!await prepareBookRenderer(gl,[...Object.values(materialArt),...Object.values(firstArt),...Object.values(paperRef.current)],world,camera,active,undefined,warmFirstFrame))return;
+  // The turning sheets' shaders exist before the first turn (otherwise the first turn would compile them on its first frame).
+  if(materialArt.endpaper){const sheets=sheetMaterials(materialArt.endpaper);warmMaterials(gl,world,camera,sheets);sheets.forEach(m=>m.dispose());}
   prepared.current=true;useStory.getState().set({phase:'COVER'});
  }
  async function openPopup(target:number,token:number,alreadyOpen=false){
@@ -81,11 +88,15 @@ function Book({onReady,onFailure}:{onReady:(director:Director)=>void;onFailure:(
   * so turning the page does not pay for those uploads. Stops as soon as anything else starts. */
  function warmChapter(target:number,token:number){
   if(target>=scenes.length)return;
-  void Promise.all([loadScene(target),preparePaper(target)]).then(([art])=>{
+  // Start once the cards have stood up and the turn's last frames are drawn, so decoding and uploads never share frames with them.
+  window.setTimeout(()=>{if(mounted.current&&token===generation.current)void Promise.all([loadScene(target),preparePaper(target,false)]).then(([art])=>{
    const queue=[...Object.values(art),...['left','right'].map(side=>paperRef.current[`page-${target}-${side}`]).filter(Boolean)];
-   const step=()=>{if(!mounted.current||token!==generation.current||useStory.getState().phase!=='EXPLORING')return;const texture=queue.shift();if(!texture)return;gl.initTexture(texture);window.setTimeout(()=>requestAnimationFrame(step),150);};
+   const step=()=>{if(!mounted.current||token!==generation.current||useStory.getState().phase!=='EXPLORING')return;const texture=queue.shift();
+    // Last, the next spread's card materials are bound to their (shared) shader program, so its first frame in a turn is cheap.
+    if(!texture){warmMaterials(gl,world,camera,scenes[target].layers.map(l=>art[l.src]).filter(Boolean).map(cardMaterial));return;}
+    gl.initTexture(texture);window.setTimeout(()=>requestAnimationFrame(step),150);};
    requestAnimationFrame(step);
-  }).catch(()=>{});
+  }).catch(()=>{});},700);
  }
  // The intro film ends on this exact open spread (on phones, the phone film on the standing book), so revealing it is only a state change.
  async function reveal(standingFilmed=false){
@@ -135,7 +146,12 @@ function Book({onReady,onFailure}:{onReady:(director:Director)=>void;onFailure:(
  function interact(detail?:string){const state=useStory.getState();if(state.phase!=='EXPLORING')return;const scene=scenes[state.chapter],id=detail??scene.detail;state.set({dialog:true,detail:id,visited:[...new Set([...state.visited,state.chapter])]});playSound('hello');const layer=scene.layers.find(l=>l.detail===id)??scene.layers.find(l=>l.interactive);if(!layer)return;const target=hinges.current.get(`${layer.id}:right`)??hinges.current.get(`${layer.id}:left`);if(target)gsap.fromTo(target.scale,{x:1,y:1,z:1},{x:1.08,y:1.08,z:1.08,duration:.2,yoyo:true,repeat:1,overwrite:true,onComplete:()=>target.scale.set(1,1,1)});}
  function retry(){const state=useStory.getState();state.set({error:null});const token=++generation.current;if(!prepared.current)void prepareStartup(token).catch(error=>{if(mounted.current&&token===generation.current)fail(error);});else void openPopup(state.chapter,token,true).catch(fail);}
  useEffect(()=>{mounted.current=true;const current=++generation.current;void prepareStartup(current).catch(error=>{if(mounted.current&&current===generation.current)fail(error);});const director:Director={reveal:standingFilmed=>void reveal(standingFilmed),go:n=>void go(n),finish:()=>{if(useStory.getState().phase==='EXPLORING'&&useStory.getState().chapter===scenes.length-1)useStory.getState().set({phase:'ENDING',dialog:false});},interact,previewTurn,settleTurn:commit=>void settle(commit),retry};onReady(director);return()=>{mounted.current=false;generation.current++;timeline.current?.kill();pending.current?.();hinges.current.forEach(g=>gsap.killTweensOf(g.scale));document.body.style.cursor='';};},[]);
+ const paper=paperRef.current;
  const moving=turn!==null;const leftChapter=moving&&turn.direction===-1?turn.to:chapter;const rightChapter=moving&&turn.direction===1?turn.to:chapter;const front=moving?paper[`page-${turn.direction===1?turn.from:turn.to}-right`]:null;const back=moving?paper[`page-${turn.direction===1?turn.to:turn.from}-left`]:null;
+ // The turning sheet keeps its last pictures between turns (hidden); before the first turn it holds the first spread's right page.
+ if(moving&&front&&back)lastSheet.current={front,back,direction:turn.direction};
+ else if(!lastSheet.current&&paper['page-0-right'])lastSheet.current={front:paper['page-0-right'],back:paper['page-0-right'],direction:1};
+ const sheet=lastSheet.current;
  if(!materials.inside)return <Camera standing={standing}/>;
  if(standing){
   // The upright page shows the backdrop of the spread being uncovered (going back) or covered (going forward); the turning sheet's
@@ -145,20 +161,62 @@ function Book({onReady,onFailure}:{onReady:(director:Director)=>void;onFailure:(
   const backdropOf=(target:number,art:Record<string,Texture>)=>{const layer=scenes[target].layers.find(isBackdrop);return layer?art[layer.src]:undefined;};
   const upright=moving&&turn.direction===-1?backdropOf(turn.to,turn.incoming)??backdropOf(chapter,textures):backdropOf(chapter,textures);
   const sheet=moving?(turn.direction===1?backdropOf(turn.to,turn.incoming):backdropOf(chapter,textures)):undefined;
-  return <><Camera standing/>
+  return <><Camera standing/><DeskFog/><DeskBackdrop materials={materials}/>
    <StandingCase materials={materials} backdrop={upright} turnBackdrop={sheet} turning={moving?turn.direction:0} progress={progress} stand={stand}
     floor={paperOf(moving&&turn.direction===1?turn.to:chapter)} sheetFloor={moving?paperOf(turn.direction===1?turn.from:turn.to):undefined}/>
-   <group>{scenes[chapter].layers.filter(l=>!isBackdrop(l)).map(l=>textures[l.src]?<StandingLayer key={`${chapter}-${l.id}`} layer={l} texture={textures[l.src]} hinges={hinges} onClick={interact} turn={turn} progress={progress}/>:null)}</group>
-   <group>{turn&&scenes[turn.to].layers.filter(l=>!isBackdrop(l)).map(l=>turn.incoming[l.src]?<StandingLayer key={`incoming-${turn.to}-${l.id}`} layer={l} texture={turn.incoming[l.src]} hinges={hinges} onClick={interact} turn={turn} progress={progress} incoming/>:null)}</group>
+   {/* One group, keyed by chapter: when a turn ends the incoming cards stay mounted and become the spread's own (no rebuild). */}
+   <group>{scenes[chapter].layers.filter(l=>!isBackdrop(l)).map(l=>textures[l.src]?<StandingLayer key={`${chapter}-${l.id}`} layer={l} texture={textures[l.src]} hinges={hinges} onClick={interact} turn={turn} progress={progress}/>:null)}
+   {turn&&turn.to!==chapter&&scenes[turn.to].layers.filter(l=>!isBackdrop(l)).map(l=>turn.incoming[l.src]?<StandingLayer key={`${turn.to}-${l.id}`} layer={l} texture={turn.incoming[l.src]} hinges={hinges} onClick={interact} turn={turn} progress={progress} incoming/>:null)}</group>
    <ContextMonitor onFailure={onFailure}/></>;
  }
- return <><Camera/><group>
+ return <><Camera/><DeskFog/><DeskBackdrop materials={materials}/><group>
  <OpenCase materials={materials}/>
  {paper[`page-${leftChapter}-left`]&&<PrintedPage texture={paper[`page-${leftChapter}-left`]} edge={materials['paper-edge']} left/>}{paper[`page-${rightChapter}-right`]&&<PrintedPage texture={paper[`page-${rightChapter}-right`]} edge={materials['paper-edge']}/>}
- {moving&&front&&back&&<TurningPage front={front} back={back} progress={progress} direction={turn.direction}/>}
- <group>{scenes[chapter].layers.flatMap(l=>(['left','right'] as const).map(side=>{const piece=splitPaperArt(l.position[0],l.size[0],side);return piece&&textures[l.src]?<PaperLayer key={`${chapter}-${l.id}-${side}`} layer={l} piece={piece} texture={textures[l.src]} hinges={hinges} onClick={interact} turn={turn} progress={progress}/>:null;}))}</group>
- <group>{turn&&scenes[turn.to].layers.flatMap(l=>(['left','right'] as const).map(side=>{const piece=splitPaperArt(l.position[0],l.size[0],side);return piece&&turn.incoming[l.src]?<PaperLayer key={`incoming-${turn.to}-${l.id}-${side}`} layer={l} piece={piece} texture={turn.incoming[l.src]} hinges={hinges} onClick={interact} turn={turn} progress={progress} incoming/>:null;}))}</group>
+ {sheet&&<TurningPage front={sheet.front} back={sheet.back} progress={progress} direction={sheet.direction} visible={moving}/>}
+ {/* One group, keyed by chapter: when a turn ends the incoming cards stay mounted and become the spread's own (no rebuild). */}
+ <group>{scenes[chapter].layers.flatMap(l=>(['left','right'] as const).map(side=>{const piece=splitPaperArt(l.position[0],l.size[0],side);return piece&&textures[l.src]?<PaperLayer key={`${chapter}-${l.id}-${side}`} layer={l} piece={piece} texture={textures[l.src]} hinges={hinges} onClick={interact} turn={turn} progress={progress}/>:null;}))}
+ {turn&&turn.to!==chapter&&scenes[turn.to].layers.flatMap(l=>(['left','right'] as const).map(side=>{const piece=splitPaperArt(l.position[0],l.size[0],side);return piece&&turn.incoming[l.src]?<PaperLayer key={`${turn.to}-${l.id}-${side}`} layer={l} piece={piece} texture={turn.incoming[l.src]} hinges={hinges} onClick={interact} turn={turn} progress={progress} incoming/>:null;}))}</group>
  </group><ContextMonitor onFailure={onFailure}/></>;
 }
+/**
+ * Paces drawing: the canvas runs frameloop="never" and this draws each frame itself (advance), in the frame it decides to. Full display rate while anything moves: startup, turns, pop-ups, drags and every
+ * GSAP animation. While the reader just looks at a spread the only motion is the clickable cards' slow sway, under half a pixel per
+ * frame, so 30 frames a second look the same and halve the GPU's work. Nothing is drawn while the text version covers the book.
+ */
+const IDLE_FRAME_MS=1000/30-4;
+function FramePacer({onDpr}:{onDpr:(dpr:number)=>void}){
+ const get=useThree(s=>s.get);
+ useEffect(()=>{
+  let raf=0,last=0,drawnUnderIntro=false,lastMoving=0;const governor=new ResolutionGovernor(get().viewport.dpr);
+  const tick=(now:number)=>{
+   raf=requestAnimationFrame(tick);
+   if(document.body.classList.contains('text-open'))return;
+   const phase=useStory.getState().phase;
+   // Under the intro film nothing is drawn while the book prepares, so the film and the preparation keep the GPU and the main thread;
+   // once ready (COVER) one frame is drawn (it bakes the desk and puts the book on the canvas), then nothing until the film leaves.
+   if(document.querySelector('.intro-screen:not(.is-leaving)')){if(phase!=='COVER'||drawnUnderIntro)return;drawnUnderIntro=true;}
+   else drawnUnderIntro=false;
+   const still=(phase==='EXPLORING'||phase==='ENDING')&&!gsap.globalTimeline.getChildren(false,true,true).length;
+   if(still&&now-last<IDLE_FRAME_MS)return;
+   const state=get(),start=performance.now();last=now;advance(now,true,state);
+   // Frames in motion (drawn every refresh) tell the governor whether the GPU keeps up; see src/framePacing.ts.
+   if(!still){const dpr=lastMoving?governor.sample(now-lastMoving,performance.now()-start):null;lastMoving=now;if(dpr)onDpr(dpr);state.gl.domElement.dataset.pacing=governor.last;}
+   else lastMoving=0;
+  };
+  raf=requestAnimationFrame(tick);return()=>cancelAnimationFrame(raf);
+ },[get,onDpr]);
+ return null;
+}
 function ContextMonitor({onFailure}:{onFailure:()=>void}){const {gl}=useThree();useEffect(()=>{const handler=(e:Event)=>{e.preventDefault();onFailure();};gl.domElement.addEventListener('webglcontextlost',handler);return()=>gl.domElement.removeEventListener('webglcontextlost',handler);},[gl,onFailure]);return null;}
-export default function Storybook({onReady,onFailure}:{onReady:(director:Director)=>void;onFailure:()=>void}){return <Canvas flat shadows={false} camera={{position:[...BOOK_CAMERA_POSITION],fov:30,near:.1,far:70}} dpr={Math.min(window.devicePixelRatio,2)} gl={{antialias:true,alpha:true,powerPreference:'high-performance'}}><Book onReady={onReady} onFailure={onFailure}/></Canvas>;}
+/**
+ * Starts the first spread's downloads while the intro film plays (App calls it once the film can play through): only network and
+ * off-thread decoding, the GPU work still waits until the book mounts after the film. Without it the book began loading when the film
+ * ended and the reader waited a further ~2.5 s on a 9 Mbps connection.
+ */
+export function preloadBook(){
+ void Promise.all([loadScene(0),...['left','right'].map(side=>loadTexture(`page-0-${side}`)),...OPEN_BOOK_MATERIALS.map(name=>loadTexture('book-'+name))]).catch(()=>{});
+}
+export default function Storybook({onReady,onFailure}:{onReady:(director:Director)=>void;onFailure:()=>void}){
+ // The canvas resolution lives here: R3F re-applies the dpr prop on every render, so the governor's choice (FramePacer) is the prop.
+ const [dpr,setDpr]=useState(()=>Math.min(window.devicePixelRatio,2));
+ return <Canvas frameloop="never" flat shadows={false} camera={{position:[...BOOK_CAMERA_POSITION],fov:30,near:.1,far:70}} dpr={dpr} gl={{antialias:true,alpha:true,powerPreference:'high-performance'}}><FramePacer onDpr={setDpr}/><Book onReady={onReady} onFailure={onFailure}/></Canvas>;}

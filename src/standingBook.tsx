@@ -10,7 +10,7 @@ import { BOOK_BOARD, BOOK_PAGES } from './bookStructure';
 import { BOOK_HINGE_Y, createBoardGeometry, createPaperBlockGeometry, createSpineGeometry, relightTurned } from './bookGeometry';
 import { createPageSkirt, createPaperGeometry, pageShade } from './paperGeometry';
 import { lightShade } from './bookGeometry';
-import { BLOCK_X, BindingDetails, Board, PaperBlock, PrintedPage, Surface, createCardGeometry, useDisposable, type BookMaterials } from './bookParts';
+import { BLOCK_X, BindingDetails, Board, cardMaterial, textureView, PaperBlock, PrintedPage, Surface, createCardGeometry, useDisposable, type BookMaterials } from './bookParts';
 import { UPRIGHT_SCALE, backdropCrop, standingFoldIn, standingFoldOut, standingPlacement, standingSheetPoint, standingSheetProgress, surfaceY } from './standingLayout';
 import { type Layer, useStory } from './story';
 
@@ -25,7 +25,7 @@ function standingUv(geometry:BufferGeometry,columns:number,rows:number){
 /** The backdrop cropped to cover the upright page; shares the painting's upload. */
 export function cropBackdrop(texture:Texture){
  const image=texture.image as {width:number;height:number}|undefined;const crop=backdropCrop(image?image.width/image.height:2.5);
- const t=texture.clone();t.repeat.set(...crop.repeat);t.offset.set(...crop.offset);t.needsUpdate=true;return t;
+ return textureView(texture,t=>{t.repeat.set(...crop.repeat);t.offset.set(...crop.offset);});
 }
 function useBackdrop(texture:Texture|undefined){
  const cropped=useMemo(()=>texture?cropBackdrop(texture):null,[texture]);
@@ -51,7 +51,7 @@ function StandingHalf({materials,backdrop,stand}:{materials:BookMaterials;backdr
   <mesh geometry={board} position={[-BOOK_BOARD.x,BOOK_BOARD.y,0]}><Surface attach="material-0" map={materials.inside}/><Surface attach="material-1" map={materials['cloth-side']}/><Surface attach="material-2" map={materials['cloth-side']}/></mesh>
   <mesh geometry={block} position={[-BLOCK_X,BOOK_PAGES.y,0]}>{[edge,edge,endpaper,endpaper,edge,edge].map((map,i)=><meshBasicMaterial key={i} attach={`material-${i}`} map={map} vertexColors side={DoubleSide}/>)}</mesh>
   {/* The painting is laid over the paper, so its cut edges (and any see-through part) show paper. */}
-  <mesh geometry={page}><Surface map={endpaper}/></mesh>{backdrop&&<mesh geometry={page} renderOrder={1}><meshBasicMaterial map={backdrop} vertexColors transparent side={DoubleSide} depthWrite={false}/></mesh>}<mesh geometry={skirt}><Surface map={edge} fallback="#e8dbc2"/></mesh>
+  <mesh geometry={page}><Surface map={endpaper}/></mesh>{backdrop&&<mesh geometry={page} renderOrder={1}><meshBasicMaterial map={backdrop} vertexColors transparent forceSinglePass side={DoubleSide} depthWrite={false}/></mesh>}<mesh geometry={skirt}><Surface map={edge} fallback="#e8dbc2"/></mesh>
  </group></group></group>;
 }
 /** The cloth spine around the 90° fold. Built for a few fold steps only (it is costly), swapped while the book stands up. */
@@ -116,5 +116,5 @@ export function StandingLayer({layer,texture,hinges,onClick,turn,progress,incomi
   const swaying=layer.interactive&&phase==='EXPLORING';if(!swaying)swaySince.current=null;else swaySince.current??=clock.elapsedTime;
   mesh.current.rotation.z=swaying?Math.sin(clock.elapsedTime*1.5+place.x*1.7)*.025*Math.min(1,(clock.elapsedTime-swaySince.current!)/1.2):0;
  });
- return <group ref={anchor}><group ref={ref}><mesh ref={mesh} geometry={geometry} position={[0,place.size[1]/2,0]} onClick={!incoming&&layer.interactive?e=>{e.stopPropagation();if(phase==='EXPLORING')onClick(layer.detail);}:undefined} onPointerOver={!incoming&&layer.interactive?()=>{if(phase==='EXPLORING')document.body.style.cursor='pointer';}:undefined} onPointerOut={()=>{document.body.style.cursor='';}}><meshBasicMaterial map={texture} transparent alphaTest={.025} side={DoubleSide} depthWrite/></mesh></group></group>;
+ return <group ref={anchor}><group ref={ref}><mesh ref={mesh} geometry={geometry} material={cardMaterial(texture)} dispose={null} position={[0,place.size[1]/2,0]} onClick={!incoming&&layer.interactive?e=>{e.stopPropagation();if(phase==='EXPLORING')onClick(layer.detail);}:undefined} onPointerOver={!incoming&&layer.interactive?()=>{if(phase==='EXPLORING')document.body.style.cursor='pointer';}:undefined} onPointerOut={()=>{document.body.style.cursor='';}}></mesh></group></group>;
 }

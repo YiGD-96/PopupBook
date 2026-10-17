@@ -1,6 +1,6 @@
 {
-  "width": 968,
-  "height": 726,
+  "width": 1694,
+  "height": 944,
   "duration": 5.04,
   "coverHold": 1,
   "uiRevealAt": 3.24,
@@ -14,10 +14,14 @@
     5.431,
     11.645
   ],
-  "fov": 29.999245309141056,
+  "fov": 38.4089860094361,
+  "span": {
+    "x": 1.75,
+    "y": 1.3
+  },
   "projection": "perspective",
   "renderer": "three.js (src/film.tsx)",
-  "background": "#ece6d6",
+  "background": "#1a110b",
   "board": {
     "width": 3.42,
     "depth": 5.02,

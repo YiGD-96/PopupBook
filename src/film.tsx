@@ -11,10 +11,10 @@ import { loadScene, loadTexture } from './assets';
 import { scenes } from './story';
 import { SITE } from './site';
 import { artSource } from './artSource';
-import { BOOK_CAMERA_POSITION, BOOK_FRAME_HEIGHT, BOOK_FRAME_WIDTH, BOOK_TARGET_Y, bookFov } from './bookView';
+import { BOOK_CAMERA_POSITION, BOOK_FRAME_HEIGHT, BOOK_FRAME_WIDTH, BOOK_TARGET_Y, FILM_SPAN, filmFov } from './bookView';
 import { BOOK_BOARD, BOOK_PAGES, BOOK_SPINE } from './bookStructure';
 import { INTRO_COVER_HOLD, INTRO_DURATION, INTRO_PAGE_COUNT, INTRO_PAGES_START, INTRO_PAGE_STAGGER, INTRO_PAGE_TURN, INTRO_UI_AT } from './introPlayback';
-import { BLOCK_X, BindingDetails, Board, OPEN_BOOK_MATERIALS, PaperBlock, PrintedPage, TurningPage, createCardGeometry, useDisposable, type BookMaterials } from './bookParts';
+import { BLOCK_X, BindingDetails, Board, DESK, Desk, DeskFog, OPEN_BOOK_MATERIALS, PaperBlock, PrintedPage, TurningPage, createCardGeometry, useDisposable, type BookMaterials } from './bookParts';
 import { BOOK_HINGE_Y, createBoardGeometry, createPaperBlockGeometry, createSpineGeometry } from './bookGeometry';
 import { splitPaperArt, type PaperPiece } from './paperAttachments';
 import type { Layer } from './story';
@@ -25,7 +25,9 @@ import { STANDING_FILM_ASPECT } from './standingMedia';
 const params=new URLSearchParams(location.search);
 /** ?mode=standing films the phone intro (src/standingFilm.tsx), portrait; otherwise the open book's. */
 const STANDING=params.get('mode')==='standing';
-const FILM_WIDTH=Number(params.get('width')||(STANDING?720:968)),FILM_HEIGHT=Math.round(FILM_WIDTH*(STANDING?1/STANDING_FILM_ASPECT:BOOK_FRAME_HEIGHT/BOOK_FRAME_WIDTH)/2)*2;
+// `width` is the frame's width in pixels; the desktop film adds FILM_SPAN of desk around the frame (the phone film is its own size).
+const FRAME_PIXELS=Number(params.get('width')||(STANDING?720:968));
+const FILM_WIDTH=STANDING?FRAME_PIXELS:Math.round(FRAME_PIXELS*FILM_SPAN.x/2)*2,FILM_HEIGHT=Math.round(FRAME_PIXELS*(STANDING?1/STANDING_FILM_ASPECT:BOOK_FRAME_HEIGHT/BOOK_FRAME_WIDTH*FILM_SPAN.y)/2)*2;
 
 /** Everything the film shows at time t (seconds). The closed book stands for INTRO_COVER_HOLD (the magazine's cover moving on it),
  *  then the cover opens while the book is still settling, without a pause. */
@@ -97,7 +99,7 @@ function Popup({layer,piece,texture,rise}:{layer:Layer;piece:PaperPiece;texture:
 }
 function FilmCamera(){
  const {camera,scene}=useThree();
- useEffect(()=>{const cam=camera as PerspectiveCamera;cam.aspect=FILM_WIDTH/FILM_HEIGHT;cam.fov=bookFov(FILM_WIDTH,FILM_HEIGHT);cam.position.set(...BOOK_CAMERA_POSITION);cam.lookAt(0,BOOK_TARGET_Y,0);cam.updateProjectionMatrix();scene.background=new Color('#ece6d6');},[camera,scene]);
+ useEffect(()=>{const cam=camera as PerspectiveCamera;cam.aspect=FILM_WIDTH/FILM_HEIGHT;cam.fov=filmFov();cam.position.set(...BOOK_CAMERA_POSITION);cam.lookAt(0,BOOK_TARGET_Y,0);cam.updateProjectionMatrix();},[camera,scene]);
  return null;
 }
 type Assets={materials:BookMaterials;journal:Texture[];paper:Record<string,Texture>;scenery:Record<string,Texture>;coverFrame:(time:number)=>Promise<void>;standing?:StandingAssets};
@@ -113,7 +115,7 @@ function Film({assets,t,onCommit}:{assets:Assets;t:number;onCommit:(t:number)=>v
  const back=(i:number)=>i===last?paper['page-0-left']:journal[(i*2+1)%JOURNAL.length];
  const started=f.pages.filter(p=>p>0).length,landed=f.pages.filter(p=>p>=1).length;
  const rightPage=front(started),leftPage=landed?back(landed-1):journal[JOURNAL.length];
- return <><FilmCamera/>
+ return <><FilmCamera/><DeskFog background/><Desk materials={materials}/>
   <group position={[f.rootX+BOOK_BOARD.x,-.08+f.lift,0]} rotation={new Euler(f.tilt,f.yaw,0,'YXZ')} scale={f.scale}><group position={[-BOOK_BOARD.x,.08,0]}>
    <Board materials={materials} x={BOOK_BOARD.x}/><PaperBlock materials={materials} x={BLOCK_X}/>
    <FoldingSpine materials={materials} fold={f.open}/>
@@ -132,8 +134,8 @@ function StandingRoll({assets,standing,t,onCommit}:{assets:Assets;standing:Stand
 }
 /** Everything the renderer records next to the movie, read from the same modules the live book uses. */
 const FILM_META=STANDING?standingFilmMeta(FILM_WIDTH,FILM_HEIGHT):{width:FILM_WIDTH,height:FILM_HEIGHT,duration:INTRO_DURATION,coverHold:INTRO_COVER_HOLD,uiRevealAt:INTRO_UI_AT,sceneryStartsAt:INTRO_UI_AT,pageCount:INTRO_PAGE_COUNT,
- worldWidth:BOOK_FRAME_WIDTH,worldHeight:BOOK_FRAME_HEIGHT,targetY:BOOK_TARGET_Y,camera:[...BOOK_CAMERA_POSITION],fov:bookFov(FILM_WIDTH,FILM_HEIGHT),projection:'perspective',renderer:'three.js (src/film.tsx)',
- background:'#ece6d6',board:BOOK_BOARD,pages:BOOK_PAGES,spine:BOOK_SPINE,shadows:false,bakedShadows:false};
+ worldWidth:BOOK_FRAME_WIDTH,worldHeight:BOOK_FRAME_HEIGHT,targetY:BOOK_TARGET_Y,camera:[...BOOK_CAMERA_POSITION],fov:filmFov(),span:FILM_SPAN,projection:'perspective',renderer:'three.js (src/film.tsx)',
+ background:DESK.color,board:BOOK_BOARD,pages:BOOK_PAGES,spine:BOOK_SPINE,shadows:false,bakedShadows:false};
 /** The magazine's moving cover: one finished cover texture per film frame, written by render-intro.mjs from the frames
  *  scripts/capture-site-cover.mjs records. Without them the cover keeps its still texture. */
 const COVER_FRAMES='/intro-cache/cover-texture/';

@@ -31,10 +31,28 @@ export function createPaperGeometry(columns=48,rows=12,swell=1){
  for(let r=0;r<rows;r++)for(let c=0;c<columns;c++){const a=r*(columns+1)+c,b=a+1,d=a+columns+2,e=a+columns+1;indices.push(a,e,b,b,e,d);}
  geometry.setAttribute('position',new Float32BufferAttribute(positions,3));geometry.setAttribute('uv',new Float32BufferAttribute(uv,2));geometry.setAttribute('color',new Float32BufferAttribute(colors,3));geometry.setIndex(indices);geometry.computeVertexNormals();return geometry;
 }
+/**
+ * Bends the turning sheet for this frame. Runs every frame of a turn, so it works on the arrays directly: the curl depends only on the
+ * column (u), each row adds its corner lift, and the normals are summed per triangle exactly as BufferGeometry.computeVertexNormals does.
+ */
 export function updatePaperGeometry(geometry:BufferGeometry,progress:number,direction:1|-1=1,columns=48,rows=12){
- const positions=geometry.getAttribute('position');for(let r=0;r<=rows;r++)for(let c=0;c<=columns;c++){const point=paperPoint(c/columns,r/rows,progress,direction);positions.setXYZ(r*(columns+1)+c,...point);}positions.needsUpdate=true;geometry.computeVertexNormals();geometry.computeBoundingSphere();
- const normals=geometry.getAttribute('normal'),colors=geometry.getAttribute('color');
- for(let r=0;r<=rows;r++)for(let c=0;c<=columns;c++){const i=r*(columns+1)+c,s=linear(pageShade(c/columns,normals.getY(i)));colors.setXYZ(i,s,s,s);}colors.needsUpdate=true;
+ const positions=geometry.getAttribute('position'),normals=geometry.getAttribute('normal'),colors=geometry.getAttribute('color');
+ const pos=positions.array as Float32Array,nor=normals.array as Float32Array,col=colors.array as Float32Array,index=geometry.getIndex()!.array;
+ const p=Math.max(0,Math.min(1,progress)),bend=Math.sin(p*Math.PI);
+ for(let c=0;c<=columns;c++){
+  const u=c/columns,[x,base]=paperPoint(u,0,p,direction),lift=bend*Math.pow(u,2);
+  for(let r=0;r<=rows;r++){const v=r/rows,i=(r*(columns+1)+c)*3;pos[i]=x;pos[i+1]=base+lift*Math.sin(v*Math.PI)*.12;pos[i+2]=(v-.5)*PAGE_HEIGHT;}
+ }
+ nor.fill(0);
+ for(let t=0;t<index.length;t+=3){
+  const a=index[t]*3,b=index[t+1]*3,c=index[t+2]*3;
+  const cbx=pos[c]-pos[b],cby=pos[c+1]-pos[b+1],cbz=pos[c+2]-pos[b+2],abx=pos[a]-pos[b],aby=pos[a+1]-pos[b+1],abz=pos[a+2]-pos[b+2];
+  const nx=cby*abz-cbz*aby,ny=cbz*abx-cbx*abz,nz=cbx*aby-cby*abx;
+  nor[a]+=nx;nor[a+1]+=ny;nor[a+2]+=nz;nor[b]+=nx;nor[b+1]+=ny;nor[b+2]+=nz;nor[c]+=nx;nor[c+1]+=ny;nor[c+2]+=nz;
+ }
+ for(let i=0;i<nor.length;i+=3){const k=1/(Math.sqrt(nor[i]*nor[i]+nor[i+1]*nor[i+1]+nor[i+2]*nor[i+2])||1);nor[i]*=k;nor[i+1]*=k;nor[i+2]*=k;}
+ for(let r=0;r<=rows;r++)for(let c=0;c<=columns;c++){const i=(r*(columns+1)+c)*3,s=linear(pageShade(c/columns,nor[i+1]));col[i]=col[i+1]=col[i+2]=s;}
+ positions.needsUpdate=normals.needsUpdate=colors.needsUpdate=true;geometry.computeBoundingSphere();
 }
 /** The stack's page edges as one wall from the resting sheet down to the foot of the block, so the swell and the stack read as one thick
  * body without a seam. The foot spreads out by forePull, so the walls lean in toward the top; each carries the baked light of its outward normal. */

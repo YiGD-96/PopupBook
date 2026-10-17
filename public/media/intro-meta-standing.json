@@ -21,7 +21,7 @@
   "fov": 42.08864309079387,
   "projection": "perspective",
   "renderer": "three.js (src/standingFilm.tsx)",
-  "background": "#ece6d6",
+  "background": "#1a110b",
   "board": {
     "width": 3.42,
     "depth": 5.02,

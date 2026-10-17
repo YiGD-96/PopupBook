@@ -87,5 +87,39 @@ export async function makeBookMaterials({createCanvas,loadImage,sharp,fs,path,pr
  ic.strokeStyle='rgba(96,58,40,.28)';ic.lineWidth=1.5;ic.strokeRect(turnIn+.75,turnIn+.75,700-turnIn*2-1.5,1004-turnIn*2-1.5);
  ic.strokeStyle='rgba(255,238,214,.35)';ic.lineWidth=1;ic.strokeRect(turnIn-1.5,turnIn-1.5,700-turnIn*2+3,1004-turnIn*2+3);
  textures.inside=await save('inside',inside);
+ textures.desk=await desk({sharp,fs,path,destination,loadImage});
  return textures;
+}
+
+/**
+ * The walnut desk the book lies on: planks running away from the reader, each its own shade, with wavy grain, fine pores and dark seams.
+ * Seamless both ways (every wave has a whole number of periods across the tile), so the desk repeats without joins. One tile is 3×3
+ * world units (src/bookParts.tsx Desk). Its own seed, so it never shifts the other textures.
+ */
+async function desk({sharp,fs,path,destination,loadImage}){
+ const N=1024,PLANKS=5,width=N/PLANKS,data=Buffer.alloc(N*N*3),TAU=Math.PI*2;let seed=20261017;
+ const rand=()=>{seed=(Math.imul(1664525,seed)+1013904223)>>>0;return seed/4294967296;};
+ const base=[64,42,28];
+ const plank=Array.from({length:PLANKS},()=>{
+  // Fine grain lines across the plank, 5–14 px apart, and broad soft bands; all bend together along the plank.
+  const lines=[];for(let x=rand()*6;x<width;x+=5+rand()*9)lines.push({x,dark:.45+rand()*.55});
+  return {shade:.86+rand()*.26,lines,
+   waves:Array.from({length:3},()=>({m:1+Math.floor(rand()*3),a:.8+rand()*3,p:rand()*TAU})),
+   bands:Array.from({length:3},()=>({k:1+Math.floor(rand()*4),a:.5+rand()*.5,p:rand()*TAU}))};
+ });
+ const fine=Float32Array.from({length:N*N},()=>rand()-.5);
+ for(let y=0;y<N;y++)for(let x=0;x<N;x++){
+  const i=Math.floor(x/width),pl=plank[i],v=y/N,local=x-i*width;
+  const bend=pl.waves.reduce((s,w)=>s+w.a*Math.sin(TAU*w.m*v+w.p),0),at=local+bend;
+  let near=99,dark=0;for(const l of pl.lines){const d=Math.abs(at-l.x);if(d<near){near=d;dark=l.dark;}}
+  const line=near<.8?-26*dark:near<1.8?-10*dark:near<3?4:0;          // thin dark late-wood line, a faint lit edge beside it
+  let band=0;for(const b of pl.bands)band+=b.a*Math.sin(TAU*b.k*(at/width)+b.p);
+  const pore=fine[y*N+x]*7+fine[((y*5)%N)*N+x]*6;                      // pores, longer along the grain
+  const edge=Math.min(local,width-local);
+  const seam=edge<1.5?-34:edge<3?-14:edge<5?7:0;                       // dark joint between planks
+  const light=pl.shade*(1+band*.05);
+  for(let c=0;c<3;c++)data[(y*N+x)*3+c]=Math.max(0,Math.min(255,base[c]*light+line*(c===0?1:c===1?.75:.55)+pore+seam));
+ }
+ const bytes=await sharp(data,{raw:{width:N,height:N,channels:3}}).webp({quality:86,effort:5}).toBuffer();
+ await fs.writeFile(path.join(destination,'desk.webp'),bytes);return loadImage(bytes);
 }

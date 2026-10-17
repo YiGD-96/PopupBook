@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import {artSource} from '../src/artSource.ts';
 import {scenes} from '../src/story.ts';
-import {BOOK_FRAME_WIDTH,BOOK_FRAME_HEIGHT,BOOK_TARGET_Y,BOOK_CAMERA_POSITION} from '../src/bookView.ts';
+import {FILM_SPAN,BOOK_FRAME_WIDTH,BOOK_FRAME_HEIGHT,BOOK_TARGET_Y,BOOK_CAMERA_POSITION} from '../src/bookView.ts';
 import {INTRO_DURATION,INTRO_UI_AT,INTRO_PAGE_COUNT} from '../src/introPlayback.ts';
 import {BOOK_BOARD,BOOK_PAGES,BOOK_SPINE} from '../src/bookStructure.ts';
 
@@ -18,7 +18,8 @@ test('every book texture is delivered as a packaged WebP instead of rasterizing 
 test('the shipped movie and its endpoint images use the same framing as the interactive book',async()=>{
  const meta=JSON.parse(await fs.readFile(new URL('../public/media/intro-meta.json',import.meta.url),'utf8'));
  assert.equal(meta.worldWidth,BOOK_FRAME_WIDTH);assert.equal(meta.worldHeight,BOOK_FRAME_HEIGHT);assert.equal(meta.targetY,BOOK_TARGET_Y);
- assert.ok(Math.abs(meta.width/meta.height-BOOK_FRAME_WIDTH/BOOK_FRAME_HEIGHT)<1e-9);
+ // The film shows desk around the frame (FILM_SPAN), at the frame's scale.
+ assert.deepEqual(meta.span,{...FILM_SPAN});assert.ok(Math.abs(meta.width/meta.height-BOOK_FRAME_WIDTH*FILM_SPAN.x/(BOOK_FRAME_HEIGHT*FILM_SPAN.y))<.003);
  assert.equal(meta.pageCount,INTRO_PAGE_COUNT);assert.equal(meta.fps,60);
  assert.equal(meta.duration,INTRO_DURATION);assert.equal(meta.uiRevealAt,INTRO_UI_AT);assert.equal(meta.sceneryStartsAt,INTRO_UI_AT);
  // The film is staged with the live book's own parts; the recorded dimensions must be the current ones.

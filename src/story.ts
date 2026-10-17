@@ -53,8 +53,8 @@ export const scenes = [
   clickable({id:'burger',src:'dish-burger',position:[2.25,1.25,1.68],size:[1,.84],detail:'menu-03',phone:{x:1.5,z:3.23,size:[.95,.8],lift:.7}})
  ] as Layer[]}
 ];
-type StoryState = {phase:Phase;chapter:number;dialog:boolean;detail:string|null;visited:number[];audioReady:boolean;introPagesTurned:number;error:string|null;fps:number;set:(patch:Partial<StoryState>)=>void};
-export const useStory = create<StoryState>(set=>({phase:'INIT',chapter:0,dialog:false,detail:null,visited:[],audioReady:false,introPagesTurned:0,error:null,fps:0,set:patch=>set(patch)}));
+type StoryState = {phase:Phase;chapter:number;dialog:boolean;detail:string|null;visited:number[];audioReady:boolean;introPagesTurned:number;error:string|null;set:(patch:Partial<StoryState>)=>void};
+export const useStory = create<StoryState>(set=>({phase:'INIT',chapter:0,dialog:false,detail:null,visited:[],audioReady:false,introPagesTurned:0,error:null,set:patch=>set(patch)}));
 let audioContext:AudioContext|null=null;
 let audioUnlock:Promise<void>|null=null;
 export function unlockAudio(){

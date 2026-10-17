@@ -12,3 +12,9 @@ export function bookZoom(width:number,height:number){
 export function bookFov(width:number,height:number){
  return 2*Math.atan(height/bookZoom(width,height)/2/BOOK_CAMERA_DISTANCE)*180/Math.PI;
 }
+
+/** The desktop intro film reaches past the frame on every side (the desk around the book) so it fills wide and tall canvases. It is
+ *  shown at the frame's scale and centred like the live camera, so the book keeps its size and place. */
+export const FILM_SPAN={x:1.75,y:1.3} as const;
+/** The film camera's field of view: the frame's height times FILM_SPAN.y. */
+export function filmFov(){return 2*Math.atan(BOOK_FRAME_HEIGHT*FILM_SPAN.y/2/BOOK_CAMERA_DISTANCE)*180/Math.PI;}

@@ -5,7 +5,7 @@ import { type Director, scenes, useStory, playSound, unlockAudio } from './story
 import { useBookGestures } from './useBookGestures';
 import Intro,{type IntroReport} from './Intro';
 import {canRevealReader,INTRO_PAGE_COUNT} from './introPlayback';
-import {BOOK_FRAME_WIDTH,BOOK_FRAME_HEIGHT,bookZoom} from './bookView';
+import {BOOK_FRAME_WIDTH,BOOK_FRAME_HEIGHT,FILM_SPAN,bookZoom} from './bookView';
 import {standingMediaSize} from './standingMedia';
 import {artSource} from './artSource';
 import DetailPanel from './DetailPanel';
@@ -13,6 +13,8 @@ import DetailBook from './DetailBook';
 import { details } from './details';
 import { noteStory, noteTurn, parseHash, track } from './analytics';
 const Storybook = lazy(() => import('./Storybook'));
+// Once the intro film has buffered, the book's code and first spread download alongside it (src/Storybook.tsx preloadBook).
+const preloadBook = () => { void import('./Storybook').then(module => module.preloadBook()).catch(() => {}); };
 
 class CanvasBoundary extends Component<{children:ReactNode;onError:()=>void},{failed:boolean}> {
   state = {failed:false};
@@ -36,6 +38,10 @@ function StaticBook({closed,onInteract}:{closed:boolean;onInteract:(detail?:stri
     {scenes[chapter].layers.map((l,i)=><img key={l.id} src={artSource(l.src)} style={{width:(l.size[0]/7.2*100)+'%',left:(50+l.position[0]/7.2*100)+'%',bottom:(25+(2-l.position[2])*6)+'%',zIndex:i}} alt=""/>)}
     {scenes[chapter].layers.filter(l=>l.detail).map(l=><button key={l.id} className="static-hotspot" style={{left:(50+l.position[0]/7.2*100)+'%',bottom:(30+(2-l.position[2])*6)+'%'}} onClick={()=>onInteract(l.detail)} aria-label={l.detail}><MousePointer2 size={20}/></button>)}
   </div>;
+}
+/** Lamp light falling off into the dark room, over the film and the book alike (static; pointer-events none). */
+function DeskAir(){
+  return <div className="desk-air" aria-hidden="true"/>;
 }
 function Modal({title,children,onClose}:{title:string;children:ReactNode;onClose:()=>void}) {
   const ref=useRef<HTMLDivElement>(null);
@@ -146,6 +152,7 @@ export default function App() {
     }))).then(()=>{if(active){setEngineReady(true);s.set({phase:'COVER'});}}).catch(error=>{if(active)s.set({phase:'ERROR',error:error.message});});
     return()=>{active=false;};
   },[fallback,fallbackAttempt,sceneMounted]);
+  const mountEarly=useCallback(()=>{if(new URLSearchParams(window.location.search).get('view')!=='paper'&&supportsWebGL())setSceneMounted(true);},[]);
   const finishIntro=useCallback((report:IntroReport)=>{
     setIntroReport(report);setChromeVisible(true);
     track('intro_complete',{layout:report.standing?'standing':'open',dropped_frames:report.droppedFrames??undefined,media_failed:report.mediaFailed});
@@ -200,8 +207,9 @@ export default function App() {
     const surface=surfaceRef.current;if(!surface)return;
     const update=()=>{
       const zoom=bookZoom(surface.clientWidth,surface.clientHeight);
-      surface.style.setProperty('--book-media-width',String(BOOK_FRAME_WIDTH*zoom)+'px');
-      surface.style.setProperty('--book-media-height',String(BOOK_FRAME_HEIGHT*zoom)+'px');
+      // The desktop film shows desk around the frame (FILM_SPAN); at the frame's scale it lines up with the live camera.
+      surface.style.setProperty('--book-media-width',String(BOOK_FRAME_WIDTH*FILM_SPAN.x*zoom)+'px');
+      surface.style.setProperty('--book-media-height',String(BOOK_FRAME_HEIGHT*FILM_SPAN.y*zoom)+'px');
       const standing=standingMediaSize(surface.clientWidth,surface.clientHeight);
       surface.style.setProperty('--standing-media-width',String(standing.width)+'px');
       surface.style.setProperty('--standing-media-height',String(standing.height)+'px');
@@ -228,9 +236,10 @@ export default function App() {
         </>}
       </div>}
       <div className="book-stage">
-        <div ref={surfaceRef} className={'canvas-wrap '+(dragging?'is-dragging':'')} data-phase={phase} data-fps={state.fps} data-intro-pages={state.introPagesTurned} data-audio-ready={audioReady} data-cover-hold-ms={introReport?.coverHoldMs} data-video-frames={introReport?.videoFrames} data-video-dropped-frames={introReport?.droppedFrames} data-video-failed={introReport?.mediaFailed} data-chrome-visible={chromeVisible} data-chrome-video-time={chromeVideoTime} aria-label={intro?SITE.title+' 입체 그림책':(chapter+1)+'장 '+scene.title+' 입체 종이 풍경'}>
+        <div ref={surfaceRef} className={'canvas-wrap '+(dragging?'is-dragging':'')} data-phase={phase} data-intro-pages={state.introPagesTurned} data-audio-ready={audioReady} data-cover-hold-ms={introReport?.coverHoldMs} data-video-frames={introReport?.videoFrames} data-video-dropped-frames={introReport?.droppedFrames} data-video-failed={introReport?.mediaFailed} data-chrome-visible={chromeVisible} data-chrome-video-time={chromeVideoTime} aria-label={intro?SITE.title+' 입체 그림책':(chapter+1)+'장 '+scene.title+' 입체 종이 풍경'}>
           {sceneMounted&&(fallback?<StaticBook closed={closed} onInteract={staticInteract}/>:<CanvasBoundary onError={onFailure}><Suspense fallback={null}><Storybook onReady={director=>{api.current=director;setEngineReady(true);}} onFailure={onFailure}/></Suspense></CanvasBoundary>)}
-          {introVisible&&<Intro key={introRun} onFinished={finishIntro} onUnfolding={showChrome} leaving={introLeaving}/>}
+          <DeskAir/>
+          {introVisible&&<Intro key={introRun} onFinished={finishIntro} onUnfolding={showChrome} onBuffered={preloadBook} onNearEnd={mountEarly} leaving={introLeaving}/>}
         </div>
         {!introVisible&&!audioReady&&intro&&<p className="audio-hint">소리는 화면을 터치하면 함께 시작돼요</p>}
         {busy&&!intro&&phase!=='DRAGGING_PAGE'&&<div className="scene-loading" role="status"><LoaderCircle size={16} className="spin"/>{phase==='LOADING_PAGE'?'다음 풍경을 준비해요':phase==='TURNING_PAGE'?'책장을 넘겨요':'종이 속 제주가 깨어나요'}</div>}

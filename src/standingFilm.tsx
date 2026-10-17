@@ -12,7 +12,7 @@ import { scenes, type Layer } from './story';
 import { SITE } from './site';
 import { BOOK_BOARD, BOOK_PAGES, BOOK_SPINE } from './bookStructure';
 import { BOOK_HINGE_Y, createBoardGeometry, createPaperBlockGeometry } from './bookGeometry';
-import { BLOCK_X, BindingDetails, Board, PaperBlock, PrintedPage, Surface, createCardGeometry, useDisposable, type BookMaterials } from './bookParts';
+import { BLOCK_X, BindingDetails, Board, DESK, Desk, DeskFog, PaperBlock, PrintedPage, Surface, createCardGeometry, useDisposable, type BookMaterials } from './bookParts';
 import { INTRO_COVER_HOLD, INTRO_PAGES_START, INTRO_PAGE_TURN, STANDING_INTRO_DURATION, STANDING_INTRO_PAGE_COUNT, STANDING_INTRO_PAGE_STAGGER, STANDING_INTRO_UI_AT } from './introPlayback';
 import { cropBackdrop, createStandingPage, createStandingSheetGeometry, createStandingSkirt, createStandingSpine, poseStandingSheet } from './standingBook';
 import { UPRIGHT_SCALE, isBackdrop, standingPlacement, surfaceY } from './standingLayout';
@@ -41,7 +41,7 @@ const PIVOT_LYING=new Vector3(0,BOOK_HINGE_Y,BOOK_BOARD.x),PIVOT_STANDING=new Ve
 
 export function StandingFilmCamera({width,height}:{width:number;height:number}){
  const {camera,scene}=useThree();
- useEffect(()=>{const cam=camera as PerspectiveCamera;cam.aspect=width/height;cam.fov=standingFov(width,height);cam.position.set(...STANDING_CAMERA_POSITION);cam.lookAt(...STANDING_TARGET);cam.updateProjectionMatrix();scene.background=new Color('#ece6d6');},[camera,scene,width,height]);
+ useEffect(()=>{const cam=camera as PerspectiveCamera;cam.aspect=width/height;cam.fov=standingFov(width,height);cam.position.set(...STANDING_CAMERA_POSITION);cam.lookAt(...STANDING_TARGET);cam.updateProjectionMatrix();},[camera,scene,width,height]);
  return null;
 }
 /** The first half turning about the binding from closed (−π) to standing (−π/2), shortening from the closed book's full size to the
@@ -101,7 +101,7 @@ export function StandingFilm({materials,assets,t,width,height}:{materials:BookMa
  // Each sheet lifting uncovers its own spread's paper tone (src/story.ts `paper`), the live book's flat page once the first spread's lifts.
  const paperOf=(i:number)=>i<0?undefined:(scenes[assets.chapters[i]] as {paper?:string}).paper,started=f.sheets.filter(q=>q>0).length;
  const cards=scenes[0].layers.filter(layer=>!isBackdrop(layer));
- return <><StandingFilmCamera width={width} height={height}/>
+ return <><StandingFilmCamera width={width} height={height}/><DeskFog background/><Desk materials={materials}/>
   <group position={pivot} quaternion={turn} scale={scale}><group position={[0,-BOOK_HINGE_Y,-BOOK_BOARD.x]}><group rotation={[0,-Math.PI/2,0]}>
    <Board materials={materials} x={BOOK_BOARD.x}/><PaperBlock materials={materials} x={BLOCK_X}/>
    {materials.endpaper&&<PrintedPage texture={materials.endpaper} edge={materials['paper-edge']} swell={f.swell} tint={paperOf(started-1)}/>}
@@ -116,5 +116,5 @@ export function StandingFilm({materials,assets,t,width,height}:{materials:BookMa
 export function standingFilmMeta(width:number,height:number){
  return {mode:'standing',width,height,aspect:STANDING_FILM_ASPECT,duration:STANDING_INTRO_DURATION,coverHold:INTRO_COVER_HOLD,uiRevealAt:STANDING_INTRO_UI_AT,sceneryStartsAt:STANDING_INTRO_UI_AT,
   pageCount:STANDING_INTRO_PAGE_COUNT,camera:[...STANDING_CAMERA_POSITION],target:[...STANDING_TARGET],fov:standingFov(width,height),projection:'perspective',renderer:'three.js (src/standingFilm.tsx)',
-  background:'#ece6d6',board:BOOK_BOARD,pages:BOOK_PAGES,spine:BOOK_SPINE,shadows:false,bakedShadows:false};
+  background:DESK.color,board:BOOK_BOARD,pages:BOOK_PAGES,spine:BOOK_SPINE,shadows:false,bakedShadows:false};
 }

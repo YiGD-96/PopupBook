@@ -6,8 +6,9 @@ import {STANDING_QUERY} from './standingMedia';
 
 /** `standing`: the phone film played (or its open still showed), which ends on the standing book. */
 export type IntroReport={coverHoldMs:number;videoFrames:number|null;droppedFrames:number|null;mediaFailed:boolean;standing:boolean};
-type Props={onFinished:(report:IntroReport)=>void;onUnfolding:(time:number)=>void;leaving:boolean};
-export default function Intro({onFinished,onUnfolding,leaving}:Props){
+type Props={onFinished:(report:IntroReport)=>void;onUnfolding:(time:number)=>void;onBuffered?:()=>void;onNearEnd?:()=>void;leaving:boolean};
+export default function Intro({onFinished,onUnfolding,onBuffered,onNearEnd,leaving}:Props){
+ const nearEnd=useRef(false);
  // Phones held upright get the portrait film of the standing book (scripts/render-intro.mjs --standing), chosen once per intro.
  const [standing]=useState(()=>typeof matchMedia==='function'&&matchMedia(STANDING_QUERY).matches);
  const media=standing?'-standing':'',uiAt=standing?STANDING_INTRO_UI_AT:INTRO_UI_AT;
@@ -38,6 +39,13 @@ export default function Intro({onFinished,onUnfolding,leaving}:Props){
   });});
   return()=>{cancelAnimationFrame(firstFrame);cancelAnimationFrame(secondFrame);};
  },[coverReady]);
+ // The film is fully downloaded: the book's own downloads (onBuffered) can start without taking bandwidth from it. On a connection too
+ // slow for that, they start when the film ends, as the book mounts.
+ const bufferedOnce=useRef(false);
+ const buffered=useCallback((e:{currentTarget:HTMLVideoElement})=>{
+  const v=e.currentTarget,ranges=v.buffered;if(bufferedOnce.current||!ranges.length||!(v.duration>0))return;
+  if(ranges.end(ranges.length-1)>=v.duration-.1){bufferedOnce.current=true;onBuffered?.();}
+ },[onBuffered]);
  const play=useCallback(()=>{
   const element=video.current;if(!element)return;
   setManual(false);
@@ -53,8 +61,8 @@ export default function Intro({onFinished,onUnfolding,leaving}:Props){
   <img className="intro-cover intro-media" src={`/media/book-cover${media}.webp`} alt={SITE.title+' 그림책 표지 — '+SITE.coverAlt} onLoad={()=>setCoverReady(true)} onError={e=>{if(!e.currentTarget.src.endsWith('/art-raster/cover.webp'))e.currentTarget.src='/art-raster/cover.webp';else setCoverReady(true);}} hidden={stage!=='cover'}/>
   <video className={'intro-media intro-video'+(stage==='cover'?' is-waiting':'')} ref={video} src={`/media/book-opening${media}.mp4`} muted playsInline preload="auto" tabIndex={-1} aria-hidden="true"
    onPlaying={()=>{actualHold.current||=Math.round(performance.now()-(shownAt.current??performance.now()));setHoldDuration(actualHold.current);setStage('opening');}}
-   onTimeUpdate={e=>{const time=e.currentTarget.currentTime;if(time>=uiAt&&!unfolded.current){unfolded.current=true;onUnfolding(time);}if(time<INTRO_COVER_HOLD)return;const page=Math.floor((time-INTRO_COVER_HOLD)*3);if(page!==soundPage.current){soundPage.current=page;playSound('flip');}}}
-   onEnded={finish} onError={()=>setFailed(true)}/>
+   onTimeUpdate={e=>{const time=e.currentTarget.currentTime;if(!nearEnd.current&&bufferedOnce.current&&e.currentTarget.duration-time<=1.1){nearEnd.current=true;onNearEnd?.();}if(time>=uiAt&&!unfolded.current){unfolded.current=true;onUnfolding(time);}if(time<INTRO_COVER_HOLD)return;const page=Math.floor((time-INTRO_COVER_HOLD)*3);if(page!==soundPage.current){soundPage.current=page;playSound('flip');}}}
+   onProgress={buffered} onCanPlayThrough={buffered} onEnded={finish} onError={()=>{setFailed(true);onBuffered?.();}}/>
   {failed&&stage==='ready'&&<img className="intro-media" src={`/media/book-open${media}.webp`} alt={'펼쳐진 '+SITE.title+' 그림책'}/>}
   {manual&&<button className="primary-button intro-play" onClick={play}>책 펼치기</button>}
  </div>;
