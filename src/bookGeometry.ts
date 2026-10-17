@@ -12,6 +12,16 @@ export function bakeLight(geometry:BufferGeometry,tint:(index:number)=>readonly 
  for(let i=0;i<normals.count;i++){const s=lightShade(normals.getX(i),normals.getY(i),normals.getZ(i)),t=tint(i);for(let k=0;k<3;k++)colors[i*3+k]=linear(s*t[k]);}
  geometry.setAttribute('color',new Float32BufferAttribute(colors,3));return geometry;
 }
+/** Re-bakes a part's light for a turn by `angle` about the binding axis (z), keeping each vertex's tint: a half standing or turning is
+ *  lit as it is placed, not as it lay. `base` holds the normals and tints taken before the first re-bake (pass the same object again). */
+export function relightTurned(geometry:BufferGeometry,angle:number,base?:{normals:Float32Array;tints:Float32Array}){
+ const colors=geometry.getAttribute('color');
+ if(!base){const n=(geometry.getAttribute('normal').array as Float32Array).slice(),t=new Float32Array(colors.count*3);
+  for(let i=0;i<colors.count;i++){const light=lightShade(n[i*3],n[i*3+1],n[i*3+2]);for(let k=0;k<3;k++)t[i*3+k]=Math.pow(colors.getComponent(i,k),1/2.2)/light;}base={normals:n,tints:t};}
+ const {normals,tints}=base,c=Math.cos(angle),s=Math.sin(angle);
+ for(let i=0;i<colors.count;i++){const nx=normals[i*3],ny=normals[i*3+1],light=lightShade(nx*c-ny*s,nx*s+ny*c,normals[i*3+2]);colors.setXYZ(i,Math.pow(light*tints[i*3],2.2),Math.pow(light*tints[i*3+1],2.2),Math.pow(light*tints[i*3+2],2.2));}
+ colors.needsUpdate=true;return base;
+}
 /** Planar (x, z) texture coordinates over a footprint, far edge at v = 1 like the printed art. */
 function planarUv(geometry:BufferGeometry,width:number,depth:number,centerX=0){
  const position=geometry.getAttribute('position'),uv=new Float32Array(position.count*2);
@@ -46,7 +56,7 @@ export function createBoardGeometry(flipped=false){
 /** The hinge groove pressed into the cloth beside each board edge, measured along the band from its ends (which sit 0.05 inside the
  * boards), so it lies in the same place on the closed cover and on the open book. Wider than the edge rounding so the bevel softens it
  * instead of filling it; `shade` darkens the groove floor so it reads even under soft light. */
-const JOINT_GROOVE={at:.094,width:.034,depth:.034,shade:.24};
+const JOINT_GROOVE={at:.105,width:.044,depth:.04,shade:.3};
 const SPINE_END=BOOK_SPINE.halfWidth+.05;
 const grooveWeight=(fromEnd:number,total:number)=>Math.exp(-Math.pow((fromEnd-JOINT_GROOVE.at)/JOINT_GROOVE.width,2))+Math.exp(-Math.pow((total-fromEnd-JOINT_GROOVE.at)/JOINT_GROOVE.width,2));
 /** How far the open spine sags under the gutter at x (zero at the boards). */
@@ -66,8 +76,9 @@ export function createSpineGeometry(fold=1,segments=96){
  const {thickness:t,depth:d,bevel:b,y}=BOOK_BOARD,end=SPINE_END,core=d-2*b,flat=Math.pow(fold,6);
  const angle=-(1-fold)*Math.PI,c=Math.cos(angle),s=Math.sin(angle);
  const turn=([px,py]:number[])=>[px*c-(py-BOOK_HINGE_Y)*s,px*s+(py-BOOK_HINGE_Y)*c+BOOK_HINGE_Y];
- // A cubic from the second board's inner end to the (turned) first board's inner end, leaving each along its board.
- const p0=[end,y],p3=turn([-end,y]),into=turn([1,0]).map((v,i)=>v-turn([0,0])[i]),reach=.53*Math.hypot(p3[0]-p0[0],p3[1]-p0[1]);
+ // A cubic from the second board's inner end to the (turned) first board's inner end, leaving each along its board. Closed, the
+ // handles reach far enough that the C bulges about 0.08 past the binding, clear of the stacked pages.
+ const p0=[end,y],p3=turn([-end,y]),into=turn([1,0]).map((v,i)=>v-turn([0,0])[i]),reach=Math.max(.53*Math.hypot(p3[0]-p0[0],p3[1]-p0[1]),(end+.08)/.75);
  const p1=[p0[0]-reach,p0[1]],p2=[p3[0]+into[0]*reach,p3[1]+into[1]*reach];
  const at=(u:number,k:number)=>(1-u)**3*p0[k]+3*(1-u)**2*u*p1[k]+3*(1-u)*u*u*p2[k]+u**3*p3[k];
  const tangent=(u:number,k:number)=>3*(1-u)**2*(p1[k]-p0[k])+6*(1-u)*u*(p2[k]-p1[k])+3*u*u*(p3[k]-p2[k]);
@@ -91,8 +102,12 @@ export function createSpineGeometry(fold=1,segments=96){
   const shade=1-JOINT_GROOVE.shade*Math.min(1,grooveWeight(arc[best],total));return [shade,shade,shade];
  });
 }
-/** The text block's box with its edge faces darker than the top, matching the board light. */
-export function createPaperBlockGeometry(){return bakeLight(new BoxGeometry(BOOK_PAGES.width,BOOK_PAGES.thickness,BOOK_PAGES.depth));}
+/** The text block's box. Its sides are hidden behind the page-edge walls except in the split between the two stacks at the binding
+ *  (GUTTER_GAP), where they show as the shadow inside the fold. */
+export function createPaperBlockGeometry(){
+ const box=new BoxGeometry(BOOK_PAGES.width,BOOK_PAGES.thickness,BOOK_PAGES.depth),normal=box.getAttribute('normal');
+ return bakeLight(box,i=>Math.abs(normal.getY(i))<.9?[.6,.55,.5]:[1,1,1]);
+}
 /** A ribbon marker coming out between the pages of the second half's tail edge, over the board's turn-in and down onto the table. */
 export function createRibbonGeometry(width=BOOK_RIBBON.width){
  const x=BOOK_RIBBON.x,front=PAGE_HEIGHT/2,board=BOOK_BOARD.y+BOOK_BOARD.thickness/2,edge=BOOK_BOARD.depth/2,floor=BOOK_BOARD.y-BOOK_BOARD.thickness/2+.004;

@@ -23,6 +23,8 @@
 .intro-screen{position:absolute;inset:0;z-index:3;background:#ece6d6;transition:opacity .28s ease-out;overflow:hidden}
 .intro-screen.is-leaving{opacity:0;pointer-events:none}
 .intro-media{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:var(--book-media-width,100%);height:var(--book-media-height,100%);object-fit:contain;display:block;max-width:none}
+/* The phone film is sized for the standing book's camera (src/standingMedia.ts). */
+.intro-screen.is-standing .intro-media{width:var(--standing-media-width,100%);height:var(--standing-media-height,100%);left:calc(50% - var(--standing-media-width,100%)/2);top:calc(50% - var(--standing-media-height,100%)/2);transform:none}
 .intro-cover[hidden]{display:none}
 .intro-video.is-waiting{opacity:0}
 .intro-play{position:absolute;left:50%;bottom:10%;transform:translateX(-50%);z-index:2}
@@ -52,4 +54,54 @@
  .cinematic-reader .site-header{height:55px}
  .cinematic-reader .hero-copy .narration{bottom:50px}
  .cinematic-reader .hero-copy .interaction-button{bottom:9px}
+}
+/* Story panel opened by a clicked pop-up object: beside the book on wide screens, a sheet from the bottom on phones. */
+.detail-panel{position:fixed;z-index:30;top:88px;right:96px;bottom:28px;width:min(380px,34vw);display:flex;background:#fbf6ea;border:1px solid #eadfc8;border-radius:18px;box-shadow:0 18px 40px rgba(94,71,56,.14);animation:detail-in .32s ease-out both;color:#5e4738}
+.detail-body{overflow:auto;padding:30px 28px 26px;width:100%;overscroll-behavior:contain}
+.detail-close{position:absolute;top:12px;right:12px;width:36px;height:36px;border-radius:50%;border:0;background:transparent;color:#8f8466;cursor:pointer;display:grid;place-items:center}
+.detail-close:hover{background:#f1e8d6}
+.detail-kicker{margin:0 0 10px;font:11px Georgia,serif;letter-spacing:2px;color:#a1977c;text-transform:uppercase}
+.detail-panel h2{margin:0 0 14px;font-family:var(--serif);font-size:23px;line-height:1.4;font-weight:700;outline:none}
+.detail-panel h3{margin:22px 0 8px;font-size:13px;letter-spacing:1px;color:#8a7a62}
+.detail-lead{margin:0;font-size:14px;line-height:1.85}
+.detail-panel blockquote{margin:18px 0 0;padding:12px 16px;border-left:3px solid #e88d51;background:#f6ecd9;border-radius:0 10px 10px 0;font-family:var(--serif);font-size:15px;line-height:1.6}
+.detail-facts{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:18px 0 0}
+.detail-facts div{background:#f3ead6;border-radius:10px;padding:9px 10px}
+.detail-facts dt{font-size:10px;color:#a1977c;margin-bottom:3px}.detail-facts dd{margin:0;font-size:13px;font-weight:600}
+.detail-ingredients{width:100%;border-collapse:collapse;font-size:13px}
+.detail-ingredients th,.detail-ingredients td{padding:6px 0;border-bottom:1px dashed #e3d6bd;text-align:left;font-weight:400}.detail-ingredients td{text-align:right;color:#8a7a62}
+.detail-panel ol,.detail-panel ul{margin:0;padding-left:20px;font-size:13.5px;line-height:1.8}.detail-panel li{margin-bottom:4px}
+.detail-tip{margin:18px 0 0;font-size:13px;line-height:1.7;background:#eef1e4;border-radius:10px;padding:10px 12px}.detail-tip strong{color:#5f8a4f;margin-right:6px}
+.detail-note{margin:16px 0 0;font-size:12px;color:#a1977c;line-height:1.7}
+.detail-link{margin-top:20px;display:inline-flex;align-items:center;gap:6px;padding:11px 18px;border-radius:999px;background:#6b4a37;color:#fff9e9;text-decoration:none;font-size:13.5px;font-weight:600}
+.detail-link:hover{background:#5e4031}
+.detail-related{margin-top:6px}.detail-related button{display:block;width:100%;text-align:left;margin-top:8px;padding:10px 12px;border:1px solid #eadfc8;border-radius:12px;background:#fff9ef;color:#5e4738;font:inherit;font-size:13.5px;cursor:pointer}
+.detail-related button span{display:block;font:10px Georgia,serif;letter-spacing:1.5px;color:#a1977c;margin-bottom:3px}.detail-related button:hover{border-color:#e88d51}
+@keyframes detail-in{from{opacity:0;transform:translateX(18px)}to{opacity:1;transform:none}}
+@media(max-width:760px){
+ .detail-panel{top:auto;left:10px;right:10px;bottom:10px;width:auto;max-height:64svh;border-radius:20px;animation-name:detail-up}
+ .detail-body{padding:26px 20px 22px}
+ @keyframes detail-up{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:none}}
+}
+/* Magazine brand (gujwa-carrot.vercel.app): logo, then the name after a thin rule. */
+.cinematic-reader .site-header .brand{gap:16px;font-size:15px;font-weight:600;letter-spacing:-.02em;color:#186049}
+.brand-logo{display:block;height:26px;width:auto}
+.brand-name{padding-left:16px;border-left:1px solid #d8d2bd;white-space:nowrap}
+.cinematic-reader .is-ending .eyebrow{font:600 10px 'Cormorant Garamond',Georgia,serif;letter-spacing:.26em}
+.cinematic-reader .is-ending .hand-underline{color:#d98327}
+.reader-mode .is-ending .hero-copy>.ending-link{display:flex;width:100%;min-height:40px;margin-top:18px;font-size:11px;text-decoration:none;color:#186049}
+.reader-mode .is-ending .hero-copy>.ending-link+.primary-button{margin-top:8px}
+.about-art img{height:40px;transform:none}.about-art span{font-family:var(--serif);color:#186049}
+.about-chapters{list-style:none;margin:14px 0 0;padding:0;font-size:12.5px;color:#5e5a4c;line-height:2}
+.about-chapters span{display:inline-block;width:28px;font:12px Georgia,serif;color:#d98327}
+@media(max-width:760px){
+ .cinematic-reader .site-header .brand{gap:12px;font-size:13px}
+ .brand-logo{height:22px}.brand-name{padding-left:12px}
+}
+@media(max-width:420px){.brand-name{display:none}}
+/* While a detail panel is open the page arrows move out from under it: beside the panel on wide screens, above the sheet on phones. */
+.cinematic-reader.has-detail .reader-next{position:fixed;top:calc(50% - 31px);right:22px}
+@media(max-width:760px){
+ .cinematic-reader.has-detail .reader-arrow{position:fixed;top:calc(36svh - 64px)}
+ .cinematic-reader.has-detail .reader-prev{left:4px}.cinematic-reader.has-detail .reader-next{right:4px}
 }

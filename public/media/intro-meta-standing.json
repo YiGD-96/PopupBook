@@ -1,0 +1,47 @@
+{
+  "mode": "standing",
+  "width": 720,
+  "height": 1280,
+  "aspect": 0.5625,
+  "duration": 4.66,
+  "coverHold": 1,
+  "uiRevealAt": 2.86,
+  "sceneryStartsAt": 2.86,
+  "pageCount": 3,
+  "camera": [
+    0,
+    8.768700648590457,
+    13.106526015770584
+  ],
+  "target": [
+    0,
+    0.94,
+    1.5
+  ],
+  "fov": 42.08864309079387,
+  "projection": "perspective",
+  "renderer": "three.js (src/standingFilm.tsx)",
+  "background": "#ece6d6",
+  "board": {
+    "width": 3.42,
+    "depth": 5.02,
+    "thickness": 0.1,
+    "x": 1.99,
+    "y": -0.28,
+    "radius": 0.08,
+    "bevel": 0.035
+  },
+  "pages": {
+    "width": 3.536,
+    "depth": 4.742,
+    "thickness": 0.31,
+    "y": -0.076
+  },
+  "spine": {
+    "halfWidth": 0.28,
+    "sag": 0.016
+  },
+  "shadows": false,
+  "bakedShadows": false,
+  "fps": 60
+}

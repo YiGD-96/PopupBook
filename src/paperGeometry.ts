@@ -1,9 +1,11 @@
 import { BufferGeometry, Float32BufferAttribute } from 'three';
 export const PAGE_WIDTH=3.55, PAGE_HEIGHT=4.75, PAGE_BASE_Y=.13;
-/** Resting sheet profile: sinks into the gutter, swells, then settles toward the fore-edge. */
-export function pageRestLift(u:number){return .15*(1-Math.exp(-u*8))*(1-.85*u)-.04*Math.exp(-u*14);}
-/** Baked light as a display-space multiplier: the gutter falls into shade and a sheet turned away from the reader dims. */
-export function pageShade(u:number,facing=1){return (1-.3*Math.exp(-u*10)-.04*Math.pow(u,4))*(.8+.2*Math.min(1,Math.abs(facing)));}
+/** Resting sheet profile: dives steeply into the gutter (so the two pages meet in a fold, not a smooth valley), swells, then settles
+ *  toward the fore-edge. */
+export function pageRestLift(u:number){return .15*(1-Math.exp(-u*8))*(1-.85*u)-.05*Math.exp(-u*18);}
+/** Baked light as a display-space multiplier: the gutter falls into shade, with a narrow dark crease right at the binding so the left and
+ *  right pages read as two sheets; a sheet turned away from the reader dims. */
+export function pageShade(u:number,facing=1){return (1-.3*Math.exp(-u*10)-.16*Math.exp(-u*60)-.04*Math.pow(u,4))*(.8+.2*Math.min(1,Math.abs(facing)));}
 const linear=(shade:number)=>Math.pow(shade,2.2);
 /** In an open book the sheets below the top one reach further out, so the stack's outer edge leans in toward the top. The printed top
  * sheet keeps its full size (its art, popups and shadows stay aligned); only the foot of the stack spreads out by this much. */
@@ -36,18 +38,23 @@ export function updatePaperGeometry(geometry:BufferGeometry,progress:number,dire
 }
 /** The stack's page edges as one wall from the resting sheet down to the foot of the block, so the swell and the stack read as one thick
  * body without a seam. The foot spreads out by forePull, so the walls lean in toward the top; each carries the baked light of its outward normal. */
+/** At the binding each half's stack stands a hair off the middle and its page edges fall into shade, so the two stacks read as
+ *  separate bodies meeting in the gutter instead of one wall. */
+export const GUTTER_GAP=.0035;
+const gutterGap=(u:number)=>GUTTER_GAP*Math.exp(-u*30),gutterShade=(u:number)=>1-.28*Math.exp(-u*40);
 export function createPageSkirt(bottom:number,shade:(nx:number,ny:number,nz:number)=>number,columns=24,swell=1,rows=6){
  const geometry=new BufferGeometry();const positions:number[]=[],uv:number[]=[],colors:number[]=[],indices:number[]=[];
- // tops: points along the top sheet's edge; feet: the matching points at the foot (the unpulled footprint).
- const wall=(tops:[number,number,number][],feet:number[],normal:(i:number)=>[number,number,number])=>{
+ // tops: points along the top sheet's edge; feet: the matching points at the foot (the unpulled footprint). u: across the page.
+ const wall=(tops:[number,number,number][],feet:number[],normal:(i:number)=>[number,number,number],u:(i:number)=>number)=>{
   const start=positions.length/3;
-  tops.forEach((top,i)=>{const s=linear(shade(...normal(i)));for(let r=0;r<=rows;r++){const t=r/rows;positions.push(feet[i]+(top[0]-feet[i])*stackLean(t),bottom+(top[1]-bottom)*t,top[2]);uv.push(i/(tops.length-1),t);colors.push(s,s,s);}});
+  tops.forEach((top,i)=>{const s=linear(shade(...normal(i))*gutterShade(u(i))),gap=gutterGap(u(i));for(let r=0;r<=rows;r++){const t=r/rows;positions.push(gap+feet[i]+(top[0]-feet[i])*stackLean(t),bottom+(top[1]-bottom)*t,top[2]);uv.push(i/(tops.length-1),t);colors.push(s,s,s);}});
   for(let i=0;i<tops.length-1;i++)for(let r=0;r<rows;r++){const a=start+i*(rows+1)+r,b=a+rows+1;indices.push(a,b,a+1,a+1,b,b+1);}
  };
  const edge=(v:number)=>Array.from({length:columns+1},(_,c)=>paperPoint(c/columns,v,0,1,swell));
  const feet=Array.from({length:columns+1},(_,c)=>c/columns*PAGE_WIDTH+forePull(c/columns,swell));
- wall(edge(0),feet,()=>[0,0,-1]);wall(edge(1),feet,()=>[0,0,1]);
+ const across=(c:number)=>c/columns;
+ wall(edge(0),feet,()=>[0,0,-1],across);wall(edge(1),feet,()=>[0,0,1],across);
  const fore=Array.from({length:5},(_,r)=>paperPoint(1,r/4,0,1,swell)),lean=forePull(1,swell)/Math.max(.01,fore[0][1]-bottom);
- wall(fore,fore.map(()=>PAGE_WIDTH+forePull(1,swell)),()=>{const l=Math.hypot(1,lean);return [1/l,lean/l,0];});
+ wall(fore,fore.map(()=>PAGE_WIDTH+forePull(1,swell)),()=>{const l=Math.hypot(1,lean);return [1/l,lean/l,0];},()=>1);
  geometry.setAttribute('position',new Float32BufferAttribute(positions,3));geometry.setAttribute('uv',new Float32BufferAttribute(uv,2));geometry.setAttribute('color',new Float32BufferAttribute(colors,3));geometry.setIndex(indices);return geometry;
 }

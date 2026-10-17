@@ -1,9 +1,10 @@
 {
   "width": 968,
   "height": 726,
-  "duration": 4.04,
-  "uiRevealAt": 2.24,
-  "sceneryStartsAt": 2.24,
+  "duration": 5.04,
+  "coverHold": 1,
+  "uiRevealAt": 3.24,
+  "sceneryStartsAt": 3.24,
   "pageCount": 6,
   "worldWidth": 8.8,
   "worldHeight": 6.6,
@@ -18,10 +19,10 @@
   "renderer": "three.js (src/film.tsx)",
   "background": "#ece6d6",
   "board": {
-    "width": 3.5,
+    "width": 3.42,
     "depth": 5.02,
     "thickness": 0.1,
-    "x": 1.95,
+    "x": 1.99,
     "y": -0.28,
     "radius": 0.08,
     "bevel": 0.035
@@ -29,26 +30,14 @@
   "pages": {
     "width": 3.536,
     "depth": 4.742,
-    "thickness": 0.32,
-    "y": -0.07
+    "thickness": 0.31,
+    "y": -0.076
   },
   "spine": {
-    "halfWidth": 0.2,
-    "sag": 0.012
+    "halfWidth": 0.28,
+    "sag": 0.016
   },
   "shadows": false,
-  "bakedShadows": {
-    "floor": true,
-    "popups": {
-      "length": 0.34,
-      "opacity": 0.36,
-      "mipBias": 2,
-      "color": [
-        0.36,
-        0.27,
-        0.18
-      ]
-    }
-  },
+  "bakedShadows": false,
   "fps": 60
 }

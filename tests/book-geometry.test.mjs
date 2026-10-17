@@ -23,7 +23,7 @@ test('the cloth case is continuous: the spine meets each board edge at board hei
  const top=BOOK_BOARD.y+BOOK_BOARD.thickness/2;
  // The band ends inside the boards at board height; the hinge groove dips just beside each board edge.
  near(spineTop(BOOK_SPINE.halfWidth+.05),top,2e-3);near(spineTop(-BOOK_SPINE.halfWidth-.05),top,2e-3);
- assert.ok(spineTop(BOOK_SPINE.halfWidth)>top-.01);assert.ok(spineTop(.156)<top-.025,'a visible groove beside the board');
+ assert.ok(spineTop(BOOK_SPINE.halfWidth)>top-.01);assert.ok(spineTop(BOOK_SPINE.halfWidth+.05-.105)<top-.03,'a visible groove beside the board');
  assert.ok(spineTop(0)<top&&spineTop(0)>top-.05,'the spine only dips slightly under the gutter');
  const b=bounds(createSpineGeometry());near(b.min.y,BOOK_BOARD.y-BOOK_BOARD.thickness/2,3e-3);near(b.max.z-b.min.z,BOOK_BOARD.depth,2e-3);
  assert.ok(b.min.x<-BOOK_SPINE.halfWidth&&b.max.x>BOOK_SPINE.halfWidth,"the band runs into both boards, so the joints never open");

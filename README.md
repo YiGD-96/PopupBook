@@ -1,4 +1,6 @@
-# 느린 제주 — Jeju Pop-up Storybook
+# 당근을 따라, 구좌 — 팝업북 (구좌 당근을 만나는 사람들)
+
+웹 매거진 [‘당근을 따라, 구좌’](https://gujwa-carrot.vercel.app)의 세 이야기(01 FARMER · 02 PEOPLE WHO COOK · 03 MENU & RECIPE)를 입체 팝업북으로 보여 주는 페이지입니다. 로고·이름·표지 문구·소개 문구는 매거진의 것을 그대로 씁니다(`src/site.ts`).
 
 `../prd.md`를 바탕으로 만든 한국어 인터랙티브 웹 프로토타입입니다. 20~30대 여성 방문자를 고려해 크림색 종이, 세이지 그린, 살구색과 여백을 중심으로 디자인했습니다.
 
@@ -17,12 +19,12 @@ npm run preview
 
 GitHub 저장소와 Vercel을 연결하는 배포 방법은 [DEPLOYMENT.md](DEPLOYMENT.md)를 참고하세요. 저장소 최상위에 이 프로젝트의 파일을 올리면 Vercel의 Root Directory는 `./`입니다.
 
-- 첫 화면에는 책등과 옆면이 살짝 보이는 표지를 약 1초 표시합니다. 메뉴·배너·버튼은 없으며, 이미지가 실제 표시된 시점부터 시간을 셉니다.
-- 표지가 기울어지는 동안 함께 열리고, 열 장을 넘겨 첫 풍경으로 이어지는 4.6초/60fps 영상을 재생합니다. 재생 중에는 3D 엔진이나 WebGL 컨텍스트를 생성하지 않습니다.
+- 첫 화면은 책등과 옆면이 살짝 보이는 표지입니다. 표지에는 매거진 첫 화면의 움직이는 그림(잎·그림자·주스 수면)과 제목이 그대로 실려 있고, 영상 첫 1초 동안 책이 선 채로 표지 그림이 움직입니다. 메뉴·배너·버튼은 없습니다.
+- 표지가 기울어지는 동안 함께 열리고, 여섯 장을 넘겨 첫 풍경으로 이어지는 5.04초/60fps 영상을 재생합니다(첫 1초는 표지). 재생 중에는 3D 엔진이나 WebGL 컨텍스트를 생성하지 않습니다.
 - 영상 2.8초의 풍경 상승과 함께 상단 메뉴·화살표·대사를 표시합니다. 조작은 실제 책이 준비될 때까지 잠깁니다. 영상 종료 후 마지막 화면을 유지하며 첫 장의 이미지·GPU·셰이더·숨겨진 렌더를 준비하고 실제 책으로 연결합니다. 영상 실패 시에는 정적인 화면에서 실제 책으로 넘어갑니다.
 - 책의 그림자와 실시간 조명을 제거했습니다. 원본 일러스트의 색을 유지하는 가벼운 재질을 사용하고, SVG의 복잡한 종이 필터는 WebP 이미지로 미리 변환했습니다.
 - 책은 크게 배치하되 PC에서 하단 여백을 확보합니다. 상단 장 표시는 작은 헤더 텍스트로 통합했으며, 페이지를 넘길 때 카메라 확대·축소는 없습니다.
-- 첫 장의 왼쪽 화살표로 책을 닫습니다. 닫힌 표지는 유지되며 ‘책 다시 펼치기’로 열 수 있습니다. 다시 열 때는 열 장의 시작 연출을 반복하지 않습니다.
+- 첫 장에서는 책을 닫지 않습니다. 마지막 장 뒤의 마무리 팝업에서도 이전 장으로 돌아갈 수 있고, ‘처음부터 다시 보기’는 표지부터 다시 시작합니다.
 - 천 결·제본 홈·모서리 마모가 있는 표지, 두꺼운 판지(0.18)와 종이 단면(0.32), 양면 인쇄와 책갈피 리본을 표현합니다. 영상과 실제 책은 같은 재질 이미지와 치수를 사용합니다.
 - 좌우 드래그로 책장을 직접 움직이며, 짧은 드래그는 취소되고 충분한 이동·빠른 스와이프는 완료됩니다. 터치의 세로 이동과 드래그를 구분합니다.
 - 책 영역의 세로 휠·가로 트랙패드 입력으로 한 장씩 이동합니다. 전환 중 입력과 휠 관성은 잠그며, 모달 및 확대 제스처는 페이지 넘김에서 제외합니다.
@@ -45,7 +47,9 @@ React 19 + TypeScript + Vite + Three.js / React Three Fiber / Drei + GSAP + Zust
 - `src/story.ts`: 세 장의 콘텐츠, 상태, 첫 사용자 입력 이후 합성 효과음.
 - `src/assets.ts`: 텍스처 캐시, 장별 로드·다음 장 프리로드·실패 캐시 정리.
 - `src/bookPreparation.ts`: 첫 장 텍스처의 단계별 GPU 업로드, 셰이더·실제 렌더 준비, 취소된 초기화 차단.
-- `src/Intro.tsx`, `src/introPlayback.ts`: 표지 2초 유지, 영상 재생, 준비된 실제 책으로 전환.
+- `src/Intro.tsx`, `src/introPlayback.ts`: 표지 정지 화면(영상 첫 프레임) → 영상 재생(첫 1초 표지 유지) → 준비된 실제 책으로 전환.
+- `src/site.ts`: 매거진의 이름·표지 문구·소개 문구(그대로 옮긴 것).
+- `src/standingBook.tsx`, `src/standingLayout.ts`, `src/standingView.ts`: 세로 휴대폰에서 책을 90°로 세워 보여 주는 화면(윗장에 배경, 아랫장에 카드, 아랫장이 올라가며 넘김).
 - `src/artSource.ts`: 미리 변환한 WebP 일러스트 경로.
 - `src/bookView.ts`: 고정 카메라와 책장·팝업 전체를 담는 반응형 구도.
 - `src/bookStructure.ts`: 영상과 실제 책이 공유하는 판지·종이 두께와 치수.
@@ -54,15 +58,20 @@ React 19 + TypeScript + Vite + Three.js / React Three Fiber / Drei + GSAP + Zust
 - `src/useBookGestures.ts`, `src/turnInput.ts`: 드래그 캡처·취소, 휠 누적·관성 차단.
 - `src/reader.css`: 책을 중심에 배치하는 반응형 독서 화면.
 - `src/cinematic.css`: 배너 없는 인트로와 크게 배치한 책 화면.
-- `public/art`: 직접 제작한 SVG 종이 일러스트. `create-art.mjs`로 재생성.
+- `public/art`: 직접 제작한 SVG 종이 일러스트. 세 장(밭·식탁·부엌)의 장면 카드·가게·요리·책장 그림은 `scripts/create-scenes.mjs`가 만든다(첫 버전 장면은 `_archive/`).
+- `art-src/characters`: 당근 농부·여행자·조랑말 원본 벡터. `scripts/prepare-characters.mjs`가 오림 테두리를 두른 WebP로 바꾼다(원본 SVG는 배포하지 않음).
+- `src/details.ts`, `src/DetailPanel.tsx`: 사물을 누르면 열리는 이야기 패널의 내용(웹 매거진 ‘당근을 따라, 구좌’ 기준)과 화면.
 - `public/art-raster`: 표시용 WebP 일러스트(원본 SVG의 투명도 유지).
 - `public/book-materials`: 표지·천 결·판지 모서리·종이 단면·면지의 미리 만든 재질.
 - `public/media`: 미리 제작한 시작 영상, 표지와 펼침 완료 이미지, 구도 정보.
-- `scripts/render-intro.mjs`: 기존 일러스트로 영상을 재생성하는 오프라인 도구. Node.js·sharp·@napi-rs/canvas·FFmpeg가 필요하며, 실행 경로는 `CODEX_NODE_MODULES`, `FFMPEG_PATH`로 지정합니다. 일반 실행·빌드에서는 영상 생성 도구가 필요하지 않습니다.
-- `scripts/book-materials.mjs`: 실시간 조명 없이 사용하는 제본 재질 생성 도구.
-- `create-pages.mjs`: 여섯 개의 페이지 양면 인쇄 텍스처 제작.
+- `scripts/render-intro.mjs`: 실제 책과 같은 3D 부품(`src/film.tsx`)을 headless Chrome에서 촬영해 시작 영상을 만드는 오프라인 도구. Node.js·sharp·@napi-rs/canvas·FFmpeg·Chrome이 필요하며, 경로는 `CODEX_NODE_MODULES`, `FFMPEG_PATH`, `CHROME_PATH`로 지정합니다. 일반 실행·빌드에서는 필요하지 않습니다.
+- `scripts/book-materials.mjs`: 실시간 조명 없이 사용하는 제본 재질 생성 도구. 표지는 매거진 표지 위에 천 결·홈·마모를 얹고, 움직이는 표지의 프레임마다 같은 마감을 입힙니다(`intro-cache/cover-texture`, 배포하지 않음).
+- `scripts/capture-site-cover.mjs`: 매거진 첫 화면을 headless Chrome에서 책 판지 비율(세로)로 띄우고, 사이트의 애니메이션 시계를 영상 프레임 단위로 직접 넘기며 표지(그림·그늘·제목)를 캡처합니다(`intro-cache/site-cover`, 인터넷 필요). 표지를 새로 받으려면 이 스크립트 → `render-intro.mjs` 순서로 실행합니다.
+- `art-src/site`: 매거진에서 받은 로고 원본과 표지 그림 원본. 헤더 로고는 `public/media/logo.webp`, 파비콘은 매거진과 같은 `public/art/favicon.svg`.
+- `scripts/create-scenes.mjs`, `scripts/prepare-characters.mjs`: 2·3장 장면 그림과 여행자 캐릭터 텍스처 생성.
+- `scripts/prepare-gpt-art.mjs`: GPT로 그린 판(`art-src/gpt/page-N/*.png`, 지금은 1장)을 오림 테두리를 두른 WebP 카드로 변환. 1장 컨셉과 프롬프트는 `docs/page-1-concept.md`.
+- `_archive/`: 지금은 쓰지 않는 첫 버전 장면 그림·글, 옛 그림 생성기, 누적 검증 기록.
 - `tests/*.test.mjs`: `node --experimental-strip-types --test tests/*.test.mjs`로 종이 기하·입력·사물 부착·초기 렌더 준비 로직 검사(Node.js 22.18+).
-- `QA.md`: 검증 결과와 실기기 검증이 필요한 부분.
 
 ## 에셋 및 라이선스
 

@@ -1,11 +1,14 @@
 import { Component, lazy, Suspense, useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
-import { ArrowRight, ArrowLeft, BookOpen, X, RotateCcw, MousePointer2, Check, Sparkles, Heart, LoaderCircle } from 'lucide-react';
+import { ArrowRight, ArrowLeft, BookOpen, X, RotateCcw, MousePointer2, Check, Sparkles, LoaderCircle } from 'lucide-react';
+import {SITE} from './site';
 import { type Director, scenes, useStory, playSound, unlockAudio } from './story';
 import { useBookGestures } from './useBookGestures';
 import Intro,{type IntroReport} from './Intro';
 import {canRevealReader,INTRO_PAGE_COUNT} from './introPlayback';
 import {BOOK_FRAME_WIDTH,BOOK_FRAME_HEIGHT,bookZoom} from './bookView';
+import {standingMediaSize} from './standingMedia';
 import {artSource} from './artSource';
+import DetailPanel from './DetailPanel';
 const Storybook = lazy(() => import('./Storybook'));
 
 class CanvasBoundary extends Component<{children:ReactNode;onError:()=>void},{failed:boolean}> {
@@ -23,12 +26,12 @@ function supportsWebGL() {
     return true;
   } catch { return false; }
 }
-function StaticBook({closed,onInteract}:{closed:boolean;onInteract:()=>void}) {
+function StaticBook({closed,onInteract}:{closed:boolean;onInteract:(detail?:string)=>void}) {
   const chapter=useStory(s=>s.chapter);
-  if(closed)return <img className="static-cover" src={artSource('cover')} alt="느린 제주 그림책 표지"/>;
+  if(closed)return <img className="static-cover" src={artSource('cover')} alt={SITE.title+' 그림책 표지'}/>;
   return <div className="static-spread" aria-label={scenes[chapter].title}>
     {scenes[chapter].layers.map((l,i)=><img key={l.id} src={artSource(l.src)} style={{width:(l.size[0]/7.2*100)+'%',left:(50+l.position[0]/7.2*100)+'%',bottom:(25+(2-l.position[2])*6)+'%',zIndex:i}} alt=""/>)}
-    <button className="static-hotspot" onClick={onInteract} aria-label={scenes[chapter].label}><MousePointer2 size={20}/></button>
+    {scenes[chapter].layers.filter(l=>l.detail).map(l=><button key={l.id} className="static-hotspot" style={{left:(50+l.position[0]/7.2*100)+'%',bottom:(30+(2-l.position[2])*6)+'%'}} onClick={()=>onInteract(l.detail)} aria-label={l.detail}><MousePointer2 size={20}/></button>)}
   </div>;
 }
 function Modal({title,children,onClose}:{title:string;children:ReactNode;onClose:()=>void}) {
@@ -82,17 +85,19 @@ export default function App() {
   const ending=phase==='ENDING';
   const scene=scenes[chapter];
   const closeModal=useCallback(()=>setModal(null),[]);
+  const closeDetail=useCallback(()=>useStory.getState().set({detail:null}),[]);
+  const openDetail=useCallback((id:string)=>useStory.getState().set({detail:id}),[]);
 
-  function staticInteract(){
+  function staticInteract(detail?:string){
     const s=useStory.getState();
     if(s.phase!=='EXPLORING')return;
-    s.set({dialog:true,visited:[...new Set([...s.visited,s.chapter])]});
+    s.set({dialog:true,detail:detail??scenes[s.chapter].detail,visited:[...new Set([...s.visited,s.chapter])]});
     playSound('hello');
   }
   function staticDirector():Director {
     return {
       reveal:()=>{const s=useStory.getState();if(s.phase==='COVER')s.set({phase:'EXPLORING',chapter:0,dialog:false,introPagesTurned:INTRO_PAGE_COUNT});},
-      go:n=>{const s=useStory.getState();if(['EXPLORING','ENDING'].includes(s.phase)&&n>=0&&n<3){s.set({phase:'EXPLORING',chapter:n,dialog:false});playSound('page');}},
+      go:n=>{const s=useStory.getState();if(['EXPLORING','ENDING'].includes(s.phase)&&n>=0&&n<3){s.set({phase:'EXPLORING',chapter:n,dialog:false,detail:null});playSound('page');}},
       finish:()=>{const s=useStory.getState();if(s.phase==='EXPLORING'&&s.chapter===2)s.set({phase:'ENDING',dialog:false});},
       interact:staticInteract,
       retry:()=>{useStory.getState().set({phase:'INIT',error:null});setFallbackAttempt(n=>n+1);},
@@ -105,7 +110,7 @@ export default function App() {
         const s=useStory.getState();
         if(!paperTurn.current||s.phase!=='DRAGGING_PAGE')return;
         const target=s.chapter+paperTurn.current.direction;paperTurn.current=null;
-        s.set({phase:'EXPLORING',...(commit?{chapter:target,dialog:false}:{})});
+        s.set({phase:'EXPLORING',...(commit?{chapter:target,dialog:false,detail:null}:{})});
         if(commit)playSound('page');
       }
     };
@@ -137,8 +142,8 @@ export default function App() {
     useStory.getState().set({phase:'INIT',chapter:0,dialog:false,visited:[],error:null,introPagesTurned:0});
   },[]);
   useEffect(()=>{
-    if(canRevealReader(mediaFinished,engineReady&&phase==='COVER'))api.current?.reveal();
-  },[mediaFinished,engineReady,phase]);
+    if(canRevealReader(mediaFinished,engineReady&&phase==='COVER'))api.current?.reveal(introReport?.standing);
+  },[mediaFinished,engineReady,phase,introReport]);
   useEffect(()=>{
     if(!introVisible||phase!=='EXPLORING')return;
     setIntroLeaving(true);const timer=window.setTimeout(()=>setIntroVisible(false),280);
@@ -168,29 +173,33 @@ export default function App() {
       const zoom=bookZoom(surface.clientWidth,surface.clientHeight);
       surface.style.setProperty('--book-media-width',String(BOOK_FRAME_WIDTH*zoom)+'px');
       surface.style.setProperty('--book-media-height',String(BOOK_FRAME_HEIGHT*zoom)+'px');
+      const standing=standingMediaSize(surface.clientWidth,surface.clientHeight);
+      surface.style.setProperty('--standing-media-width',String(standing.width)+'px');
+      surface.style.setProperty('--standing-media-height',String(standing.height)+'px');
     };
     update();const observer=new ResizeObserver(update);observer.observe(surface);return()=>observer.disconnect();
   },[]);
 
   const introText=phase==='INIT'?'책을 준비하고 있어요':'당신의 작은 여행을 펼쳐요';
-  return <div className={"app-shell reader-mode cinematic-reader"+(introVisible?" intro-active":"")}>
+  const detailOpen=!!state.detail&&!introVisible&&!ending;
+  return <div className={"app-shell reader-mode cinematic-reader"+(introVisible?" intro-active":"")+(detailOpen?" has-detail":"")}>
     {!introVisible&&<a className="skip-link" href="#main">이야기로 바로 가기</a>}
     {chromeVisible&&<header className="site-header">
-      <a href="/" className="brand" aria-label="느린 제주 홈"><span className="brand-icon"><BookOpen size={24} strokeWidth={1.5}/><span/></span><span>느린 제주<span className="brand-en">SLOW JEJU</span></span></a>
+      <a href="/" className="brand" aria-label={SITE.name+' 홈으로'}><img className="brand-logo" src="/media/logo.webp" alt="carrot" width={87} height={26}/><span className="brand-name">{SITE.name}</span></a>
       <div className="header-chapter" aria-label={(chapter+1)+'장 '+scene.title}><span>0{chapter+1} / 03</span><strong>{scene.title}</strong></div><nav aria-label="메인 메뉴"><button className="nav-link" onClick={()=>setModal('about')}>이야기 소개</button></nav>
     </header>}
-    <main id="main"><section className={'hero '+(intro?'is-cover':'is-open')+(ending?' is-ending':'')} aria-label="제주 팝업북">
+    <main id="main"><section className={'hero '+(intro?'is-cover':'is-open')+(ending?' is-ending':'')} aria-label={SITE.title+' 팝업북'}>
       {chromeVisible&&<div className="hero-copy">
-        {coverMode?<div className="cover-intro"><span>A LITTLE PAPER JOURNEY</span><h1>한 장씩, 만나는 제주</h1><p role="status"><LoaderCircle size={14} className="spin"/>{introText}</p></div>:
-        ending?<><span className="eyebrow"><Heart size={14}/> 오늘의 작은 여행을 마치며</span><h1>제주의 바람을,<br/><span className="hand-underline">당신의 하루에.</span></h1><p className="hero-description">잠시 쉬어 간 마음이 조금 가벼워졌나요?<br/>이 작은 풍경은 언제나 여기서 기다릴게요.</p><div className="ending-stamp"><Check size={15}/> 세 가지 풍경을 모두 만났어요</div><button className="primary-button" onClick={beginIntro}><RotateCcw size={18}/> 다시 여행하기<ArrowRight size={18}/></button></>:
+        {coverMode?<div className="cover-intro"><span>{SITE.label}</span><h1>{SITE.title}</h1><p role="status"><LoaderCircle size={14} className="spin"/>{introText}</p></div>:
+        ending?<><span className="eyebrow">{SITE.label}</span><h1>{SITE.title}</h1><p className="hero-description">{SITE.tagline[0]}<br/>{SITE.tagline[1]}<span className="hand-underline">{SITE.tagline[2]}</span>{SITE.tagline[3]}</p><div className="ending-stamp"><Check size={15}/> 01 · 02 · 03 이야기를 모두 만났어요</div><a className="secondary-button ending-link" href={SITE.url} target="_blank" rel="noreferrer">웹진에서 이어 읽기<span className="sr-only"> (새 창에서 열림)</span></a><button className="primary-button" onClick={beginIntro}><RotateCcw size={18}/> 처음부터 다시 보기<ArrowRight size={18}/></button></>:
         <><h1 className="sr-only" aria-label={scene.title} ref={storyRef} tabIndex={-1}>{scene.title}</h1>
-          <div className={'narration '+(dialog?'has-dialog':'')}><span className="narration-label">{dialog?<><Sparkles size={14}/> 풍경이 들려주는 이야기</>:<><BookOpen size={14}/> 이 장의 이야기</>}</span><p aria-live="polite">{dialog?scene.dialog:'작은 풍경에도 이야기가 숨어 있어요. 종이 위의 친구를 눌러 이야기를 들어보세요.'}</p></div>
+          <div className={'narration '+(dialog?'has-dialog':'')}><span className="narration-label">{dialog?<><Sparkles size={14}/> 풍경이 들려주는 이야기</>:<><BookOpen size={14}/> 이 장의 이야기</>}</span><p aria-live="polite">{dialog?scene.dialog:'그림 속 사물을 눌러 이야기를 펼쳐 보세요.'}</p></div>
           <button className="interaction-button" disabled={phase!=='EXPLORING'||introVisible} onClick={()=>api.current?.interact()}>{state.visited.includes(chapter)?<Check size={16}/>:<MousePointer2 size={16}/>} {scene.label}</button>
 
         </>}
       </div>}
       <div className="book-stage">
-        <div ref={surfaceRef} className={'canvas-wrap '+(dragging?'is-dragging':'')} data-phase={phase} data-fps={state.fps} data-intro-pages={state.introPagesTurned} data-audio-ready={audioReady} data-cover-hold-ms={introReport?.coverHoldMs} data-video-frames={introReport?.videoFrames} data-video-dropped-frames={introReport?.droppedFrames} data-video-failed={introReport?.mediaFailed} data-chrome-visible={chromeVisible} data-chrome-video-time={chromeVideoTime} aria-label={intro?'느린 제주 입체 그림책':(chapter+1)+'장 '+scene.title+' 입체 종이 풍경'}>
+        <div ref={surfaceRef} className={'canvas-wrap '+(dragging?'is-dragging':'')} data-phase={phase} data-fps={state.fps} data-intro-pages={state.introPagesTurned} data-audio-ready={audioReady} data-cover-hold-ms={introReport?.coverHoldMs} data-video-frames={introReport?.videoFrames} data-video-dropped-frames={introReport?.droppedFrames} data-video-failed={introReport?.mediaFailed} data-chrome-visible={chromeVisible} data-chrome-video-time={chromeVideoTime} aria-label={intro?SITE.title+' 입체 그림책':(chapter+1)+'장 '+scene.title+' 입체 종이 풍경'}>
           {sceneMounted&&(fallback?<StaticBook closed={closed} onInteract={staticInteract}/>:<CanvasBoundary onError={onFailure}><Suspense fallback={null}><Storybook onReady={director=>{api.current=director;setEngineReady(true);}} onFailure={onFailure}/></Suspense></CanvasBoundary>)}
           {introVisible&&<Intro key={introRun} onFinished={finishIntro} onUnfolding={showChrome} leaving={introLeaving}/>}
         </div>
@@ -204,6 +213,7 @@ export default function App() {
         {phase==='ERROR'&&<div className="scene-error" role="alert"><p>{state.error}</p><button className="secondary-button" onClick={()=>api.current?.retry()}><RotateCcw size={16}/> 다시 시도</button></div>}
       </div>
     </section></main>
-    {modal==='about'&&<Modal title="한 장씩, 마음에 닿는 여행" onClose={closeModal}><div className="about-art"><img src="/art/carrot.svg" alt="웃고 있는 당근 친구"/><span>안녕, 나는 당근이야!</span></div><p className="about-text">‘느린 제주’는 손끝으로 펼치는 작은 팝업북이에요. 구좌의 당근밭에서 출발해, 다정한 골목을 지나, 바다의 작은 등대에 도착합니다.</p><p className="about-text">종이 위의 친구와 풍경을 눌러보세요. 당신의 속도로 즐겨주세요. 첫 장에서는 책을 닫고 잠시 쉬어 갈 수 있어요.</p><div className="about-help"><MousePointer2 size={18}/><p>클릭하거나 터치해요.<br/><span>Tab과 Enter, 방향키로도 여행할 수 있어요.</span></p></div><button className="primary-button" onClick={closeModal}>책으로 돌아가기<ArrowRight size={18}/></button></Modal>}
+    {detailOpen&&state.detail&&<DetailPanel id={state.detail} onClose={closeDetail} onOpen={openDetail}/>}
+    {modal==='about'&&<Modal title={SITE.name} onClose={closeModal}><div className="about-art"><img src="/media/logo.webp" alt="carrot" width={134} height={40}/><span>{SITE.title}</span></div><p className="about-text">{SITE.description}</p><ol className="about-chapters">{scenes.map((item,index)=><li key={item.id}><span>0{index+1}</span>{item.title}</li>)}</ol><div className="about-help"><MousePointer2 size={18}/><p>클릭하거나 터치해요.<br/><span>Tab과 Enter, 방향키로도 여행할 수 있어요.</span></p></div><button className="primary-button" onClick={closeModal}>책으로 돌아가기<ArrowRight size={18}/></button></Modal>}
   </div>;
 }
