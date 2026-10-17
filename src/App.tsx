@@ -9,6 +9,8 @@ import {BOOK_FRAME_WIDTH,BOOK_FRAME_HEIGHT,bookZoom} from './bookView';
 import {standingMediaSize} from './standingMedia';
 import {artSource} from './artSource';
 import DetailPanel from './DetailPanel';
+import DetailBook from './DetailBook';
+import { details } from './details';
 const Storybook = lazy(() => import('./Storybook'));
 
 class CanvasBoundary extends Component<{children:ReactNode;onError:()=>void},{failed:boolean}> {
@@ -213,7 +215,7 @@ export default function App() {
         {phase==='ERROR'&&<div className="scene-error" role="alert"><p>{state.error}</p><button className="secondary-button" onClick={()=>api.current?.retry()}><RotateCcw size={16}/> 다시 시도</button></div>}
       </div>
     </section></main>
-    {detailOpen&&state.detail&&<DetailPanel id={state.detail} onClose={closeDetail} onOpen={openDetail}/>}
+    {detailOpen&&state.detail&&(details[state.detail]?.spread?<DetailBook key={state.detail} id={state.detail} onClose={closeDetail} onOpen={openDetail}/>:<DetailPanel id={state.detail} onClose={closeDetail} onOpen={openDetail}/>)}
     {modal==='about'&&<Modal title={SITE.name} onClose={closeModal}><div className="about-art"><img src="/media/logo.webp" alt="carrot" width={134} height={40}/><span>{SITE.title}</span></div><p className="about-text">{SITE.description}</p><ol className="about-chapters">{scenes.map((item,index)=><li key={item.id}><span>0{index+1}</span>{item.title}</li>)}</ol><div className="about-help"><MousePointer2 size={18}/><p>클릭하거나 터치해요.<br/><span>Tab과 Enter, 방향키로도 여행할 수 있어요.</span></p></div><button className="primary-button" onClick={closeModal}>책으로 돌아가기<ArrowRight size={18}/></button></Modal>}
   </div>;
 }

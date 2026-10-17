@@ -19,6 +19,8 @@ export type Detail={
  link:{label:string;href:string};
  /** Other details worth opening next (ids). */
  related?:string[];
+ /** Opens as a book (src/DetailBook.tsx) instead of the side panel: pictures on the left page, the story as running text on the right. */
+ spread?:{pictures:{src:string;alt:string;caption:string;fallback?:string}[];byline?:string;paragraphs:string[];folio:[string,string]};
 };
 const site='https://gujwa-carrot.vercel.app';
 const draft='매거진 원고를 준비하고 있어요. 자세한 이야기는 매거진에서 이어집니다.';
@@ -27,7 +29,19 @@ export const details:Record<string,Detail>={
   lead:'제주 구좌에서 당근을 키우는 유도균 농부님. 23년간 광고 회사에서 일하다 2014년 제주로 내려와, “이 동네는 당근과 콩이다”라는 이웃 할머니의 말 한마디로 당근 농사를 시작했습니다.',
   quote:'겨울을 제대로 맞아야 진짜 맛이 들어요.',facts:[['농부','유도균'],['지역','제주 구좌']],
   list:{title:'인터뷰에서 다루는 이야기',items:['구좌의 흙과 바람','당근이 자라는 시간','수확하는 날','밭에서 식탁까지'],ordered:true},
-  note:'인터뷰 영상이 곧 공개됩니다.',link:{label:'영상 인터뷰 보기',href:`${site}/video/farmer-interview`},related:['harvest','cook-01']},
+  note:'인터뷰 영상이 곧 공개됩니다.',link:{label:'영상 인터뷰 보기',href:`${site}/video/farmer-interview`},related:['harvest','night-watch'],
+  // The magazine's farmer page (its two photos, resized to WebP, and their alt text) and the facts gathered in this file; the prose adds
+  // nothing beyond them.
+  spread:{pictures:[
+    {src:'/media/farmer-portrait.webp',alt:'농부님 인물 사진',caption:'제주 구좌 당근 농부 유도균',fallback:'/art-raster/char-farmer.webp'},
+    {src:'/media/farmer-field.webp',alt:'밭에서 일하는 농부님',caption:'밭에서 일하는 농부님',fallback:'/art-raster/farm-back.webp'}],
+   byline:'제주 구좌 당근 농부 유도균 · 영상 인터뷰에서',
+   paragraphs:[
+    '제주 구좌에서 당근을 키우는 유도균 농부님은 23년 동안 광고 회사에서 일했습니다. 2014년 제주로 내려온 뒤 “이 동네는 당근과 콩이다”라는 이웃 할머니의 말 한마디로 당근 농사를 시작했습니다.',
+    '구좌의 밭은 검은 화산토입니다. 물 빠짐이 좋아 당근 뿌리가 땅속 깊이 곧게 내립니다. 겨울 눈보라를 맞으면 당근은 얼지 않으려 잎의 영양분과 당분을 뿌리로 밀어 넣고, 그렇게 겨울을 견딘 당근은 과일처럼 달고 묵직해집니다.',
+    '농부님은 당근을 유기농으로 키웁니다. 귀뚜라미가 당근을 꺾고 갉아 먹는데, 막지 않으면 천 평 밭이 이삼일 만에 망가집니다. 유기농에 쓸 수 있는 약은 귀뚜라미에게 직접 맞혀야 듣고 귀뚜라미는 밤에만 바위 틈에서 나오니, 해가 지면 랜턴과 파리채를 들고 밭고랑을 돕니다. 하루에 수천 마리를 잡는 날도 있습니다.',
+    '“밭에서 랜턴 들고 돌아다니는 거 보면, 바깥에서 보면 귀신인 줄 알 거야.” 그렇게 키운 당근을 두고 농부님은 짧게 권합니다. “생으로 먹어보세요.”'],
+   folio:['— 04 —','— 05 —']}},
  harvest:{id:'harvest',kicker:'01 · FARMER — 수확하는 날',title:'겨울을 견딘 단맛',
   lead:'검은 화산토는 물 빠짐이 좋아 당근 뿌리가 땅속 깊이 곧게 내립니다. 영하의 눈보라를 맞으면 당근은 얼지 않으려 잎의 영양분과 당분을 뿌리로 밀어 넣고, 그래서 겨울을 견딘 구좌 당근은 과일처럼 달고 묵직해집니다.',
   quote:'생으로 먹어보세요.',list:{title:'구좌 당근이 다른 이유',items:['검은 화산토 — 뿌리가 곧고 깊게','겨울 눈보라 — 당분이 뿌리로','농부의 손 — 농약 대신 랜턴과 파리채로']},

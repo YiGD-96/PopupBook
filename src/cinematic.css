@@ -105,3 +105,45 @@
  .cinematic-reader.has-detail .reader-arrow{position:fixed;top:calc(36svh - 64px)}
  .cinematic-reader.has-detail .reader-prev{left:4px}.cinematic-reader.has-detail .reader-next{right:4px}
 }
+/* A story opened as a book (src/DetailBook.tsx): the spread rises from the pop-up book, pictures left, running text right. */
+.detail-book-backdrop{position:fixed;inset:0;z-index:30;display:grid;place-items:center;padding:24px;background:rgba(62,52,40,0);perspective:1600px;transition:background .42s ease-out}
+.detail-book-backdrop.is-open{background:rgba(62,52,40,.32)}
+.detail-book{position:relative;display:grid;grid-template-columns:1fr 1fr;width:min(1080px,94vw);height:min(720px,86svh);transform-origin:50% 100%;transform:translateY(38vh) rotateX(62deg) scale(.82);opacity:0;transition:transform .42s cubic-bezier(.2,.75,.25,1),opacity .16s ease-out;border-radius:6px 6px 4px 4px;box-shadow:0 30px 60px rgba(70,50,30,.28),0 2px 0 #c89b80,0 6px 0 #b9806a}
+.is-open>.detail-book{transform:none;opacity:1}
+.detail-book-page{position:relative;overflow:hidden;padding:40px 40px 52px;background:#f7efdf url('/art-raster/intro-pages.webp') center/cover;color:#54473a}
+/* The gutter: each page darkens toward the binding, so the two read as one spread. */
+.detail-book-page.is-left{border-radius:6px 0 0 4px;box-shadow:inset -38px 0 40px -28px rgba(90,64,40,.35);display:flex;flex-direction:column;gap:18px}
+.detail-book-page.is-right{border-radius:0 6px 4px 0;box-shadow:inset 38px 0 40px -28px rgba(90,64,40,.35);display:flex;flex-direction:column;overflow:auto;overscroll-behavior:contain}
+.detail-book-page figure{margin:0;display:flex;flex-direction:column;gap:7px;min-height:0}
+.detail-book-page figure.is-main{flex:1 1 auto}
+.detail-book-page figure.is-inset{flex:0 0 32%;width:70%;align-self:flex-end}
+.detail-book-page img{flex:1 1 auto;min-height:0;width:100%;object-fit:cover;border-radius:2px;box-shadow:0 1px 0 rgba(255,255,255,.6),0 3px 10px rgba(80,60,40,.18);background:#eadcc3}
+.detail-book-page figcaption{font-size:11px;line-height:1.6;color:#8c7d66}
+.detail-book-kicker{margin:0 0 10px;font:11px Georgia,serif;letter-spacing:2px;color:#a1977c}
+.detail-book h2{margin:0;font-family:var(--serif);font-size:24px;line-height:1.4;font-weight:700;color:#4a3b2f;outline:none}
+.detail-book-byline{margin:8px 0 0;font-size:12px;color:#8c7d66}
+.detail-book-text{margin-top:16px;font-family:var(--serif);font-size:14px;line-height:1.85;word-break:keep-all}
+.detail-book-text p{margin:0 0 10px;text-indent:1em}
+.detail-book-text blockquote{margin:12px 0 4px;padding:2px 0 2px 16px;border-left:2px solid #e88d51;font-size:16px;color:#6b4a37}
+.detail-book-page footer{margin-top:auto;padding-top:12px;display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px}
+.detail-book-link{display:inline-flex;align-items:center;gap:5px;font-size:13px;font-weight:600;color:#6b4a37;text-decoration:none;border-bottom:1px solid #d8b99a}
+.detail-book-page nav{display:flex;flex-wrap:wrap;gap:6px}
+.detail-book-page nav button{border:1px solid #e3d3b8;background:rgba(255,250,240,.7);border-radius:999px;padding:5px 11px;font:inherit;font-size:12px;color:#6b5a48;cursor:pointer}
+.detail-book-folio{position:absolute;bottom:16px;font:11px Georgia,serif;color:#a69779}
+.is-left>.detail-book-folio{left:40px}.is-right>.detail-book-folio{right:40px}
+.detail-book-close{position:absolute;top:10px;right:10px;z-index:2;width:36px;height:36px;border-radius:50%;border:0;background:rgba(255,250,240,.8);color:#7d6b55;display:grid;place-items:center;cursor:pointer}
+@media(prefers-reduced-motion:reduce){.detail-book,.detail-book-backdrop{transition:none}}
+/* Phones: the pages stack, pictures above the story, and the book scrolls as one. */
+@media(max-width:760px){
+ .detail-book-backdrop{padding:10px}
+ .detail-book{grid-template-columns:1fr;grid-template-rows:auto auto;width:100%;height:auto;max-height:88svh;overflow:auto;overscroll-behavior:contain}
+ .detail-book-page{padding:26px 22px 38px}
+ .detail-book-page.is-left{border-radius:6px 6px 0 0;box-shadow:inset 0 -30px 32px -24px rgba(90,64,40,.3);height:auto;gap:12px}
+ .detail-book-page.is-right{border-radius:0 0 4px 4px;box-shadow:inset 0 30px 32px -24px rgba(90,64,40,.3);overflow:visible}
+ .detail-book-page figure.is-main img{aspect-ratio:16/10}
+ .detail-book-page figure.is-inset{width:52%}
+ .detail-book-page figure.is-inset img{aspect-ratio:3/2}
+ .detail-book h2{font-size:22px}
+ .detail-book-text{font-size:14.5px;line-height:1.9}
+ .is-left>.detail-book-folio{left:22px}.is-right>.detail-book-folio{right:22px}
+}
