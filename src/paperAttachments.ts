@@ -1,4 +1,4 @@
-import { PAGE_HEIGHT, PAGE_WIDTH, paperPoint } from './paperGeometry.ts';
+import { PAGE_BASE_Y, PAGE_HEIGHT, PAGE_WIDTH, pageRestLift, paperPoint } from './paperGeometry.ts';
 export type PageSide='left'|'right';
 export type PaperPiece={center:number;width:number;u0:number;u1:number;side:PageSide};
 export function splitPaperArt(center:number,width:number,side:PageSide):PaperPiece|null{
@@ -9,7 +9,7 @@ export function splitPaperArt(center:number,width:number,side:PageSide):PaperPie
 export function attachedPaperPose(x:number,y:number,z:number,progress:number,direction:1|-1,face:1|-1){
  const p=Math.max(0,Math.min(1,progress)),u=Math.min(1,Math.abs(x)/PAGE_WIDTH),v=z/PAGE_HEIGHT+.5;
  const angle=(direction===1?p:1-p)*Math.PI-Math.sin(p*Math.PI)*.95*direction*u;
- const point=paperPoint(u,v,p,direction);const offset=y-.13-.055*Math.exp(-u*12);
+ const point=paperPoint(u,v,p,direction);const offset=y-PAGE_BASE_Y-pageRestLift(u);
  const normal:[number,number,number]=[-Math.sin(angle)*face,Math.cos(angle)*face,0];
  return {position:[point[0]+normal[0]*offset,point[1]+normal[1]*offset+.018,z] as [number,number,number],rotation:angle+(face===-1?Math.PI:0),normal};
 }

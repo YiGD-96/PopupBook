@@ -1,34 +1,137 @@
 import { create } from 'zustand';
-export type Phase = 'INIT'|'COVER'|'OPENING_BOOK'|'LOADING_PAGE'|'OPENING_POPUP'|'EXPLORING'|'DRAGGING_PAGE'|'CLOSING_POPUP'|'TURNING_PAGE'|'ENDING'|'ERROR';
-export type Quality = 'auto'|'low'|'high';
-export type Layer = { id:string; src:string; position:[number,number,number]; size:[number,number]; interactive?:boolean };
+export type Phase = 'INIT'|'COVER'|'LOADING_PAGE'|'OPENING_POPUP'|'EXPLORING'|'DRAGGING_PAGE'|'TURNING_PAGE'|'ENDING'|'ERROR';
+/** A pop-up card. `detail` makes it clickable: it opens that entry of src/details.ts in the side panel. `phone` places it in the
+ *  standing book on phones (src/standingLayout.ts: x across, z depth from the binding, `lift` above the page for a card standing on
+ *  another, like a dish on the table); without it the place is derived. On the open book `position[1]` is the card's foot. */
+/** `on`: the id of the card this one stands on (a dish on the table): it folds with that card instead of on its own (src/popupStack.ts). */
+export type Layer = { id:string; src:string; position:[number,number,number]; size:[number,number]; interactive?:boolean; detail?:string; on?:string; phone?:{x:number;z:number;size:[number,number];lift?:number} };
+const clickable=(layer:Omit<Layer,'interactive'>&{detail:string}):Layer=>({...layer,interactive:true});
+// Three chapters following the web magazine "당근을 따라, 구좌": the farmer, the people who cook, and menus & recipes.
+// The first version's chapters are kept in _archive/scenes-v1. Sizes keep each texture's proportions (width : height).
 export const scenes = [
- {id:'gujwa',title:'당근밭의 아침',place:'제주 구좌',english:'A MORNING IN GUJWA',intro:'햇살이 내려앉은 당근밭.\n작은 당근 친구와 첫 인사를 나눠요.',dialog:'“안녕! 나는 당근이야. 오늘은 조금 천천히 걸어볼까? 바람이 들려주는 이야기를 함께 들어봐.”',label:'당근 친구에게 인사하기',hint:'당근 친구를 톡, 눌러보세요',color:'#96a780',layers:[
-  {id:'hills',src:'hills',position:[0,.24,-1.65],size:[7.1,2.5]},
-  {id:'field',src:'field',position:[0,.25,-.5],size:[7,1.4]},
-  {id:'wall',src:'wall',position:[-.55,.26,.25],size:[5.7,.8]},
-  {id:'flowers',src:'flowers',position:[.1,.27,1.5],size:[6.3,1.15]},
-  {id:'carrot',src:'carrot',position:[.7,.28,.95],size:[1.05,1.35],interactive:true}
+ {id:'farmer',title:'구좌를 길러내는 묵묵한 방식',paper:'#ffe4cd',english:'01 · FARMER',intro:'검은 화산토와 겨울 바람이 키운 당근.\n밭에서 시작되는 이야기예요.',dialog:'“겨울을 제대로 맞아야 진짜 맛이 들어요.” 농부님과 당근 바구니를 눌러 보세요.',label:'농부님 이야기 보기',color:'#96a780',detail:'farmer',layers:[
+  // Painted layers (GPT, art-src/gpt/page-1 → scripts/prepare-gpt-art.mjs): dusk over Gujwa, back to front. Sizes keep each texture's aspect.
+  {id:'back',src:'farm-back',position:[0,.24,-1.7],size:[6.9,2.72]},
+  // The windbreaks stand at the very front, inside the page, and frame the scene; the field comes forward and the rest gathers in the
+  // middle in rows (pony and farmer, the low wall, the crate and lantern). The phone layout keeps the same rows.
+  {id:'trees-left',src:'farm-trees-left',position:[-2.25,.29,2],size:[2,2.95],phone:{x:-1.53,z:2.95,size:[1.56,2.3]}},
+  {id:'trees-right',src:'farm-trees-right',position:[2.3,.29,2],size:[1.81,2.95],phone:{x:1.6,z:2.95,size:[1.42,2.3]}},
+  {id:'field',src:'farm-field',position:[0,.25,.45],size:[6.6,1.85],phone:{x:0,z:1.05,size:[4.63,1.29]}},
+  {id:'pony',src:'char-pony',position:[-1.25,.255,.6],size:[1.4,1.15],phone:{x:-.55,z:1.2,size:[1.14,.94]}},
+  clickable({id:'farmer',src:'char-farmer',position:[1.05,.27,.9],size:[1.3,2.37],detail:'farmer',phone:{x:.75,z:1.55,size:[1.14,2.08]}}),
+  {id:'wall',src:'farm-wall',position:[-.2,.28,1.3],size:[2.6,.75],phone:{x:-.1,z:1.95,size:[2.4,.68]}},
+  clickable({id:'crate',src:'farm-crate',position:[-.92,.285,1.72],size:[1.55,1.02],detail:'harvest',phone:{x:-.75,z:2.4,size:[1.44,.95]}}),
+  clickable({id:'lantern',src:'farm-lantern',position:[1.55,.285,1.7],size:[.75,1.49],detail:'night-watch',phone:{x:1.25,z:2.3,size:[.6,1.2]}})
  ] as Layer[]},
- {id:'village',title:'골목에 머무는 오후',place:'제주 마을',english:'AN AFTERNOON IN THE VILLAGE',intro:'낮은 돌담 너머로 번지는 귤 향기.\n오늘은 이름 없는 골목도 좋아요.',dialog:'“서두르지 않아도 괜찮아. 이 골목에서는 바람도 쉬어 가거든. 나무 아래서 잠깐 귤 향기를 맡아봐.”',label:'감귤나무의 이야기 듣기',hint:'감귤나무를 톡, 눌러보세요',color:'#b89970',layers:[
-  {id:'village',src:'village',position:[0,.24,-1.5],size:[7.1,2.55]},
-  {id:'alley',src:'alley',position:[0,.25,-.05],size:[7,1.45]},
-  {id:'tree',src:'tree',position:[1.8,.26,.45],size:[1.9,2.5],interactive:true},
-  {id:'flowers',src:'flowers',position:[-1.5,.27,1.55],size:[3.3,.8]},
-  {id:'carrot',src:'carrot',position:[-.6,.28,.9],size:[.8,1.05]}
+ {id:'cooks',title:'구좌를 맛보는 다채로운 방식',paper:'#fff6e3',english:'02 · PEOPLE WHO COOK',intro:'구좌 당근으로 새로운 맛을 만드는\n식당 사장님들을 만났어요.',dialog:'세 곳의 식당이 구좌 당근으로 저마다의 한 접시를 만들어요. 가게를 눌러 이야기를 펼쳐 보세요.',label:'식당 이야기 보기',color:'#b89970',detail:'cook-01',layers:[
+  // Painted layers (GPT, art-src/gpt/page-2 → scripts/prepare-gpt-art.mjs): a Gujwa seaside village in late morning, back to front.
+  // The hackberry frames the scene at the front left, the basalt wall with the carrot cart at the front right; the three restaurants
+  // stand in one row, each wholly on one page, so all of them show.
+  {id:'back',src:'village-back',position:[0,.24,-1.7],size:[6.8,2.72]},
+  {id:'tree-left',src:'village-tree-left',position:[-2.45,.29,2.05],size:[1.9,2.75],phone:{x:-1.53,z:2.95,size:[1.56,2.26]}},
+  {id:'lane',src:'village-lane',position:[0,.25,-.75],size:[6.6,1.85],phone:{x:0,z:.6,size:[4.63,1.3]}},
+  clickable({id:'shop-a',src:'shop-a',position:[-1.25,.255,-.05],size:[1.9,1.26],detail:'cook-01',phone:{x:-1.41,z:1.35,size:[1.8,1.19]}}),
+  clickable({id:'shop-b',src:'shop-b',position:[1.08,.255,-.05],size:[1.9,1.27],detail:'cook-02',phone:{x:0,z:1.35,size:[1.8,1.2]}}),
+  clickable({id:'shop-c',src:'shop-c',position:[2.66,.255,0],size:[1.25,1.27],detail:'cook-03',phone:{x:1.55,z:1.4,size:[1.32,1.34]}}),
+  {id:'traveler',src:'char-traveler',position:[-.85,.275,1.2],size:[.7,1.5],phone:{x:-.55,z:2.2,size:[.66,1.42]}},
+  {id:'front',src:'village-front',position:[2.05,.285,1.85],size:[2.2,1.02],phone:{x:1.2,z:2.8,size:[2.22,1.03]}}
  ] as Layer[]},
- {id:'coast',title:'바다가 건네는 인사',place:'제주 해안',english:'A MOMENT BY THE SEA',intro:'이야기의 끝에서 만난 푸른 바다.\n마음에 작은 빛 하나를 담아가요.',dialog:'“멀리 가지 않아도 새로운 풍경은 있어. 오늘의 작은 여행이 너의 하루에도 오래도록 따뜻한 빛이 되기를.”',label:'등대의 작은 빛 켜기',hint:'등대를 톡, 눌러보세요',color:'#81a69c',layers:[
-  {id:'sea',src:'sea',position:[0,.24,-1.65],size:[7.2,2.35]},
-  {id:'coast',src:'coast',position:[0,.25,-.15],size:[7.1,1.65]},
-  {id:'lighthouse',src:'lighthouse',position:[1.6,.26,.3],size:[1.4,2.8],interactive:true},
-  {id:'grasses',src:'grasses',position:[0,.27,1.7],size:[6.8,1]},
-  {id:'carrot',src:'carrot',position:[-1.05,.28,1],size:[.8,1.1]}
+ {id:'recipes',title:'구좌를 요리하는 가장 쉬운 방식',paper:'#ffe9d2',english:'03 · MENU & RECIPE',intro:'식당의 당근 메뉴와\n집에서 따라 하는 레시피를 모았어요.',dialog:'벽의 줄에 걸린 메모는 집에서 따라 하는 레시피, 둥근 식탁 위의 음식은 식당의 메뉴예요. 궁금한 것을 눌러 보세요.',label:'레시피 보기',color:'#81a69c',detail:'recipe-01',layers:[
+  // Painted layers (GPT, art-src/gpt/page-3 → scripts/prepare-gpt-art.mjs): an evening kitchen, back to front. The wall is a teal-tiled
+  // kitchen wall with a hood, a utensil rail, a shelf and a string across it (35% down the painting). Left page: three papers clipped to
+  // that string (glued to the wall, so they fold with it) and a basket on the floor; right page: a round table with the three restaurant
+  // dishes in front and a pot and a kettle behind them. Each thing on the table has a contact shadow baked under its foot, so its card
+  // is a little taller than the thing: its foot y is set by the table's ellipse, minus that padding. Sizes keep each texture's aspect.
+  // On the phone the wall is the upright page: the papers stand in a row against it, hung to the height of the painted string.
+  {id:'back',src:'kitchen-back',position:[0,.24,-1.7],size:[6.6,2.73]},
+  clickable({id:'note-rape',on:'back',src:'note-rape-card',position:[-2.85,.61,-1.66],size:[1.05,1.12],detail:'recipe-01',phone:{x:-1.5,z:.3,size:[1.43,1.52]}}),
+  clickable({id:'note-soup',on:'back',src:'note-soup-card',position:[-1.82,.61,-1.66],size:[1.05,1.115],detail:'recipe-02',phone:{x:0,z:.3,size:[1.43,1.52]}}),
+  clickable({id:'note-pickle',on:'back',src:'note-pickle-card',position:[-.8,.61,-1.66],size:[1.05,1.145],detail:'recipe-03',phone:{x:1.5,z:.3,size:[1.43,1.56]}}),
+  // The left floor is a home-cooking still life (kettle, basket, soup pot: the home recipes' side); the round table carries only the three
+  // restaurant dishes, spread apart so none covers another. On the phone the floor things stand in front of the table's pedestal.
+  {id:'kettle',src:'kitchen-kettle',position:[-3,.18,1],size:[1,1.067],phone:{x:1.9,z:3.25,size:[.7,.746]}},
+  {id:'basket',src:'kitchen-basket',position:[-1.95,.19,1.55],size:[1.6,1.189],phone:{x:-1.68,z:3.25,size:[1.15,.854]}},
+  {id:'pot',src:'kitchen-pot',position:[-.75,.175,1.2],size:[1.15,1.15],phone:{x:1.05,z:3.25,size:[.85,.85]}},
+  {id:'table',src:'kitchen-table-round',position:[1.78,.2,1.55],size:[3.3,1.99],phone:{x:0,z:3.2,size:[3.4,2.05]}},
+  clickable({id:'burger',on:'table',src:'dish-burger',position:[.88,1.336,1.62],size:[1,.919],detail:'menu-03',phone:{x:-1.18,z:3.25,size:[1.05,.965],lift:1.16}}),
+  clickable({id:'plate',on:'table',src:'dish-plate',position:[2.05,1.277,1.64],size:[1.35,1.026],detail:'menu-01',phone:{x:.15,z:3.25,size:[1.45,1.102],lift:1.13}}),
+  clickable({id:'juice',on:'table',src:'dish-juice',position:[3.02,1.382,1.6],size:[.68,1.048],detail:'menu-02',phone:{x:1.35,z:3.25,size:[.6,.924],lift:1.23}})
  ] as Layer[]}
 ];
-type StoryState = {phase:Phase;chapter:number;dialog:boolean;visited:number[];muted:boolean;quality:Quality;reduceMotion:boolean;error:string|null;fps:number;set:(patch:Partial<StoryState>)=>void};
-export const useStory = create<StoryState>(set=>({phase:'INIT',chapter:0,dialog:false,visited:[],muted:true,quality:'auto',reduceMotion:window.matchMedia('(prefers-reduced-motion: reduce)').matches,error:null,fps:0,set:patch=>set(patch)}));
-export function playSound(kind:'page'|'hello') {
- if(useStory.getState().muted)return;
- try { const AudioCtx=window.AudioContext??(window as unknown as {webkitAudioContext:typeof AudioContext}).webkitAudioContext; const ctx=new AudioCtx();const gain=ctx.createGain();gain.connect(ctx.destination);gain.gain.setValueAtTime(.035,ctx.currentTime);gain.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+.4); const osc=ctx.createOscillator();osc.type='sine';osc.frequency.setValueAtTime(kind==='hello'?523:280,ctx.currentTime);osc.frequency.exponentialRampToValueAtTime(kind==='hello'?784:140,ctx.currentTime+.3);osc.connect(gain);osc.start();osc.stop(ctx.currentTime+.4);osc.onended=()=>void ctx.close(); }catch(e){console.info('Sound unavailable',e);}
+type StoryState = {phase:Phase;chapter:number;dialog:boolean;detail:string|null;visited:number[];audioReady:boolean;introPagesTurned:number;error:string|null;set:(patch:Partial<StoryState>)=>void};
+export const useStory = create<StoryState>(set=>({phase:'INIT',chapter:0,dialog:false,detail:null,visited:[],audioReady:false,introPagesTurned:0,error:null,set:patch=>set(patch)}));
+let audioContext:AudioContext|null=null;
+let audioUnlock:Promise<void>|null=null;
+export function unlockAudio(){
+ if(audioContext?.state==='running')return;
+ if(audioUnlock){void audioContext?.resume().catch(()=>{});return;}
+ try{
+  const AudioCtx=window.AudioContext??(window as unknown as {webkitAudioContext:typeof AudioContext}).webkitAudioContext;
+  audioContext??=new AudioCtx();
+  audioContext.onstatechange=()=>useStory.getState().set({audioReady:audioContext?.state==='running'});
+  audioUnlock=audioContext.resume().then(()=>{useStory.getState().set({audioReady:audioContext?.state==='running'});}).catch(()=>{}).finally(()=>{audioUnlock=null;});
+  void loadPageTurn(audioContext);
+ }catch{ /* Audio is optional on browsers without Web Audio. */ }
 }
-export interface Director {start:()=>void;go:(chapter:number)=>void;finish:()=>void;restart:()=>void;interact:()=>void;retry:()=>void;previewTurn:(direction:1|-1,progress:number)=>boolean;settleTurn:(commit:boolean)=>void}
+/** Pink noise (Paul Kellet's filter), made once per audio context: the raw material of every paper sound. */
+let paperNoise:AudioBuffer|null=null;
+function noiseFor(ctx:BaseAudioContext){
+ if(paperNoise&&paperNoise.sampleRate===ctx.sampleRate)return paperNoise;
+ const length=Math.floor(ctx.sampleRate*1.6),buffer=ctx.createBuffer(1,length,ctx.sampleRate),data=buffer.getChannelData(0);
+ let b0=0,b1=0,b2=0,b3=0,b4=0,b5=0,b6=0;
+ for(let i=0;i<length;i++){const w=Math.random()*2-1;b0=.99886*b0+w*.0555179;b1=.99332*b1+w*.0750759;b2=.969*b2+w*.153852;b3=.8665*b3+w*.3104856;b4=.55*b4+w*.5329522;b5=-.7616*b5-w*.016898;data[i]=(b0+b1+b2+b3+b4+b5+b6+w*.5362)*.11;b6=w*.115926;}
+ return paperNoise=buffer;
+}
+/**
+ * A sheet of heavy, fine paper turning, synthesized (no file to download): an airy swish that swells as the sheet travels, crisp grains
+ * where the paper flexes as it lifts and settles, and a soft low landing. `length` is the turn in seconds; `level` scales it (the intro's
+ * quick fanned pages are short and quiet).
+ */
+export function paperTurn(ctx:BaseAudioContext,length:number,level:number){
+ const t0=ctx.currentTime+.01,noise=noiseFor(ctx),out=ctx.createGain();out.gain.value=level;out.connect(ctx.destination);
+ const nodes:AudioNode[]=[out];
+ const source=(offset:number,duration:number)=>{const n=ctx.createBufferSource();n.buffer=noise;n.start(t0+offset,Math.random()*(noise.duration-duration-.05),duration);nodes.push(n);return n;};
+ // Swish: band-passed air whose pitch rises as the sheet sweeps up and falls as it comes down.
+ const swish=source(0,length),band=ctx.createBiquadFilter(),air=ctx.createGain();band.type='bandpass';band.Q.value=.7;
+ band.frequency.setValueAtTime(900,t0);band.frequency.exponentialRampToValueAtTime(2600,t0+length*.45);band.frequency.exponentialRampToValueAtTime(700,t0+length);
+ air.gain.setValueAtTime(0,t0);air.gain.linearRampToValueAtTime(.05,t0+length*.12);air.gain.linearRampToValueAtTime(.085,t0+length*.45);air.gain.linearRampToValueAtTime(.03,t0+length*.8);air.gain.linearRampToValueAtTime(0,t0+length);
+ swish.connect(band).connect(air).connect(out);nodes.push(band,air);
+ // Grain: crisp high crackles, bunched where the paper bends (lifting off, settling down).
+ const crisp=source(0,length),high=ctx.createBiquadFilter(),grains=ctx.createGain();high.type='highpass';high.frequency.value=4200;grains.gain.setValueAtTime(0,t0);
+ const count=Math.round(6+length*10);
+ const times=Array.from({length:count},(_,i)=>{const r=Math.random(),band=i%3;return length*(band===0?r*.25:band===1?.7+r*.25:.25+r*.45);}).sort((a,b)=>a-b);
+ times.forEach(t=>{const at=t0+t,peak=.02+Math.random()*.045;grains.gain.setValueAtTime(0,at);grains.gain.linearRampToValueAtTime(peak,at+.004);grains.gain.exponentialRampToValueAtTime(.0001,at+.018+Math.random()*.03);});
+ crisp.connect(high).connect(grains).connect(out);nodes.push(high,grains);
+ // Landing: a soft, low pat as the sheet lies down.
+ const land=source(length*.86,.2),low=ctx.createBiquadFilter(),pat=ctx.createGain();low.type='lowpass';low.frequency.value=520;
+ const at=t0+length*.86;pat.gain.setValueAtTime(0,at);pat.gain.linearRampToValueAtTime(.09,at+.012);pat.gain.exponentialRampToValueAtTime(.0001,at+.16);
+ land.connect(low).connect(pat).connect(out);nodes.push(low,pat);
+ window.setTimeout(()=>nodes.forEach(node=>{try{node.disconnect();}catch{ /* already gone */ }}),(length+.4)*1000);
+}
+/** A real book page turning: a soft rustle as the sheet lifts, then a crisp flick as it lands (Voltiment555, "Book Flip Sounds",
+ *  BookFlip9, CC0, opengameart.org/content/book-flip-sounds; trimmed and normalized to 14 KB). Fetched and decoded off the main thread
+ *  once audio is unlocked; until then the synthesized turn above stands in. */
+const PAGE_TURN_FLICK=.55;
+let pageTurn:AudioBuffer|null=null,pageTurnLoad:Promise<void>|null=null;
+function loadPageTurn(ctx:BaseAudioContext){
+ pageTurnLoad??=fetch('/media/page-turn.mp3').then(response=>response.arrayBuffer()).then(data=>ctx.decodeAudioData(data)).then(buffer=>{pageTurn=buffer;}).catch(()=>{pageTurnLoad=null;});
+ return pageTurnLoad;
+}
+function playClip(ctx:BaseAudioContext,buffer:AudioBuffer,offset:number,level:number,rate:number,duration?:number){
+ const source=ctx.createBufferSource(),gain=ctx.createGain();source.buffer=buffer;source.playbackRate.value=rate;gain.gain.value=level;
+ source.connect(gain).connect(ctx.destination);source.start(ctx.currentTime+.005,offset,duration);source.onended=()=>{source.disconnect();gain.disconnect();};
+}
+/** 'page': a page turn; 'flip': one of the intro film's quick fanned pages (the flick alone); 'hello': a soft chime when a story opens. */
+export function playSound(kind:'page'|'flip'|'hello') {
+ const emit=()=>{const ctx=audioContext;if(!ctx||ctx.state!=='running')return;
+  try {
+   // A touch of speed variation keeps repeated turns from sounding identical.
+   if(kind==='page'){if(pageTurn)playClip(ctx,pageTurn,0,1.4,.97+Math.random()*.06);else paperTurn(ctx,1.1,3);return;}
+   if(kind==='flip'){if(pageTurn)playClip(ctx,pageTurn,PAGE_TURN_FLICK,.7,1.02+Math.random()*.1,.5);else paperTurn(ctx,.42,2);return;}
+   const gain=ctx.createGain();gain.connect(ctx.destination);gain.gain.setValueAtTime(.035,ctx.currentTime);gain.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+.4);const osc=ctx.createOscillator();osc.type='sine';osc.frequency.setValueAtTime(523,ctx.currentTime);osc.frequency.exponentialRampToValueAtTime(784,ctx.currentTime+.3);osc.connect(gain);osc.start();osc.stop(ctx.currentTime+.4);osc.onended=()=>{osc.disconnect();gain.disconnect();};
+  }catch{ /* Keep the book usable if audio is interrupted. */ }
+ };
+ if(audioContext?.state==='running')emit();else if(audioUnlock)void audioUnlock.then(emit);
+}
+/** `reveal(standingFilmed)`: true when the intro played the phone film, which ends on the standing book. */
+export interface Director {reveal:(standingFilmed?:boolean)=>void;go:(chapter:number)=>void;finish:()=>void;interact:(detail?:string)=>void;retry:()=>void;previewTurn:(direction:1|-1,progress:number)=>boolean;settleTurn:(commit:boolean)=>void}

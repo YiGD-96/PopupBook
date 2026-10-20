@@ -9,6 +9,7 @@ export async function prepareBookRenderer(
   camera: Camera,
   active: () => boolean,
   yieldFrame = nextFrame,
+  warmScene = () => {},
 ) {
   // Let the mounted, initially hidden pages register their materials first.
   await yieldFrame();
@@ -20,6 +21,8 @@ export async function prepareBookRenderer(
   }
   if (!active()) return false;
   await renderer.compileAsync(scene, camera);
+  if (!active()) return false;
+  warmScene();
   await yieldFrame();
   return active();
 }

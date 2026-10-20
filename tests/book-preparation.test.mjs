@@ -19,3 +19,12 @@ test('a shader failure is propagated so startup can show a retry instead of open
  const renderer={initTexture:()=>{},compileAsync:async()=>{throw new Error('shader unavailable');}};
  await assert.rejects(prepareBookRenderer(renderer,[],{},{},()=>true,async()=>{}),/shader unavailable/);
 });
+test('the hidden first scene is rendered after shaders compile and before preparation finishes',async()=>{
+ const events=[];const renderer={initTexture:()=>{},compileAsync:async()=>events.push('compiled')};
+ assert.equal(await prepareBookRenderer(renderer,[],{},{},()=>true,async()=>events.push('frame'),()=>events.push('rendered')),true);
+ assert.deepEqual(events,['frame','frame','compiled','rendered','frame']);
+});
+test('cancellation during shader compilation prevents a stale hidden render',async()=>{
+ let active=true;const renderer={initTexture:()=>{},compileAsync:async()=>{active=false;}};
+ assert.equal(await prepareBookRenderer(renderer,[],{},{},()=>active,async()=>{},()=>assert.fail('stale scene rendered')),false);
+});

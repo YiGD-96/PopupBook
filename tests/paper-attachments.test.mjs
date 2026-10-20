@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { splitPaperArt, attachedPaperPose, pageReveal, popupFoldAngle } from '../src/paperAttachments.ts';
+import { paperPoint, PAGE_WIDTH } from '../src/paperGeometry.ts';
 const near=(a,b)=>assert.ok(Math.abs(a-b)<1e-8,`${a} ≠ ${b}`);
 test('wide scenery is split at the binding without duplicating or cropping interior art',()=>{const left=splitPaperArt(0,7.1,'left'),right=splitPaperArt(0,7.1,'right');near(left.width+right.width,7.1);near(left.u1,right.u0);near(left.center+left.width/2,0);near(right.center-right.width/2,0);});
 test('small objects remain attached to their actual page',()=>{assert.equal(splitPaperArt(.7,1.05,'left'),null);assert.ok(splitPaperArt(.7,1.05,'right'));assert.equal(splitPaperArt(-1.05,.8,'right'),null);assert.ok(splitPaperArt(-1.05,.8,'left'));});
@@ -18,4 +19,9 @@ test('incoming unfolding keeps its timing and reversing restores the earlier fol
  for(const p of [0,.2,.5,.8,1])near(popupFoldAngle(p,true),-Math.PI/2*(1-p));
  for(const p of [.8,.6,.4,.2,0])near(popupFoldAngle(p),-Math.PI/2*Math.min(p/.7,1));
  near(popupFoldAngle(0),0);near(popupFoldAngle(1,true),0);
+});
+test('every clickable card stands wholly on one page, clear of the gutter, so it sways and hops as one piece',async()=>{
+ const {scenes}=await import('../src/story.ts');
+ for(const scene of scenes)for(const layer of scene.layers.filter(l=>l.interactive))
+  assert.ok(Math.abs(layer.position[0])-layer.size[0]/2>=.12,`${scene.id}/${layer.id} crosses the gutter`);
 });

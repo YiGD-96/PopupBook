@@ -1,0 +1,139 @@
+/**
+ * The standing book (phones in portrait, src/standingLayout.ts): the open book's own parts turned so the binding runs across the screen,
+ * the first half standing at 90° with the backdrop printed on its page, the cards standing on the flat second page, and a sheet that
+ * swings up to turn the spread. The story director (src/Storybook.tsx) is shared with the open book.
+ */
+import { useEffect, useMemo, useRef, type ReactNode, type RefObject } from 'react';
+import { useFrame } from '@react-three/fiber';
+import { BackSide, BufferGeometry, Color, DoubleSide, Float32BufferAttribute, Group, Mesh, type MeshBasicMaterial, type Texture } from 'three';
+import { BOOK_BOARD, BOOK_PAGES } from './bookStructure';
+import { BOOK_HINGE_Y, createBoardGeometry, createPaperBlockGeometry, createSpineGeometry, relightTurned } from './bookGeometry';
+import { createPageSkirt, createPaperGeometry, pageShade } from './paperGeometry';
+import { lightShade } from './bookGeometry';
+import { BLOCK_X, BindingDetails, Board, cardMaterial, textureView, PaperBlock, PrintedPage, Surface, createCardGeometry, useDisposable, type BookMaterials } from './bookParts';
+import { UPRIGHT_SCALE, backdropCrop, standingFoldIn, standingFoldOut, standingPlacement, standingSheetPoint, standingSheetProgress, surfaceY } from './standingLayout';
+import { type Layer, useStory } from './story';
+import { flatLift } from './popupStack';
+
+const UP=-Math.PI/2,COLUMNS=32,ROWS=10;
+const linear=(v:number)=>Math.pow(v,2.2);
+/** Texture coordinates for a sheet seen standing: across the binding (world x) and up the page, so a painting reads upright. */
+function standingUv(geometry:BufferGeometry,columns:number,rows:number){
+ const uv=geometry.getAttribute('uv');
+ for(let r=0;r<=rows;r++)for(let c=0;c<=columns;c++)uv.setXY(r*(columns+1)+c,1-r/rows,c/columns);
+ uv.needsUpdate=true;return geometry;
+}
+/** The backdrop cropped to cover the upright page; shares the painting's upload. */
+export function cropBackdrop(texture:Texture){
+ const image=texture.image as {width:number;height:number}|undefined;const crop=backdropCrop(image?image.width/image.height:2.5);
+ return textureView(texture,t=>{t.repeat.set(...crop.repeat);t.offset.set(...crop.offset);});
+}
+function useBackdrop(texture:Texture|undefined){
+ const cropped=useMemo(()=>texture?cropBackdrop(texture):null,[texture]);
+ useEffect(()=>()=>cropped?.dispose(),[cropped]);return cropped;
+}
+/** The upright page's sheet and its page-edge wall as the live book shows them (swell 1); the phone intro film (src/standingFilm.tsx)
+ *  presses them flat while the book is closed. */
+export function createStandingPage(swell=1){const g=createPaperGeometry(COLUMNS,ROWS,swell);g.scale(-1,1,1);g.computeVertexNormals();return standingUv(g,COLUMNS,ROWS);}
+export function createStandingSkirt(swell=1){const g=createPageSkirt(BOOK_PAGES.y-BOOK_PAGES.thickness/2,lightShade,24,swell);g.scale(-1,1,1);return g;}
+/** The cloth spine at a fold (0.5 is the standing book's 90°), at the resolution the live book uses. */
+export const createStandingSpine=(fold:number)=>createSpineGeometry(fold,32);
+/** The first half of the case standing: its board, its half of the text block and its page (the backdrop), turned up about the binding.
+ *  `stand` (0 lying open → 1 standing) is animated only when the book first stands up after the intro film. */
+function StandingHalf({materials,backdrop,stand}:{materials:BookMaterials;backdrop:Texture|null;stand:RefObject<{value:number}>}){
+ const board=useDisposable(()=>{const g=createBoardGeometry(true);relightTurned(g,UP);return g;},[]);
+ const block=useDisposable(()=>{const g=createPaperBlockGeometry();relightTurned(g,UP);return g;},[]);
+ const page=useDisposable(()=>createStandingPage(),[]),skirt=useDisposable(()=>createStandingSkirt(),[]);
+ const pivot=useRef<Group>(null!);
+ // Shortened to UPRIGHT_SCALE as it stands (the outward axis, before the turn), so it is full size only while lying open.
+ useFrame(()=>{const s=stand.current.value;pivot.current.rotation.z=UP*s;pivot.current.scale.x=1+(UPRIGHT_SCALE-1)*s;});
+ const edge=materials['paper-edge'],endpaper=materials.endpaper;
+ return <group position={[0,BOOK_HINGE_Y,0]}><group ref={pivot}><group position={[0,-BOOK_HINGE_Y,0]}>
+  <mesh geometry={board} position={[-BOOK_BOARD.x,BOOK_BOARD.y,0]}><Surface attach="material-0" map={materials.inside}/><Surface attach="material-1" map={materials['cloth-side']}/><Surface attach="material-2" map={materials['cloth-side']}/></mesh>
+  <mesh geometry={block} position={[-BLOCK_X,BOOK_PAGES.y,0]}>{[edge,edge,endpaper,endpaper,edge,edge].map((map,i)=><meshBasicMaterial key={i} attach={`material-${i}`} map={map} vertexColors side={DoubleSide}/>)}</mesh>
+  {/* The painting is laid over the paper, so its cut edges (and any see-through part) show paper. */}
+  <mesh geometry={page}><Surface map={endpaper}/></mesh>{backdrop&&<mesh geometry={page} renderOrder={1}><meshBasicMaterial map={backdrop} vertexColors transparent forceSinglePass side={DoubleSide} depthWrite={false}/></mesh>}<mesh geometry={skirt}><Surface map={edge} fallback="#e8dbc2"/></mesh>
+ </group></group></group>;
+}
+/** The cloth spine around the 90° fold. Built for a few fold steps only (it is costly), swapped while the book stands up. */
+function StandingSpine({materials,stand}:{materials:BookMaterials;stand:RefObject<{value:number}>}){
+ const steps=useMemo(()=>[1,.75,.5].map(createStandingSpine),[]);useEffect(()=>()=>steps.forEach(g=>g.dispose()),[steps]);
+ const mesh=useRef<Mesh>(null!);
+ useFrame(()=>{const s=stand.current.value,geometry=steps[s>.8?2:s>.35?1:0];if(mesh.current.geometry!==geometry)mesh.current.geometry=geometry;});
+ return <mesh ref={mesh} geometry={steps[2]}><Surface map={materials['cloth-side']} fallback="#ac705b"/></mesh>;
+}
+/** The sheet that turns the spread: lying as the lower page it shows paper, standing it shows the next backdrop on its other face. */
+export function createStandingSheetGeometry(){
+ const g=new BufferGeometry(),positions:number[]=[],uv:number[]=[],colors:number[]=[],indices:number[]=[];
+ for(let r=0;r<=ROWS;r++)for(let c=0;c<=COLUMNS;c++){positions.push(...standingSheetPoint(c/COLUMNS,r/ROWS,0));uv.push(1-r/ROWS,c/COLUMNS);const s=linear(pageShade(c/COLUMNS));colors.push(s,s,s);}
+ for(let r=0;r<ROWS;r++)for(let c=0;c<COLUMNS;c++){const a=r*(COLUMNS+1)+c,b=a+1,d=a+COLUMNS+2,e=a+COLUMNS+1;indices.push(a,e,b,b,e,d);}
+ g.setAttribute('position',new Float32BufferAttribute(positions,3));g.setAttribute('uv',new Float32BufferAttribute(uv,2));g.setAttribute('color',new Float32BufferAttribute(colors,3));g.setIndex(indices);return g;
+}
+/** Bends the turning sheet to q (0 lying as the lower page, 1 standing). */
+export function poseStandingSheet(geometry:BufferGeometry,q:number){
+ const position=geometry.getAttribute('position');
+ for(let r=0;r<=ROWS;r++)for(let c=0;c<=COLUMNS;c++)position.setXYZ(r*(COLUMNS+1)+c,...standingSheetPoint(c/COLUMNS,r/ROWS,q));
+ position.needsUpdate=true;geometry.computeBoundingSphere();
+}
+function StandingSheet({paper,paperTint,backdrop,progress,direction}:{paper?:Texture;paperTint?:string;backdrop:Texture|null;progress:RefObject<{value:number}>;direction:1|-1}){
+ const geometry=useDisposable(createStandingSheetGeometry,[]);
+ const group=useRef<Group>(null!);
+ useFrame(()=>{
+  const s=standingSheetProgress(progress.current.value),q=direction===1?s:1-s;group.current.visible=q>.002;if(!group.current.visible)return;
+  poseStandingSheet(geometry,q);
+ });
+ return <group ref={group} visible={false}><mesh geometry={geometry} renderOrder={4}><meshBasicMaterial map={paper} color={paperTint??'#ffffff'} vertexColors side={DoubleSide}/></mesh>{backdrop&&<mesh geometry={geometry} renderOrder={5}><meshBasicMaterial map={backdrop} vertexColors transparent side={BackSide} depthWrite={false}/></mesh>}</group>;
+}
+/** The case: the second half lying open (its page the flat stage), the first half standing with the backdrop, the spine around the fold.
+ *  Drawn in the open book's frame and turned −90° about y, so the binding runs across the screen and the flat page reaches the reader. */
+/** `floor` tones the flat page to the spread's paper (src/story.ts `paper`); `sheetFloor` the turning sheet's paper face. */
+export function StandingCase({materials,backdrop,turnBackdrop,turning,progress,stand,floor,sheetFloor}:{materials:BookMaterials;backdrop?:Texture;turnBackdrop?:Texture;turning:1|-1|0;progress:RefObject<{value:number}>;stand:RefObject<{value:number}>;floor?:string;sheetFloor?:string}){
+ const upright=useBackdrop(backdrop),sheetBack=useBackdrop(turnBackdrop);
+ // Turning forward, the flat page still shows the spread being turned until the sheet starts to lift and uncovers the next one, so the
+ // floor never changes tone while the old cards stand on it (or before the sheet that carries the old tone has appeared).
+ const page=useRef<Group>(null!),tones=useMemo(()=>({floor:new Color(floor??'#ffffff'),sheet:new Color(sheetFloor??'#ffffff')}),[floor,sheetFloor]);
+ useFrame(()=>{const material=(page.current?.children[0] as Mesh|undefined)?.material as MeshBasicMaterial|undefined;if(!material?.map)return;
+  material.color.copy(turning===1&&standingSheetProgress(progress.current.value)<=0?tones.sheet:tones.floor);});
+ return <group rotation={[0,-Math.PI/2,0]}>
+  <Board materials={materials} x={BOOK_BOARD.x}/><PaperBlock materials={materials} x={BLOCK_X}/>
+  {materials.endpaper&&<group ref={page}><PrintedPage texture={materials.endpaper} edge={materials['paper-edge']} tint={floor}/></group>}
+  <BindingDetails materials={materials}/><StandingSpine materials={materials} stand={stand}/>
+  <StandingHalf materials={materials} backdrop={upright} stand={stand}/>
+  {turning!==0&&<StandingSheet paper={materials.endpaper} paperTint={sheetFloor} backdrop={sheetBack} progress={progress} direction={turning}/>}
+ </group>;
+}
+type StandingTurn={direction:1|-1}|null;
+/** A pop-up card standing on the flat page at its phone placement; it folds back flat to turn the page and stands up again after. */
+type StandingCardProps={layer:Layer;texture:Texture;hinges:RefObject<Map<string,Group>>;onClick:(detail?:string)=>void;incoming?:boolean};
+/** The card's face on the phone: its picture, its click, and the sway that marks it clickable. */
+function StandingFace({layer,texture,onClick,incoming=false}:Omit<StandingCardProps,'hinges'>){
+ const place=standingPlacement(layer),phase=useStory(s=>s.phase);
+ const mesh=useRef<Mesh>(null!),swaySince=useRef<number|null>(null);
+ const geometry=useDisposable(()=>createCardGeometry({center:0,width:place.size[0],u0:0,u1:1,side:'right'},place.size[1]),[place.size[0],place.size[1]]);
+ useFrame(({clock})=>{
+  // The sway eases in, so the first frame after the intro film (and after a turn) is the still card the film ended on.
+  const swaying=layer.interactive&&phase==='EXPLORING';if(!swaying)swaySince.current=null;else swaySince.current??=clock.elapsedTime;
+  mesh.current.rotation.z=swaying?Math.sin(clock.elapsedTime*1.5+place.x*1.7)*.025*Math.min(1,(clock.elapsedTime-swaySince.current!)/1.2):0;
+ });
+ return <mesh ref={mesh} geometry={geometry} material={cardMaterial(texture)} dispose={null} position={[0,place.size[1]/2,0]} onClick={!incoming&&layer.interactive?e=>{e.stopPropagation();if(phase==='EXPLORING')onClick(layer.detail);}:undefined} onPointerOver={!incoming&&layer.interactive?()=>{if(phase==='EXPLORING')document.body.style.cursor='pointer';}:undefined} onPointerOut={()=>{document.body.style.cursor='';}}/>;
+}
+/** A card standing on another card (`on` in src/story.ts), inside that card's hinge so it folds with it (src/popupStack.ts). */
+export function StandingGluedCard({parent,...card}:StandingCardProps&{parent:Layer}){
+ const {layer,hinges,incoming=false}=card;const ref=useRef<Group>(null!);
+ const place=standingPlacement(layer),base=standingPlacement(parent);
+ const key=`${incoming?'incoming:':''}${layer.id}:right`;
+ useEffect(()=>{const group=ref.current;group.userData.glued=true;hinges.current.set(key,group);return()=>{hinges.current.delete(key);};},[key,hinges]);
+ return <group ref={ref} position={[place.x-base.x,surfaceY(place.z)+(place.lift??0)-surfaceY(base.z)-(base.lift??0),place.z-base.z]}><StandingFace {...card}/></group>;
+}
+export function StandingLayer({layer,texture,hinges,onClick,turn,progress,incoming=false,rank=0,children}:StandingCardProps&{turn:StandingTurn;progress:RefObject<{value:number}>;rank?:number;children?:ReactNode}){
+ const place=standingPlacement(layer);
+ const anchor=useRef<Group>(null!),ref=useRef<Group>(null!);
+ const key=`${incoming?'incoming:':''}${layer.id}:right`;
+ useEffect(()=>{const group=ref.current;hinges.current.set(key,group);return()=>{hinges.current.delete(key);};},[key,hinges]);
+ useFrame(()=>{
+  if(turn){const p=progress.current.value;ref.current.rotation.x=incoming?standingFoldIn(p):standingFoldOut(p);anchor.current.visible=incoming?p>.78:p<.3;}else anchor.current.visible=true;
+  // Folded cards stack, front ones on top (src/popupStack.ts); upright the lift is zero.
+  anchor.current.position.set(place.x,surfaceY(place.z)+(place.lift??0)+flatLift(rank,ref.current.rotation.x),place.z);
+ });
+ return <group ref={anchor}><group ref={ref}><StandingFace layer={layer} texture={texture} onClick={onClick} incoming={incoming}/>{children}</group></group>;
+}

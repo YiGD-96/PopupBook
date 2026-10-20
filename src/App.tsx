@@ -1,45 +1,257 @@
 import { Component, lazy, Suspense, useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
-import { ArrowRight, ArrowLeft, BookOpen, Volume2, VolumeX, SlidersHorizontal, X, RotateCcw, MousePointer2, Check, Sparkles, Heart, MapPin, LoaderCircle } from 'lucide-react';
-import { Director, scenes, useStory, playSound } from './story';
+import { ArrowRight, ArrowLeft, BookOpen, X, RotateCcw, MousePointer2, Check, Sparkles, LoaderCircle } from 'lucide-react';
+import {SITE} from './site';
+import { type Director, scenes, useStory, playSound, unlockAudio } from './story';
 import { useBookGestures } from './useBookGestures';
-const Storybook=lazy(()=>import('./Storybook'));
+import Intro,{type IntroReport} from './Intro';
+import {canRevealReader,INTRO_PAGE_COUNT} from './introPlayback';
+import {BOOK_FRAME_WIDTH,BOOK_FRAME_HEIGHT,FILM_SPAN,bookZoom} from './bookView';
+import {standingMediaSize} from './standingMedia';
+import {artSource} from './artSource';
+import DetailPanel from './DetailPanel';
+import DetailBook from './DetailBook';
+import { details } from './details';
+import { noteStory, noteTurn, parseHash, track } from './analytics';
+const Storybook = lazy(() => import('./Storybook'));
+// Once the intro film has buffered, the book's code and first spread download alongside it (src/Storybook.tsx preloadBook).
+const preloadBook = () => { void import('./Storybook').then(module => module.preloadBook()).catch(() => {}); };
 
-class CanvasBoundary extends Component<{children:ReactNode;onError:()=>void},{failed:boolean}>{state={failed:false};static getDerivedStateFromError(){return {failed:true};}componentDidCatch(){this.props.onError();}render(){return this.state.failed?null:this.props.children;}}
-function supportsWebGL(){try{const c=document.createElement('canvas');const gl=c.getContext('webgl2')??c.getContext('webgl');if(!gl)return false;gl.getExtension('WEBGL_lose_context')?.loseContext();return true;}catch{return false;}}
-function StaticBook({cover,onInteract}:{cover:boolean;onInteract:()=>void}){const chapter=useStory(s=>s.chapter);return cover?<img className="static-cover" src="/art/cover.svg" alt="느린 제주 그림책 표지"/>:<div className="static-spread" aria-label={scenes[chapter].title}>{scenes[chapter].layers.map((l,i)=><img key={l.id} src={`/art/${l.src}.svg`} style={{width:`${l.size[0]/7.2*100}%`,left:`${50+l.position[0]/7.2*100}%`,bottom:`${25+(2-l.position[2])*6}%`,zIndex:i}} alt=""/>)}<button className="static-hotspot" onClick={onInteract} aria-label={scenes[chapter].label}><MousePointer2 size={20}/></button></div>;}
-function Modal({title,children,onClose}:{title:string;children:ReactNode;onClose:()=>void}){const ref=useRef<HTMLDivElement>(null);useEffect(()=>{const previous=document.activeElement as HTMLElement;ref.current?.querySelector<HTMLButtonElement>('button')?.focus();const handler=(e:KeyboardEvent)=>{if(e.key==='Escape')onClose();if(e.key==='Tab'){const elements=ref.current?.querySelectorAll<HTMLElement>('button, input, select, [tabindex="0"]');if(!elements?.length)return;const first=elements[0],last=elements[elements.length-1];if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus();}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}}};document.addEventListener('keydown',handler);return()=>{document.removeEventListener('keydown',handler);previous?.focus();};},[onClose]);return <div className="modal-backdrop" onClick={e=>{if(e.target===e.currentTarget)onClose();}}><div className="modal" role="dialog" aria-modal="true" aria-label={title} ref={ref}><div className="modal-head"><h2>{title}</h2><button className="icon-button" onClick={onClose} aria-label="닫기"><X size={21}/></button></div>{children}</div></div>;}
-export default function App(){
- const state=useStory();const {phase,chapter,muted,quality,reduceMotion,dialog}=state;const api=useRef<Director|null>(null);const [fallback,setFallback]=useState(()=>new URLSearchParams(window.location.search).get('view')==='paper'||!supportsWebGL());const [modal,setModal]=useState<'settings'|'about'|'contents'|null>(null);const [engineReady,setEngineReady]=useState(false);const storyRef=useRef<HTMLHeadingElement>(null);const surfaceRef=useRef<HTMLDivElement>(null);const paperTurn=useRef<{direction:1|-1;progress:number}|null>(null);
- const {dragging,releaseReady}=useBookGestures(surfaceRef,api,modal!==null);
- const cover=phase==='COVER'||phase==='INIT';const busy=!['COVER','EXPLORING','ENDING','ERROR'].includes(phase);const scene=scenes[chapter];const ending=phase==='ENDING';
- const markInteraction=()=>{if(api.current)api.current.interact();else staticInteract();};
- function staticInteract(){const s=useStory.getState();if(s.phase!=='EXPLORING')return;s.set({dialog:true,visited:[...new Set([...s.visited,s.chapter])]});playSound('hello');}
- function staticDirector():Director{return {start:()=>{if(useStory.getState().phase==='COVER')useStory.getState().set({phase:'EXPLORING',chapter:0});},go:n=>{if(['EXPLORING','ENDING'].includes(useStory.getState().phase)&&n>=0&&n<3){useStory.getState().set({phase:'EXPLORING',chapter:n,dialog:false});playSound('page');}},finish:()=>{if(useStory.getState().phase==='EXPLORING'&&useStory.getState().chapter===2)useStory.getState().set({phase:'ENDING',dialog:false});},restart:()=>useStory.getState().set({phase:'COVER',chapter:0,dialog:false,visited:[],error:null}),interact:staticInteract,retry:()=>useStory.getState().set({phase:'EXPLORING',error:null}),previewTurn:(direction,progress)=>{const s=useStory.getState();if(!['EXPLORING','DRAGGING_PAGE'].includes(s.phase)||s.chapter+direction<0||s.chapter+direction>2)return false;paperTurn.current={direction,progress};s.set({phase:'DRAGGING_PAGE'});return true;},settleTurn:commit=>{const s=useStory.getState();if(!paperTurn.current||s.phase!=='DRAGGING_PAGE')return;const target=s.chapter+paperTurn.current.direction;paperTurn.current=null;s.set({phase:'EXPLORING',...(commit?{chapter:target,dialog:false}:{})});if(commit)playSound('page');}};}
- function onFailure(){setFallback(true);api.current=staticDirector();setEngineReady(true);const s=useStory.getState();s.set({phase:['INIT','COVER'].includes(s.phase)?'COVER':s.phase==='ENDING'?'ENDING':'EXPLORING',error:null});}
- useEffect(()=>{if(!fallback)return;api.current=staticDirector();const s=useStory.getState();if(!['INIT','COVER'].includes(s.phase)){setEngineReady(true);return;}let active=true;setEngineReady(false);void Promise.all(['cover',...scenes[0].layers.map(l=>l.src)].map(name=>new Promise<void>((resolve,reject)=>{const image=new Image();image.onload=()=>resolve();image.onerror=()=>reject(new Error('책을 준비하지 못했어요. 연결을 확인해 주세요.'));image.src=`/art/${name}.svg`;}))).then(()=>{if(active){setEngineReady(true);s.set({phase:'COVER'});}}).catch(error=>{if(active)s.set({phase:'ERROR',error:error.message});});return()=>{active=false;};},[fallback]);
- useEffect(()=>{if(!engineReady||phase!=='COVER'||modal!==null)return;const timer=window.setTimeout(()=>api.current?.start(),reduceMotion?150:450);return()=>window.clearTimeout(timer);},[engineReady,phase,modal,reduceMotion]);
- useEffect(()=>{const media=window.matchMedia('(prefers-reduced-motion: reduce)');const listener=()=>state.set({reduceMotion:media.matches});media.addEventListener('change',listener);return()=>media.removeEventListener('change',listener);},[]);
- useEffect(()=>{if(phase==='EXPLORING')storyRef.current?.focus({preventScroll:true});},[phase]);
- useEffect(()=>{function keys(e:KeyboardEvent){if(modal!==null||(e.target instanceof HTMLElement&&['INPUT','SELECT','TEXTAREA','BUTTON'].includes(e.target.tagName)))return;const s=useStory.getState();if(s.phase==='EXPLORING'){if(e.key==='ArrowRight'){e.preventDefault();s.chapter===2?api.current?.finish():api.current?.go(s.chapter+1);}if(e.key==='ArrowLeft'){e.preventDefault();api.current?.go(s.chapter-1);}}}window.addEventListener('keydown',keys);return()=>window.removeEventListener('keydown',keys);},[modal]);
- const closeModal=useCallback(()=>setModal(null),[]);
- useEffect(()=>{document.body.classList.add('book-reading');window.scrollTo({top:0,behavior:'instant'});return()=>document.body.classList.remove('book-reading');},[]);
- return <div className="app-shell reader-mode"><a className="skip-link" href="#main">이야기로 바로 가기</a><header className="site-header"><a href="/" className="brand" aria-label="느린 제주 홈"><span className="brand-icon"><BookOpen size={24} strokeWidth={1.5}/><span/></span><span>느린 제주<span className="brand-en">SLOW JEJU</span></span></a><nav aria-label="메인 메뉴"><button className="nav-link" onClick={()=>setModal('about')}>이야기 소개</button><button className="nav-link" disabled={cover||busy} onClick={()=>setModal('contents')}>책갈피</button><span className="nav-divider"/><button className="icon-button" onClick={()=>state.set({muted:!muted})} aria-label={muted?'효과음 켜기':'효과음 끄기'} aria-pressed={!muted}>{muted?<VolumeX size={19}/>:<Volume2 size={19}/>}</button><button className="icon-button" onClick={()=>setModal('settings')} aria-label="설정 열기"><SlidersHorizontal size={19}/></button></nav></header>
- <main id="main"><section className={`hero ${cover?'is-cover':'is-open'} ${ending?'is-ending':''}`} aria-label="제주 팝업북"><div className="hero-copy">
- {cover?<div className="cover-intro"><span>A LITTLE PAPER JOURNEY</span><h1>한 장씩, 만나는 제주</h1><p role="status"><LoaderCircle size={14} className="spin"/>{phase==='INIT'?'책을 준비하고 있어요':'당신의 작은 여행을 펼쳐요'}</p></div>:
- ending?<><span className="eyebrow"><Heart size={14}/> 오늘의 작은 여행을 마치며</span><h1>제주의 바람을,<br/><span className="hand-underline">당신의 하루에.</span></h1><p className="hero-description">잠시 쉬어 간 마음이 조금 가벼워졌나요?<br/>이 작은 풍경은 언제나 여기서 기다릴게요.</p><div className="ending-stamp"><Check size={15}/> 세 가지 풍경을 모두 만났어요</div><button className="primary-button" onClick={()=>api.current?.restart()}><RotateCcw size={18}/> 다시 여행하기 <ArrowRight size={18}/></button></>:
- <><span className="eyebrow"><MapPin size={14}/> {scene.place} <i/> CHAPTER 0{chapter+1}</span><h1 className="chapter-heading" aria-label={scene.title} ref={storyRef} tabIndex={-1}>{scene.title.split(' ').slice(0,-1).join(' ')}<br/><span className="hand-underline">{scene.title.split(' ').slice(-1)}</span></h1><p className="hero-description story-intro">{scene.intro}</p><div className={`narration ${dialog?'has-dialog':''}`}><span className="narration-label">{dialog?<><Sparkles size={14}/> 풍경이 들려주는 이야기</>:<><BookOpen size={14}/> 이 장의 이야기</>}</span><p aria-live="polite">{dialog?scene.dialog:'작은 풍경에도 이야기가 숨어 있어요. 종이 위의 친구를 눌러 이야기를 들어보세요.'}</p></div><button className="interaction-button" disabled={phase!=='EXPLORING'} onClick={markInteraction}>{state.visited.includes(chapter)?<Check size={16}/>:<MousePointer2 size={16}/>} {scene.label}<ArrowRight size={16}/></button><div className="story-navigation">{chapter>0&&<button className="secondary-button" disabled={busy} onClick={()=>api.current?.go(chapter-1)}><ArrowLeft size={17}/> 이전 장</button>}<button className="primary-button" disabled={busy||phase==='ERROR'} onClick={()=>chapter===2?api.current?.finish():api.current?.go(chapter+1)}>{chapter===2?'여행 마무리하기':'다음 풍경으로'}<ArrowRight size={18}/></button></div></>}
- </div><div className="book-stage"><div className="stage-orbit"/><div className="stage-dot dot-one"/><div className="stage-dot dot-two"/><span className="stage-spark spark-one">✧</span><span className="stage-spark spark-two">✧</span><div className="book-caption">{cover?'한 장씩, 천천히':ending?'오늘도, 좋은 하루':'종이 위에 펼쳐지는 제주'}<svg width="74" height="47" viewBox="0 0 74 47" aria-hidden="true"><path d="M3 5q52-5 51 30m-10-7 10 10 8-12" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeDasharray="3 4"/></svg></div>
- <div ref={surfaceRef} className={`canvas-wrap ${dragging?'is-dragging':''}`} data-phase={phase} data-fps={state.fps} aria-label={cover?'느린 제주 입체 그림책':`${chapter+1}장 ${scene.title} 입체 종이 풍경`}>
- {fallback?<StaticBook cover={cover} onInteract={markInteraction}/>:<CanvasBoundary onError={onFailure}><Suspense fallback={null}><Storybook onReady={director=>{api.current=director;setEngineReady(true);}} onFailure={onFailure}/></Suspense></CanvasBoundary>}
- {phase==='INIT'&&!fallback&&<img className="startup-cover" src="/art/cover.svg" alt="느린 제주 그림책 표지"/>}
- </div>{busy&&phase!=='INIT'&&phase!=='DRAGGING_PAGE'&&<div className="scene-loading" role="status"><LoaderCircle size={16} className="spin"/>{phase==='LOADING_PAGE'?'다음 풍경을 준비해요':phase==='CLOSING_POPUP'?'풍경을 살며시 접어요':phase==='TURNING_PAGE'?'책장을 넘겨요':'종이 속 제주가 깨어나요'}</div>}
- {!cover&&!ending&&<><div className="reader-bookmark"><span>CHAPTER 0{chapter+1} / 03</span><strong>{scene.title}</strong><div className="bookmark-dots">{scenes.map((s,i)=><button key={s.id} disabled={busy} className={i===chapter?'selected':''} aria-label={`${i+1}장으로 이동`} aria-current={i===chapter?'step':undefined} onClick={()=>api.current?.go(i)}/>)}</div></div><button className="reader-arrow reader-prev" aria-label="이전 책장" disabled={busy||chapter===0} onClick={()=>api.current?.go(chapter-1)}><ArrowLeft size={24}/></button><button className="reader-arrow reader-next" aria-label={chapter===2?'여행 마무리':'다음 책장'} disabled={busy} onClick={()=>chapter===2?api.current?.finish():api.current?.go(chapter+1)}><ArrowRight size={24}/></button><div className={`gesture-guide ${dragging?'drag-active':''}`} aria-live="polite">{dragging?(releaseReady?'손을 놓으면 책장이 넘어가요':'손을 놓으면 원래 장으로 돌아가요'):<><span>↔ 좌우로 드래그</span><i/><span>↕ 책 위에서 스크롤</span></>}</div></>}
- {!busy&&phase!=='ERROR'&&<div className={`stage-tag ${cover?'cover-tag':''}`}>{cover?<><span className="tiny-leaf">✦</span> 종이로 만나는, 다정한 섬</>:ending?<><Heart size={14}/> 마음에 담아가는 작은 쉼</>:<><MousePointer2 size={14}/>{scene.hint}</>}</div>}
- {phase==='ERROR'&&<div className="scene-error" role="alert"><p>{state.error}</p><button className="secondary-button" onClick={()=>api.current?.retry()}><RotateCcw size={16}/> 다시 시도</button></div>}
- </div></section>
- </main>
- {modal==='contents'&&<Modal title="작은 여행의 책갈피" onClose={closeModal}><p className="modal-description">머무르고 싶은 풍경으로 돌아가요.</p><div className="contents-list">{scenes.map((s,i)=><button key={s.id} disabled={busy} className={chapter===i?'current':''} onClick={()=>{closeModal();api.current?.go(i);}}><span>0{i+1}</span><div><strong>{s.title}</strong><small>{s.place}</small></div>{chapter===i?<Check size={19}/>:<ArrowRight size={19}/>}</button>)}</div></Modal>}
- {modal==='settings'&&<Modal title="나에게 맞는 여행" onClose={closeModal}><p className="modal-description">편안하게 책을 즐길 수 있도록 조절해요.</p><div className="settings-row"><div><strong>효과음</strong><p>책장 소리와 작은 인사 소리</p></div><button className={`toggle ${!muted?'on':''}`} role="switch" aria-checked={!muted} aria-label="효과음" onClick={()=>state.set({muted:!muted})}><span/></button></div><div className="settings-row"><div><strong>움직임 줄이기</strong><p>책장과 종이 풍경을 빠르게 펼쳐요</p></div><button className={`toggle ${reduceMotion?'on':''}`} role="switch" aria-checked={reduceMotion} aria-label="움직임 줄이기" onClick={()=>state.set({reduceMotion:!reduceMotion})}><span/></button></div><div className="quality-setting"><strong>풍경의 선명도</strong><div className="segmented">{(['auto','low','high'] as const).map(q=><button key={q} aria-pressed={quality===q} className={quality===q?'selected':''} onClick={()=>state.set({quality:q})}>{q==='auto'?'자동':q==='low'?'가볍게':'선명하게'}</button>)}</div><p>자동 모드는 화면에 맞는 선명도를 사용해요.</p></div>{fallback&&<p className="fallback-note">이 기기에서는 종이 일러스트 모드로 감상할 수 있어요.</p>}{!cover&&<button className="text-button" onClick={()=>{api.current?.restart();closeModal();}}><RotateCcw size={15}/> 처음부터 다시 보기</button>}</Modal>}
- {modal==='about'&&<Modal title="한 장씩, 마음에 닿는 여행" onClose={closeModal}><div className="about-art"><img src="/art/carrot.svg" alt="웃고 있는 당근 친구"/><span>안녕, 나는 당근이야!</span></div><p className="about-text">‘느린 제주’는 손끝으로 펼치는 작은 팝업북이에요. 구좌의 당근밭에서 출발해, 다정한 골목을 지나, 바다의 작은 등대에 도착합니다.</p><p className="about-text">종이 위의 친구와 풍경을 눌러보세요. 급하게 넘길 필요도, 모든 이야기를 찾을 필요도 없어요. 당신의 속도로 즐겨주세요.</p><div className="about-help"><MousePointer2 size={18}/><p>클릭하거나 터치해요.<br/><span>키보드의 Tab과 Enter, 방향키로도 여행할 수 있어요.</span></p></div><button className="primary-button" onClick={()=>{closeModal();if(cover)api.current?.start();}}>작은 여행 시작하기<ArrowRight size={18}/></button><p className="prototype-note">Jeju Pop-up Storybook · 인터랙티브 프로토타입</p></Modal>}
- </div>;
+class CanvasBoundary extends Component<{children:ReactNode;onError:()=>void},{failed:boolean}> {
+  state = {failed:false};
+  static getDerivedStateFromError() { return {failed:true}; }
+  componentDidCatch() { this.props.onError(); }
+  render() { return this.state.failed ? null : this.props.children; }
+}
+function supportsWebGL() {
+  try {
+    const canvas=document.createElement('canvas');
+    const gl=canvas.getContext('webgl2')??canvas.getContext('webgl');
+    if(!gl)return false;
+    gl.getExtension('WEBGL_lose_context')?.loseContext();
+    return true;
+  } catch { return false; }
+}
+function StaticBook({closed,onInteract}:{closed:boolean;onInteract:(detail?:string)=>void}) {
+  const chapter=useStory(s=>s.chapter);
+  if(closed)return <img className="static-cover" src={artSource('cover')} alt={SITE.title+' 그림책 표지'}/>;
+  return <div className="static-spread" aria-label={scenes[chapter].title}>
+    {scenes[chapter].layers.map((l,i)=><img key={l.id} src={artSource(l.src)} style={{width:(l.size[0]/7.2*100)+'%',left:(50+l.position[0]/7.2*100)+'%',bottom:(25+(2-l.position[2])*6)+'%',zIndex:i}} alt=""/>)}
+    {scenes[chapter].layers.filter(l=>l.detail).map(l=><button key={l.id} className="static-hotspot" style={{left:(50+l.position[0]/7.2*100)+'%',bottom:(30+(2-l.position[2])*6)+'%'}} onClick={()=>onInteract(l.detail)} aria-label={l.detail}><MousePointer2 size={20}/></button>)}
+  </div>;
+}
+/** Lamp light falling off into the dark room, over the film and the book alike (static; pointer-events none). */
+function DeskAir(){
+  return <div className="desk-air" aria-hidden="true"/>;
+}
+function Modal({title,children,onClose}:{title:string;children:ReactNode;onClose:()=>void}) {
+  const ref=useRef<HTMLDivElement>(null);
+  useEffect(()=>{
+    const previous=document.activeElement as HTMLElement;
+    ref.current?.querySelector<HTMLButtonElement>('button')?.focus();
+    const handler=(event:KeyboardEvent)=>{
+      if(event.key==='Escape')onClose();
+      if(event.key!=='Tab')return;
+      const elements=ref.current?.querySelectorAll<HTMLElement>('button,input,select,[tabindex="0"]');
+      if(!elements?.length)return;
+      const first=elements[0],last=elements[elements.length-1];
+      if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus();}
+      else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus();}
+    };
+    document.addEventListener('keydown',handler);
+    return()=>{document.removeEventListener('keydown',handler);previous?.focus();};
+  },[onClose]);
+  return <div className="modal-backdrop" onClick={e=>{if(e.target===e.currentTarget)onClose();}}>
+    <div className="modal" role="dialog" aria-modal="true" aria-label={title} ref={ref}>
+      <div className="modal-head"><h2>{title}</h2><button className="icon-button" onClick={onClose} aria-label="닫기"><X size={21}/></button></div>
+      {children}
+    </div>
+  </div>;
+}
+export default function App() {
+  const state=useStory();
+  const {phase,chapter,dialog,audioReady}=state;
+  const api=useRef<Director|null>(null);
+  const [fallback,setFallback]=useState(()=>new URLSearchParams(window.location.search).get('view')==='paper');
+  const [modal,setModal]=useState<'about'|null>(null);
+  const [engineReady,setEngineReady]=useState(false);
+  const [sceneMounted,setSceneMounted]=useState(false);
+  const [introVisible,setIntroVisible]=useState(true);
+  const [introLeaving,setIntroLeaving]=useState(false);
+  const [chromeVisible,setChromeVisible]=useState(false);
+  const [chromeVideoTime,setChromeVideoTime]=useState<number|null>(null);
+  const [mediaFinished,setMediaFinished]=useState(false);
+  const [introRun,setIntroRun]=useState(0);
+  const [introReport,setIntroReport]=useState<IntroReport|null>(null);
+  const [fallbackAttempt,setFallbackAttempt]=useState(0);
+  const storyRef=useRef<HTMLHeadingElement>(null);
+  const surfaceRef=useRef<HTMLDivElement>(null);
+  const paperTurn=useRef<{direction:1|-1;progress:number}|null>(null);
+  const {dragging}=useBookGestures(surfaceRef,api,modal!==null||introVisible);
+  const closed=['INIT','COVER'].includes(phase);
+  const coverMode=!introVisible&&closed;
+  const intro=introVisible||closed;
+  const busy=!['COVER','EXPLORING','ENDING','ERROR'].includes(phase);
+  const ending=phase==='ENDING';
+  const scene=scenes[chapter];
+  const closeModal=useCallback(()=>setModal(null),[]);
+  const closeDetail=useCallback(()=>useStory.getState().set({detail:null}),[]);
+  const openDetail=useCallback((id:string)=>{noteStory('related');useStory.getState().set({detail:id});},[]);
+  // A shared link (#cooks, #recipes/recipe-02, #ending) opens that spread or story once the intro has handed over to the book.
+  // The book as text (built into index.html by src/seo.ts): for reading without the pictures, for screen readers and for crawlers.
+  const openText=useCallback(()=>{const text=document.getElementById('book-text');if(!text)return;text.hidden=false;document.body.classList.add('text-open');text.focus();track('text_view');},[]);
+  useEffect(()=>{
+    const text=document.getElementById('book-text');if(!text)return;
+    const close=()=>{if(text.hidden)return;text.hidden=true;document.body.classList.remove('text-open');};
+    const click=(e:MouseEvent)=>{if((e.target as Element|null)?.closest('[data-close-text]'))close();};
+    const key=(e:KeyboardEvent)=>{if(e.key==='Escape')close();};
+    text.addEventListener('click',click);document.addEventListener('keydown',key);
+    return()=>{text.removeEventListener('click',click);document.removeEventListener('keydown',key);};
+  },[]);
+  const deepLink=useRef<ReturnType<typeof parseHash>|null>(parseHash(window.location.hash));const [linkTick,setLinkTick]=useState(0);
+
+  function staticInteract(detail?:string){
+    const s=useStory.getState();
+    if(s.phase!=='EXPLORING')return;
+    s.set({dialog:true,detail:detail??scenes[s.chapter].detail,visited:[...new Set([...s.visited,s.chapter])]});
+    playSound('hello');
+  }
+  function staticDirector():Director {
+    return {
+      reveal:()=>{const s=useStory.getState();if(s.phase==='COVER')s.set({phase:'EXPLORING',chapter:0,dialog:false,introPagesTurned:INTRO_PAGE_COUNT});},
+      go:n=>{const s=useStory.getState();if(['EXPLORING','ENDING'].includes(s.phase)&&n>=0&&n<3){s.set({phase:'EXPLORING',chapter:n,dialog:false,detail:null});playSound('page');}},
+      finish:()=>{const s=useStory.getState();if(s.phase==='EXPLORING'&&s.chapter===2)s.set({phase:'ENDING',dialog:false});},
+      interact:staticInteract,
+      retry:()=>{useStory.getState().set({phase:'INIT',error:null});setFallbackAttempt(n=>n+1);},
+      previewTurn:(direction,progress)=>{
+        const s=useStory.getState();
+        if(!['EXPLORING','ENDING','DRAGGING_PAGE'].includes(s.phase)||s.chapter+direction<0||s.chapter+direction>2)return false;
+        paperTurn.current={direction,progress};s.set({phase:'DRAGGING_PAGE'});return true;
+      },
+      settleTurn:commit=>{
+        const s=useStory.getState();
+        if(!paperTurn.current||s.phase!=='DRAGGING_PAGE')return;
+        const target=s.chapter+paperTurn.current.direction;paperTurn.current=null;
+        s.set({phase:'EXPLORING',...(commit?{chapter:target,dialog:false,detail:null}:{})});
+        if(commit)playSound('page');
+      }
+    };
+  }
+  function onFailure(){
+    setFallback(true);setEngineReady(false);
+    const s=useStory.getState();
+    s.set({phase:['INIT','COVER'].includes(s.phase)?'INIT':s.phase==='ENDING'?'ENDING':'EXPLORING',error:null});
+  }
+  useEffect(()=>{
+    if(!fallback||!sceneMounted)return;
+    api.current=staticDirector();
+    const s=useStory.getState();
+    if(!['INIT','COVER'].includes(s.phase)){setEngineReady(true);return;}
+    let active=true;setEngineReady(false);
+    void Promise.all(['cover',...scenes[0].layers.map(l=>l.src)].map(name=>new Promise<void>((resolve,reject)=>{
+      const image=new Image();image.onload=()=>resolve();image.onerror=()=>reject(new Error('책을 준비하지 못했어요. 연결을 확인해 주세요.'));image.src=artSource(name);
+    }))).then(()=>{if(active){setEngineReady(true);s.set({phase:'COVER'});}}).catch(error=>{if(active)s.set({phase:'ERROR',error:error.message});});
+    return()=>{active=false;};
+  },[fallback,fallbackAttempt,sceneMounted]);
+  const mountEarly=useCallback(()=>{if(new URLSearchParams(window.location.search).get('view')!=='paper'&&supportsWebGL())setSceneMounted(true);},[]);
+  const finishIntro=useCallback((report:IntroReport)=>{
+    setIntroReport(report);setChromeVisible(true);
+    track('intro_complete',{layout:report.standing?'standing':'open',dropped_frames:report.droppedFrames??undefined,media_failed:report.mediaFailed});
+    if(new URLSearchParams(window.location.search).get('view')!=='paper'&&!supportsWebGL())setFallback(true);
+    setMediaFinished(true);setSceneMounted(true);
+  },[]);
+  const showChrome=useCallback((time:number)=>{setChromeVisible(true);setChromeVideoTime(time);},[]);
+  const beginIntro=useCallback(()=>{
+    track('restart');api.current=null;setEngineReady(false);setSceneMounted(false);setMediaFinished(false);setIntroLeaving(false);setIntroVisible(true);setIntroRun(n=>n+1);setIntroReport(null);setChromeVisible(false);setChromeVideoTime(null);
+    useStory.getState().set({phase:'INIT',chapter:0,dialog:false,visited:[],error:null,introPagesTurned:0});
+  },[]);
+  useEffect(()=>{
+    if(canRevealReader(mediaFinished,engineReady&&phase==='COVER'))api.current?.reveal(introReport?.standing);
+  },[mediaFinished,engineReady,phase,introReport]);
+  useEffect(()=>{
+    if(!introVisible||phase!=='EXPLORING')return;
+    setIntroLeaving(true);const timer=window.setTimeout(()=>setIntroVisible(false),280);
+    return()=>window.clearTimeout(timer);
+  },[phase,introVisible]);
+  useEffect(()=>{
+    document.addEventListener('pointerdown',unlockAudio,true);
+    document.addEventListener('pointerup',unlockAudio,true);
+    document.addEventListener('keydown',unlockAudio,true);
+    return()=>{document.removeEventListener('pointerdown',unlockAudio,true);document.removeEventListener('pointerup',unlockAudio,true);document.removeEventListener('keydown',unlockAudio,true);};
+  },[]);
+  useEffect(()=>{if(phase==='EXPLORING'&&!introVisible)storyRef.current?.focus({preventScroll:true});},[phase,introVisible]);
+  useEffect(()=>{
+    const link=deepLink.current;if(!link||introVisible||phase!=='EXPLORING')return;
+    if(link.chapter!==null&&link.chapter!==chapter){noteTurn('link');api.current?.go(link.chapter);return;}
+    deepLink.current=null;
+    if(link.ending)api.current?.finish();
+    else if(link.detail){noteStory('link');useStory.getState().set({detail:link.detail});}
+  },[phase,chapter,introVisible,linkTick]);
+  useEffect(()=>{
+    // A hash typed or pasted while reading takes the reader there too.
+    const follow=()=>{deepLink.current=parseHash(window.location.hash);setLinkTick(n=>n+1);};
+    window.addEventListener('hashchange',follow);return()=>window.removeEventListener('hashchange',follow);
+  },[]);
+  useEffect(()=>{
+    const keys=(e:KeyboardEvent)=>{
+      if(introVisible||modal!==null||document.body.classList.contains('text-open')||(e.target instanceof HTMLElement&&['INPUT','SELECT','TEXTAREA','BUTTON'].includes(e.target.tagName)))return;
+      const s=useStory.getState();
+      // The first spread is the start of the story: there is no going back to the cover from here.
+      if(['ArrowRight','ArrowLeft'].includes(e.key))noteTurn('key');
+      if(e.key==='ArrowRight'&&s.phase==='EXPLORING'){e.preventDefault();s.chapter===2?api.current?.finish():api.current?.go(s.chapter+1);}
+      if(e.key==='ArrowLeft'&&['EXPLORING','ENDING'].includes(s.phase)&&s.chapter>0){e.preventDefault();api.current?.go(s.chapter-1);}
+    };
+    window.addEventListener('keydown',keys);return()=>window.removeEventListener('keydown',keys);
+  },[modal,introVisible]);
+  useEffect(()=>{document.body.classList.add('book-reading');window.scrollTo({top:0,behavior:'instant'});return()=>document.body.classList.remove('book-reading');},[]);
+  useEffect(()=>{
+    const surface=surfaceRef.current;if(!surface)return;
+    const update=()=>{
+      const zoom=bookZoom(surface.clientWidth,surface.clientHeight);
+      // The desktop film shows desk around the frame (FILM_SPAN); at the frame's scale it lines up with the live camera.
+      surface.style.setProperty('--book-media-width',String(BOOK_FRAME_WIDTH*FILM_SPAN.x*zoom)+'px');
+      surface.style.setProperty('--book-media-height',String(BOOK_FRAME_HEIGHT*FILM_SPAN.y*zoom)+'px');
+      const standing=standingMediaSize(surface.clientWidth,surface.clientHeight);
+      surface.style.setProperty('--standing-media-width',String(standing.width)+'px');
+      surface.style.setProperty('--standing-media-height',String(standing.height)+'px');
+    };
+    update();const observer=new ResizeObserver(update);observer.observe(surface);return()=>observer.disconnect();
+  },[]);
+
+  const introText=phase==='INIT'?'책을 준비하고 있어요':'당신의 작은 여행을 펼쳐요';
+  const detailOpen=!!state.detail&&!introVisible&&!ending;
+  return <div className={"app-shell reader-mode cinematic-reader"+(introVisible?" intro-active":"")+(detailOpen?" has-detail":"")}>
+    {!introVisible&&<a className="skip-link" href="#main">이야기로 바로 가기</a>}
+    {chromeVisible&&<header className="site-header">
+      <a href="/" className="brand" aria-label={SITE.name+' 홈으로'}><img className="brand-logo" src="/media/logo.webp" alt="carrot" width={87} height={26}/><span className="brand-name">{SITE.name}</span></a>
+      <div className="header-chapter" aria-label={(chapter+1)+'장 '+scene.title}><span>0{chapter+1} / 03</span><strong>{scene.title}</strong></div><nav aria-label="메인 메뉴"><button className="nav-link" onClick={openText}>글로 읽기</button><button className="nav-link" onClick={()=>{setModal('about');track('about_open');}}>이야기 소개</button></nav>
+    </header>}
+    <main id="main"><section className={'hero '+(intro?'is-cover':'is-open')+(ending?' is-ending':'')} aria-label={SITE.title+' 팝업북'}>
+      {chromeVisible&&<div className="hero-copy">
+        {coverMode?<div className="cover-intro"><span>{SITE.label}</span><h1>{SITE.title}</h1><p role="status"><LoaderCircle size={14} className="spin"/>{introText}</p></div>:
+        ending?<><span className="eyebrow">{SITE.label}</span><h1>{SITE.title}</h1><p className="hero-description">{SITE.tagline[0]}<br/>{SITE.tagline[1]}<span className="hand-underline">{SITE.tagline[2]}</span>{SITE.tagline[3]}</p><div className="ending-stamp"><Check size={15}/> 01 · 02 · 03 이야기를 모두 만났어요</div><a className="secondary-button ending-link" href={SITE.url} target="_blank" rel="noreferrer">웹진에서 이어 읽기<span className="sr-only"> (새 창에서 열림)</span></a><button className="primary-button" onClick={beginIntro}><RotateCcw size={18}/> 처음부터 다시 보기<ArrowRight size={18}/></button></>:
+        <><h1 className="sr-only" aria-label={scene.title} ref={storyRef} tabIndex={-1}>{scene.title}</h1>
+          <div className={'narration '+(dialog?'has-dialog':'')}><span className="narration-label">{dialog?<><Sparkles size={14}/> 풍경이 들려주는 이야기</>:<><BookOpen size={14}/> 이 장의 이야기</>}</span><p aria-live="polite">{dialog?scene.dialog:'그림 속 사물을 눌러 이야기를 펼쳐 보세요.'}</p></div>
+          <button className="interaction-button" disabled={phase!=='EXPLORING'||introVisible} onClick={()=>{noteStory('button');api.current?.interact();}}>{state.visited.includes(chapter)?<Check size={16}/>:<MousePointer2 size={16}/>} {scene.label}</button>
+
+        </>}
+      </div>}
+      <div className="book-stage">
+        <div ref={surfaceRef} className={'canvas-wrap '+(dragging?'is-dragging':'')} data-phase={phase} data-intro-pages={state.introPagesTurned} data-audio-ready={audioReady} data-cover-hold-ms={introReport?.coverHoldMs} data-video-frames={introReport?.videoFrames} data-video-dropped-frames={introReport?.droppedFrames} data-video-failed={introReport?.mediaFailed} data-chrome-visible={chromeVisible} data-chrome-video-time={chromeVideoTime} aria-label={intro?SITE.title+' 입체 그림책':(chapter+1)+'장 '+scene.title+' 입체 종이 풍경'}>
+          {sceneMounted&&(fallback?<StaticBook closed={closed} onInteract={staticInteract}/>:<CanvasBoundary onError={onFailure}><Suspense fallback={null}><Storybook onReady={director=>{api.current=director;setEngineReady(true);}} onFailure={onFailure}/></Suspense></CanvasBoundary>)}
+          <DeskAir/>
+          {introVisible&&<Intro key={introRun} onFinished={finishIntro} onUnfolding={showChrome} onBuffered={preloadBook} onNearEnd={mountEarly} leaving={introLeaving}/>}
+        </div>
+        {!introVisible&&!audioReady&&intro&&<p className="audio-hint">소리는 화면을 터치하면 함께 시작돼요</p>}
+        {busy&&!intro&&phase!=='DRAGGING_PAGE'&&<div className="scene-loading" role="status"><LoaderCircle size={16} className="spin"/>{phase==='LOADING_PAGE'?'다음 풍경을 준비해요':phase==='TURNING_PAGE'?'책장을 넘겨요':'종이 속 제주가 깨어나요'}</div>}
+        {chromeVisible&&!coverMode&&<>
+          <button className="reader-arrow reader-prev" aria-label="이전 책장" title="이전 책장" disabled={busy||introVisible||chapter===0} onClick={()=>api.current?.go(chapter-1)}><ArrowLeft size={24}/></button>
+          {!ending&&<button className="reader-arrow reader-next" aria-label={chapter===2?'여행 마무리':'다음 책장'} title={chapter===2?'여행 마무리':'다음 책장'} disabled={busy||introVisible} onClick={()=>chapter===2?api.current?.finish():api.current?.go(chapter+1)}><ArrowRight size={24}/></button>}
+
+        </>}
+        {phase==='ERROR'&&<div className="scene-error" role="alert"><p>{state.error}</p><button className="secondary-button" onClick={()=>api.current?.retry()}><RotateCcw size={16}/> 다시 시도</button></div>}
+      </div>
+    </section></main>
+    {detailOpen&&state.detail&&(details[state.detail]?.spread?<DetailBook key={state.detail} id={state.detail} onClose={closeDetail} onOpen={openDetail}/>:<DetailPanel id={state.detail} onClose={closeDetail} onOpen={openDetail}/>)}
+    {modal==='about'&&<Modal title={SITE.name} onClose={closeModal}><div className="about-art"><img src="/media/logo.webp" alt="carrot" width={134} height={40}/><span>{SITE.title}</span></div><p className="about-text">{SITE.description}</p><ol className="about-chapters">{scenes.map((item,index)=><li key={item.id}><span>0{index+1}</span>{item.title}</li>)}</ol><div className="about-help"><MousePointer2 size={18}/><p>클릭하거나 터치해요.<br/><span>Tab과 Enter, 방향키로도 여행할 수 있어요.</span></p></div><button className="primary-button" onClick={closeModal}>책으로 돌아가기<ArrowRight size={18}/></button></Modal>}
+  </div>;
 }
