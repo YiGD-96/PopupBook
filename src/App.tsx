@@ -107,7 +107,10 @@ export default function App() {
     text.addEventListener('click',click);document.addEventListener('keydown',key);
     return()=>{text.removeEventListener('click',click);document.removeEventListener('keydown',key);};
   },[]);
-  const deepLink=useRef<ReturnType<typeof parseHash>|null>(parseHash(window.location.hash));const [linkTick,setLinkTick]=useState(0);
+  // A link with a hash (a shared spread or story) opens it after the intro. A reload or back/forward only returns to the address the book
+  // itself kept up to date, so the reader starts again from the first spread instead of watching the book turn to where they were.
+  const navigation=(performance.getEntriesByType?.('navigation')[0] as PerformanceNavigationTiming|undefined)?.type;
+  const deepLink=useRef<ReturnType<typeof parseHash>|null>(navigation==='reload'||navigation==='back_forward'?null:parseHash(window.location.hash));const [linkTick,setLinkTick]=useState(0);
 
   function staticInteract(detail?:string){
     const s=useStory.getState();
@@ -223,8 +226,10 @@ export default function App() {
     {!introVisible&&<a className="skip-link" href="#main">이야기로 바로 가기</a>}
     {chromeVisible&&<header className="site-header">
       <a href="/" className="brand" aria-label={SITE.name+' 홈으로'}><img className="brand-logo" src="/media/logo.webp" alt="carrot" width={87} height={26}/><span className="brand-name">{SITE.name}</span></a>
-      <div className="header-chapter" aria-label={(chapter+1)+'장 '+scene.title}><span>0{chapter+1} / 03</span><strong>{scene.title}</strong></div><nav aria-label="메인 메뉴"><button className="nav-link" onClick={openText}>글로 읽기</button><button className="nav-link" onClick={()=>{setModal('about');track('about_open');}}>이야기 소개</button></nav>
+      <div className="header-chapter" aria-label={(chapter+1)+'장 '+scene.title}><span>0{chapter+1} / 03</span></div><nav aria-label="메인 메뉴"><button className="nav-link" onClick={openText}>글로 읽기</button><button className="nav-link" onClick={()=>{setModal('about');track('about_open');}}>이야기 소개</button></nav>
     </header>}
+    {/* The spread's title, on its own above the book (the header keeps only the page count). Read by screen readers from the h1 below. */}
+    {chromeVisible&&!ending&&<div className="chapter-title" key={chapter} aria-hidden="true"><span>{scene.english}</span><strong>{scene.title}</strong></div>}
     <main id="main"><section className={'hero '+(intro?'is-cover':'is-open')+(ending?' is-ending':'')} aria-label={SITE.title+' 팝업북'}>
       {chromeVisible&&<div className="hero-copy">
         {coverMode?<div className="cover-intro"><span>{SITE.label}</span><h1>{SITE.title}</h1><p role="status"><LoaderCircle size={14} className="spin"/>{introText}</p></div>:

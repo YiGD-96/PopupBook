@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode, type RefObject } from 'react';
 import { Canvas, advance, useFrame, useThree } from '@react-three/fiber';
-import { Group, Mesh, Texture, PerspectiveCamera, WebGLRenderTarget, DoubleSide } from 'three';
+import { Group, Mesh, Texture, PerspectiveCamera, WebGLRenderTarget, DoubleSide, type MeshBasicMaterial } from 'three';
 import gsap from 'gsap';
 import { loadTexture, loadScene, readyScene } from './assets';
 import { type Director, type Layer, scenes, useStory, playSound } from './story';
@@ -10,10 +10,11 @@ import { BOOK_TARGET_Y, BOOK_CAMERA_POSITION, bookZoom, bookFov } from './bookVi
 import { INTRO_PAGE_COUNT } from './introPlayback';
 import { ResolutionGovernor } from './framePacing';
 import { flatLift, gluedParent, riseOrder, stackRanks } from './popupStack';
+import { darkHalo, idle, lightHalo, loadHalo, pulseHalos, restHalo, seenStories } from './cardHalo';
 import { StandingCase, StandingGluedCard, StandingLayer } from './standingBook';
 import { isBackdrop, standingPlacement } from './standingLayout';
 import { STANDING_CAMERA_POSITION, STANDING_QUERY, STANDING_TARGET, standingFov } from './standingView';
-import { DeskBackdrop, DeskFog, OPEN_BOOK_MATERIALS, OpenCase, cardMaterial, sheetMaterials, warmMaterials, PrintedPage, TurningPage, createCardGeometry, useDisposable, type BookMaterials } from './bookParts';
+import { CardHalo, DeskBackdrop, DeskFog, OPEN_BOOK_MATERIALS, OpenCase, cardMaterial, sheetMaterials, warmMaterials, PrintedPage, TurningPage, createCardGeometry, useDisposable, type BookMaterials } from './bookParts';
 type Turn={from:number;to:number;direction:1|-1;incoming:Record<string,Texture>;restoreDialog:boolean};
 /** Phones held upright show the standing book (src/standingBook.tsx); the story director below is the same for both. */
 function useStanding(){
@@ -29,13 +30,13 @@ function Camera({standing=false}:{standing?:boolean}){
   cam.updateProjectionMatrix();gl.domElement.dataset.cameraZoom=String(bookZoom(size.width,size.height));gl.domElement.dataset.cameraFov=cam.fov.toFixed(3);gl.domElement.dataset.cameraX=String(cam.position.x);gl.domElement.dataset.shadows="off";gl.domElement.dataset.standing=String(standing);},[camera,size,gl,standing]);return null;
 }
 type CardProps={layer:Layer;piece:PaperPiece;texture:Texture;hinges:RefObject<Map<string,Group>>;onClick:(detail?:string)=>void;incoming?:boolean};
-/** The card's face: its picture, the click that opens its story and the sway that marks it clickable. */
+/** The card's face: its picture, the click that opens its story and the glow that marks it clickable. */
 function CardFace({layer,piece,texture,onClick,incoming=false}:Omit<CardProps,'hinges'>){
- const mesh=useRef<Mesh>(null!);const phase=useStory(s=>s.phase);
+ const phase=useStory(s=>s.phase);
  const geometry=useDisposable(()=>createCardGeometry(piece,layer.size[1]),[piece.width,piece.u0,piece.u1,layer.size[1]]);
- // Clickable cards sway a little, each on its own beat, so the reader can tell which ones open a story.
- useFrame(({clock})=>{mesh.current.rotation.z=layer.interactive&&phase==='EXPLORING'?Math.sin(clock.elapsedTime*1.5+layer.position[0]*1.7)*.025:0;});
- return <mesh ref={mesh} geometry={geometry} material={cardMaterial(texture)} dispose={null} position={[0,layer.size[1]/2,0]} onClick={!incoming&&layer.interactive?e=>{e.stopPropagation();if(phase==='EXPLORING')onClick(layer.detail);}:undefined} onPointerOver={!incoming&&layer.interactive?()=>{if(phase==='EXPLORING')document.body.style.cursor='pointer';}:undefined} onPointerOut={()=>{document.body.style.cursor='';}}/>;
+ // Clickable cards glow (src/cardHalo.ts): a rim at rest, full when pointed at. They are wholly on one page, so the halo is the whole card's.
+ const glows=!!layer.interactive&&piece.u0<1e-6&&piece.u1>1-1e-6,live=!incoming&&glows;
+ return <>{glows&&<CardHalo layer={layer} texture={texture} width={piece.width} height={layer.size[1]} incoming={incoming}/>}<mesh geometry={geometry} material={cardMaterial(texture)} dispose={null} position={[0,layer.size[1]/2,0]} onClick={live?e=>{e.stopPropagation();if(phase==='EXPLORING')onClick(layer.detail);}:undefined} onPointerOver={live?()=>{if(phase==='EXPLORING'){document.body.style.cursor='pointer';lightHalo(texture);}}:undefined} onPointerOut={()=>{document.body.style.cursor='';if(live&&useStory.getState().detail!==layer.detail)restHalo(layer,texture);}}/></>;
 }
 /** A card standing on another (a dish on the table, `on` in src/story.ts): placed inside that card's hinge, it folds with it. */
 function GluedCard({parent,parentPiece,...card}:CardProps&{parent:Layer;parentPiece:PaperPiece}){
@@ -113,24 +114,35 @@ function Book({onReady,onFailure}:{onReady:(director:Director)=>void;onFailure:(
   if(!await prepareBookRenderer(gl,[...Object.values(materialArt),...Object.values(firstArt),...Object.values(paperRef.current)],world,camera,active,undefined,warmFirstFrame))return;
   // The turning sheets' shaders exist before the first turn (otherwise the first turn would compile them on its first frame).
   if(materialArt.endpaper){const sheets=sheetMaterials(materialArt.endpaper);warmMaterials(gl,world,camera,sheets);sheets.forEach(m=>m.dispose());}
+  warmMaterials(gl,world,camera,await prepareHalos(firstArt,0));if(!active())return;
   prepared.current=true;useStory.getState().set({phase:'COVER'});
  }
  async function openPopup(target:number,token:number,alreadyOpen=false){
   useStory.getState().set({phase:'LOADING_PAGE',dialog:false,detail:null});const [art]=await Promise.all([loadScene(target),preparePaper(target)]);if(!mounted.current||token!==generation.current)return;
   setTextures(art);useStory.getState().set({chapter:target});clearTurn();await renderWait();if(!mounted.current||token!==generation.current)return;
   if(!alreadyOpen){useStory.getState().set({phase:'OPENING_POPUP'});hinges.current.forEach(h=>{if(!h.userData.glued)h.rotation.x=-Math.PI/2;});const layers=scenes[target].layers,ranks=stackRanks(layers);await animate(tl=>layers.forEach(l=>{for(const side of ['left','right']){const hinge=hinges.current.get(`${l.id}:${side}`);if(hinge&&!hinge.userData.glued)tl.to(hinge.rotation,{x:0,duration:.72,ease:'back.out(1.05)'},riseOrder(ranks.get(l.id)??0,layers.length)*.13);}}));}
-  if(!mounted.current||token!==generation.current)return;useStory.getState().set({phase:'EXPLORING'});warmChapter(target+1,token);
+  if(!mounted.current||token!==generation.current)return;useStory.getState().set({phase:'EXPLORING'});pulseHalos(clickableCards(target));warmChapter(target+1,token);
  }
  /** While the reader looks at a spread, the next chapter's textures are fetched, decoded off-thread and uploaded one per few frames,
   * so turning the page does not pay for those uploads. Stops as soon as anything else starts. */
+ /** A spread's clickable cards with their pictures (those already loaded). */
+ function clickableCards(target:number){const art=readyScene(target)??{};return scenes[target].layers.filter(l=>l.interactive&&art[l.src]).map(layer=>({layer,texture:art[layer.src]}));}
+ /** Makes and uploads a spread's halos ahead of time (startup, or while the reader looks at the previous spread). */
+ async function prepareHalos(art:Record<string,Texture>,target:number){
+  const materials:MeshBasicMaterial[]=[];
+  for(const layer of scenes[target].layers.filter(l=>l.interactive&&art[l.src])){await idle();if(!mounted.current)break;const halo=await loadHalo(art[layer.src]);gl.initTexture(halo.texture);materials.push(halo.material);}
+  return materials;
+ }
  function warmChapter(target:number,token:number){
   if(target>=scenes.length)return;
   // Start once the cards have stood up and the turn's last frames are drawn, so decoding and uploads never share frames with them.
   window.setTimeout(()=>{if(mounted.current&&token===generation.current)void Promise.all([loadScene(target),preparePaper(target,false)]).then(([art])=>{
    const queue=[...Object.values(art),...['left','right'].map(side=>paperRef.current[`page-${target}-${side}`]).filter(Boolean)];
+   // The halos come first (a turn soon after needs them most), then the pictures one upload at a time.
+   const halosReady=prepareHalos(art,target);
    const step=()=>{if(!mounted.current||token!==generation.current||useStory.getState().phase!=='EXPLORING')return;const texture=queue.shift();
     // Last, the next spread's card materials are bound to their (shared) shader program, so its first frame in a turn is cheap.
-    if(!texture){warmMaterials(gl,world,camera,scenes[target].layers.map(l=>art[l.src]).filter(Boolean).map(cardMaterial));return;}
+    if(!texture){const cards=scenes[target].layers.map(l=>art[l.src]).filter(Boolean).map(cardMaterial);void halosReady.then(halos=>{if(mounted.current&&token===generation.current&&useStory.getState().phase==='EXPLORING')warmMaterials(gl,world,camera,[...cards,...halos]);});return;}
     gl.initTexture(texture);window.setTimeout(()=>requestAnimationFrame(step),150);};
    requestAnimationFrame(step);
   }).catch(()=>{});},700);
@@ -150,9 +162,10 @@ function Book({onReady,onFailure}:{onReady:(director:Director)=>void;onFailure:(
    await animate(tl=>{tl.to(stand.current,{value:1,duration:.8,ease:'power2.inOut'},0);const cards=scenes[0].layers.filter(l=>!isBackdrop(l)),ranks=stackRanks(cards,l=>standingPlacement(l).z);cards.forEach(l=>{const hinge=hinges.current.get(`${l.id}:right`);if(hinge&&!hinge.userData.glued)tl.to(hinge.rotation,{x:0,duration:.55,ease:'back.out(1.1)'},.42+riseOrder(ranks.get(l.id)??0,cards.length)*.06);});});
    if(!mounted.current||token!==generation.current)return;
   }
-  stand.current.value=1;useStory.getState().set({phase:'EXPLORING'});warmChapter(1,token);
+  stand.current.value=1;useStory.getState().set({phase:'EXPLORING'});pulseHalos(clickableCards(0));warmChapter(1,token);
  }
  function configureTurn(target:number){
+  for(const {texture} of clickableCards(useStory.getState().chapter))darkHalo(texture);for(const {texture} of clickableCards(target))darkHalo(texture,0);
   const state=useStory.getState();const info:Turn={from:state.chapter,to:target,direction:target>state.chapter?1:-1,incoming:readyScene(target)??{},restoreDialog:state.dialog};turnRef.current=info;setTurn(info);progress.current.value=0;
   const token=generation.current;const load=Promise.all([loadScene(target),preparePaper(target)]).then(([art])=>art);incomingLoad.current=load;
   void load.then(art=>{if(!mounted.current||token!==generation.current||turnRef.current!==info)return;info.incoming=art;setTurn({...info});}).catch(error=>{if(mounted.current&&token===generation.current&&turnRef.current===info)fail(error);});return info;
@@ -175,13 +188,20 @@ function Book({onReady,onFailure}:{onReady:(director:Director)=>void;onFailure:(
     if(!mounted.current||token!==generation.current)return;await openPopup(info.to,token,true);
    }else{
     await animate(tl=>tl.to(progress.current,{value:0,duration:.35,ease:'power2.out'}));
-    if(!mounted.current||token!==generation.current)return;clearTurn();hinges.current.forEach(h=>h.rotation.x=0);useStory.getState().set({phase:'EXPLORING',dialog:info.restoreDialog});
+    if(!mounted.current||token!==generation.current)return;clearTurn();hinges.current.forEach(h=>h.rotation.x=0);useStory.getState().set({phase:'EXPLORING',dialog:info.restoreDialog});for(const {layer,texture} of clickableCards(info.from))restHalo(layer,texture);
    }
   }catch(e){fail(e);}
  }
  /** Opens a story in the side panel: a clicked card's own detail, or (from the button) the chapter's main one; the card answers with a hop. */
  function interact(detail?:string){const state=useStory.getState();if(state.phase!=='EXPLORING')return;const scene=scenes[state.chapter],id=detail??scene.detail;state.set({dialog:true,detail:id,visited:[...new Set([...state.visited,state.chapter])]});playSound('hello');const layer=scene.layers.find(l=>l.detail===id)??scene.layers.find(l=>l.interactive);if(!layer)return;const target=hinges.current.get(`${layer.id}:right`)??hinges.current.get(`${layer.id}:left`);if(target)gsap.fromTo(target.scale,{x:1,y:1,z:1},{x:1.08,y:1.08,z:1.08,duration:.2,yoyo:true,repeat:1,overwrite:true,onComplete:()=>target.scale.set(1,1,1)});}
  function retry(){const state=useStory.getState();state.set({error:null});const token=++generation.current;if(!prepared.current)void prepareStartup(token).catch(error=>{if(mounted.current&&token===generation.current)fail(error);});else void openPopup(state.chapter,token,true).catch(fail);}
+ // While a card's story is open its halo stays lit; closed, the card keeps the fainter rim of a story already read.
+ useEffect(()=>useStory.subscribe((state,previous)=>{
+  if(state.detail===previous.detail)return;
+  const card=(detail:string|null)=>detail?clickableCards(state.chapter).find(c=>c.layer.detail===detail):undefined;
+  if(previous.detail){seenStories.add(previous.detail);const c=card(previous.detail);if(c&&state.phase==='EXPLORING')restHalo(c.layer,c.texture);}
+  const opened=card(state.detail);if(opened)lightHalo(opened.texture);
+ }),[]);
  useEffect(()=>{mounted.current=true;const current=++generation.current;void prepareStartup(current).catch(error=>{if(mounted.current&&current===generation.current)fail(error);});const director:Director={reveal:standingFilmed=>void reveal(standingFilmed),go:n=>void go(n),finish:()=>{if(useStory.getState().phase==='EXPLORING'&&useStory.getState().chapter===scenes.length-1)useStory.getState().set({phase:'ENDING',dialog:false});},interact,previewTurn,settleTurn:commit=>void settle(commit),retry};onReady(director);return()=>{mounted.current=false;generation.current++;timeline.current?.kill();pending.current?.();hinges.current.forEach(g=>gsap.killTweensOf(g.scale));document.body.style.cursor='';};},[]);
  const paper=paperRef.current;
  const moving=turn!==null;const leftChapter=moving&&turn.direction===-1?turn.to:chapter;const rightChapter=moving&&turn.direction===1?turn.to:chapter;const front=moving?paper[`page-${turn.direction===1?turn.from:turn.to}-right`]:null;const back=moving?paper[`page-${turn.direction===1?turn.to:turn.from}-left`]:null;
@@ -217,14 +237,15 @@ function Book({onReady,onFailure}:{onReady:(director:Director)=>void;onFailure:(
 }
 /**
  * Paces drawing: the canvas runs frameloop="never" and this draws each frame itself (advance), in the frame it decides to. Full display rate while anything moves: startup, turns, pop-ups, drags and every
- * GSAP animation. While the reader just looks at a spread the only motion is the clickable cards' slow sway, under half a pixel per
- * frame, so 30 frames a second look the same and halve the GPU's work. Nothing is drawn while the text version covers the book.
+ * GSAP animation (the halos' glow included). While the reader just looks at a spread nothing moves, so nothing is drawn. Nothing is
+ * drawn either while the text version covers the book.
  */
-const IDLE_FRAME_MS=1000/30-4;
+const HEARTBEAT_MS=1000;
 function FramePacer({onDpr}:{onDpr:(dpr:number)=>void}){
  const get=useThree(s=>s.get);
  useEffect(()=>{
-  let raf=0,last=0,drawnUnderIntro=false,lastMoving=0;const governor=new ResolutionGovernor(get().viewport.dpr);
+  let raf=0,last=0,drawnUnderIntro=false,lastMoving=0,dirty=3,lastSize=0;const governor=new ResolutionGovernor(get().viewport.dpr);
+  const unsubscribe=useStory.subscribe(()=>{dirty=3;});const wake=()=>{dirty=3;};document.addEventListener('visibilitychange',wake);
   const tick=(now:number)=>{
    raf=requestAnimationFrame(tick);
    if(document.body.classList.contains('text-open'))return;
@@ -233,14 +254,18 @@ function FramePacer({onDpr}:{onDpr:(dpr:number)=>void}){
    // once ready (COVER) one frame is drawn (it bakes the desk and puts the book on the canvas), then nothing until the film leaves.
    if(document.querySelector('.intro-screen:not(.is-leaving)')){if(phase!=='COVER'||drawnUnderIntro)return;drawnUnderIntro=true;}
    else drawnUnderIntro=false;
+   // Still (reading a spread, nothing animating): nothing is drawn, except a few frames after anything changes (the story state, the
+   // canvas size) and one a second as a safety net. Nothing on a still spread moves since the halos replaced the sway.
    const still=(phase==='EXPLORING'||phase==='ENDING')&&!gsap.globalTimeline.getChildren(false,true,true).length;
-   if(still&&now-last<IDLE_FRAME_MS)return;
+   const canvas=get().gl.domElement,size=canvas.width*10000+canvas.height;if(size!==lastSize){lastSize=size;dirty=3;}
+   if(still&&dirty<=0&&now-last<HEARTBEAT_MS)return;
+   if(dirty>0)dirty--;
    const state=get(),start=performance.now();last=now;advance(now,true,state);
    // Frames in motion (drawn every refresh) tell the governor whether the GPU keeps up; see src/framePacing.ts.
    if(!still){const dpr=lastMoving?governor.sample(now-lastMoving,performance.now()-start):null;lastMoving=now;if(dpr)onDpr(dpr);state.gl.domElement.dataset.pacing=governor.last;}
    else lastMoving=0;
   };
-  raf=requestAnimationFrame(tick);return()=>cancelAnimationFrame(raf);
+  raf=requestAnimationFrame(tick);return()=>{cancelAnimationFrame(raf);unsubscribe();document.removeEventListener('visibilitychange',wake);};
  },[get,onDpr]);
  return null;
 }
