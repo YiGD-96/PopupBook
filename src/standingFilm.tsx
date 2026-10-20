@@ -4,11 +4,12 @@
  * across the screen, opens its first half to 90°, a few sheets swing up onto the upright page and the first spread's cards rise:
  * its last frame is the live standing book.
  */
-import { useEffect } from 'react';
+import { useEffect, type ReactNode } from 'react';
 import { useThree } from '@react-three/fiber';
 import { BackSide, CanvasTexture, Color, DoubleSide, Euler, Matrix4, Quaternion, SRGBColorSpace, Vector3, type PerspectiveCamera, type Texture } from 'three';
 import { loadScene, loadTexture } from './assets';
 import { scenes, type Layer } from './story';
+import { flatLift, gluedParent, riseOrder, stackRanks } from './popupStack';
 import { SITE } from './site';
 import { BOOK_BOARD, BOOK_PAGES, BOOK_SPINE } from './bookStructure';
 import { BOOK_HINGE_Y, createBoardGeometry, createPaperBlockGeometry } from './bookGeometry';
@@ -66,10 +67,23 @@ function FilmSheet({paper,paperTint,backdrop,q,lift}:{paper?:Texture;paperTint?:
  return <group position={[0,lift,0]}><mesh geometry={geometry} renderOrder={4}><meshBasicMaterial map={paper} color={paperTint??'#ffffff'} vertexColors side={DoubleSide}/></mesh><mesh geometry={geometry} renderOrder={5}><meshBasicMaterial map={backdrop} vertexColors transparent side={BackSide} depthWrite={false}/></mesh></group>;
 }
 /** A card rising on the flat page, built like the live StandingLayer. */
-function StandingPopup({layer,texture,rise}:{layer:Layer;texture:Texture;rise:number}){
+function StandingPopupFace({layer,texture}:{layer:Layer;texture:Texture}){
  const place=standingPlacement(layer);
  const card=useDisposable(()=>createCardGeometry({center:0,width:place.size[0],u0:0,u1:1,side:'right'},place.size[1]),[place.size[0],place.size[1]]);
- return <group position={[place.x,surfaceY(place.z)+(place.lift??0),place.z]}><group rotation={[-(1-rise)*Math.PI/2,0,0]}><mesh geometry={card} position={[0,place.size[1]/2,0]}><meshBasicMaterial map={texture} transparent alphaTest={.025} side={DoubleSide} depthWrite/></mesh></group></group>;
+ return <mesh geometry={card} position={[0,place.size[1]/2,0]}><meshBasicMaterial map={texture} transparent alphaTest={.025} side={DoubleSide} depthWrite/></mesh>;
+}
+/** A card rising on the flat page, stacked while folded and carrying its glued cards, like the live StandingLayer. */
+function StandingPopup({layer,texture,rise,rank,children}:{layer:Layer;texture:Texture;rise:number;rank:number;children?:ReactNode}){
+ const place=standingPlacement(layer),hinge=-(1-rise)*Math.PI/2;
+ return <group position={[place.x,surfaceY(place.z)+(place.lift??0)+flatLift(rank,hinge),place.z]}><group rotation={[hinge,0,0]}><StandingPopupFace layer={layer} texture={texture}/>{children}</group></group>;
+}
+function StandingPopups({cards,scenery,time}:{cards:Layer[];scenery:Record<string,Texture>;time:number}){
+ const ranks=stackRanks(cards,layer=>standingPlacement(layer).z);
+ return <>{cards.map(layer=>{
+  if(gluedParent(layer,cards))return null;const base=standingPlacement(layer);
+  const glued=cards.filter(child=>gluedParent(child,cards)===layer).map(child=>{const place=standingPlacement(child);return <group key={child.id} position={[place.x-base.x,surfaceY(place.z)+(place.lift??0)-surfaceY(base.z)-(base.lift??0),place.z-base.z]}><StandingPopupFace layer={child} texture={scenery[child.src]}/></group>;});
+  return <StandingPopup key={layer.id} layer={layer} texture={scenery[layer.src]} rise={smooth((time-riseOrder(ranks.get(layer.id)??0,cards.length)*.075)/.85)} rank={ranks.get(layer.id)??0}>{glued}</StandingPopup>;
+ })}</>;
 }
 /** The title, printed on the first half's page (landscape, as the upright page reads), seen as the book opens. */
 async function titlePage(){
@@ -109,7 +123,7 @@ export function StandingFilm({materials,assets,t,width,height}:{materials:BookMa
    <FilmStandingHalf materials={materials} angle={-Math.PI+f.open*Math.PI/2} swell={f.swell} page={upright} height={1+(UPRIGHT_SCALE-1)*f.open}/>
    {f.sheets.map((q,i)=>q>0&&q<1?<FilmSheet key={i} paper={materials.endpaper} paperTint={paperOf(i-1)} backdrop={assets.backs[i]} q={q} lift={.008+(STANDING_INTRO_PAGE_COUNT-i)*.004}/>:null)}
   </group></group></group>
-  {f.cards>=0&&cards.map((layer,index)=><StandingPopup key={layer.id} layer={layer} texture={assets.scenery[layer.src]} rise={smooth((f.cards-index*.075)/.85)}/>)}
+  {f.cards>=0&&<StandingPopups cards={cards} scenery={assets.scenery} time={f.cards}/>}
  </>;
 }
 /** What the renderer records next to the phone movie, read from the modules the live standing book uses. */

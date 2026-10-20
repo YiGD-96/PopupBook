@@ -3,7 +3,7 @@
  * the first half standing at 90° with the backdrop printed on its page, the cards standing on the flat second page, and a sheet that
  * swings up to turn the spread. The story director (src/Storybook.tsx) is shared with the open book.
  */
-import { useEffect, useMemo, useRef, type RefObject } from 'react';
+import { useEffect, useMemo, useRef, type ReactNode, type RefObject } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { BackSide, BufferGeometry, Color, DoubleSide, Float32BufferAttribute, Group, Mesh, type MeshBasicMaterial, type Texture } from 'three';
 import { BOOK_BOARD, BOOK_PAGES } from './bookStructure';
@@ -13,6 +13,7 @@ import { lightShade } from './bookGeometry';
 import { BLOCK_X, BindingDetails, Board, cardMaterial, textureView, PaperBlock, PrintedPage, Surface, createCardGeometry, useDisposable, type BookMaterials } from './bookParts';
 import { UPRIGHT_SCALE, backdropCrop, standingFoldIn, standingFoldOut, standingPlacement, standingSheetPoint, standingSheetProgress, surfaceY } from './standingLayout';
 import { type Layer, useStory } from './story';
+import { flatLift } from './popupStack';
 
 const UP=-Math.PI/2,COLUMNS=32,ROWS=10;
 const linear=(v:number)=>Math.pow(v,2.2);
@@ -103,18 +104,36 @@ export function StandingCase({materials,backdrop,turnBackdrop,turning,progress,s
 }
 type StandingTurn={direction:1|-1}|null;
 /** A pop-up card standing on the flat page at its phone placement; it folds back flat to turn the page and stands up again after. */
-export function StandingLayer({layer,texture,hinges,onClick,turn,progress,incoming=false}:{layer:Layer;texture:Texture;hinges:RefObject<Map<string,Group>>;onClick:(detail?:string)=>void;turn:StandingTurn;progress:RefObject<{value:number}>;incoming?:boolean}){
+type StandingCardProps={layer:Layer;texture:Texture;hinges:RefObject<Map<string,Group>>;onClick:(detail?:string)=>void;incoming?:boolean};
+/** The card's face on the phone: its picture, its click, and the sway that marks it clickable. */
+function StandingFace({layer,texture,onClick,incoming=false}:Omit<StandingCardProps,'hinges'>){
  const place=standingPlacement(layer),phase=useStory(s=>s.phase);
- const anchor=useRef<Group>(null!),ref=useRef<Group>(null!),mesh=useRef<Mesh>(null!),swaySince=useRef<number|null>(null);
- const key=`${incoming?'incoming:':''}${layer.id}:right`;
+ const mesh=useRef<Mesh>(null!),swaySince=useRef<number|null>(null);
  const geometry=useDisposable(()=>createCardGeometry({center:0,width:place.size[0],u0:0,u1:1,side:'right'},place.size[1]),[place.size[0],place.size[1]]);
- useEffect(()=>{const group=ref.current;hinges.current.set(key,group);return()=>{hinges.current.delete(key);};},[key,hinges]);
  useFrame(({clock})=>{
-  anchor.current.position.set(place.x,surfaceY(place.z)+(place.lift??0),place.z);
-  if(turn){const p=progress.current.value;ref.current.rotation.x=incoming?standingFoldIn(p):standingFoldOut(p);anchor.current.visible=incoming?p>.78:p<.3;}else anchor.current.visible=true;
   // The sway eases in, so the first frame after the intro film (and after a turn) is the still card the film ended on.
   const swaying=layer.interactive&&phase==='EXPLORING';if(!swaying)swaySince.current=null;else swaySince.current??=clock.elapsedTime;
   mesh.current.rotation.z=swaying?Math.sin(clock.elapsedTime*1.5+place.x*1.7)*.025*Math.min(1,(clock.elapsedTime-swaySince.current!)/1.2):0;
  });
- return <group ref={anchor}><group ref={ref}><mesh ref={mesh} geometry={geometry} material={cardMaterial(texture)} dispose={null} position={[0,place.size[1]/2,0]} onClick={!incoming&&layer.interactive?e=>{e.stopPropagation();if(phase==='EXPLORING')onClick(layer.detail);}:undefined} onPointerOver={!incoming&&layer.interactive?()=>{if(phase==='EXPLORING')document.body.style.cursor='pointer';}:undefined} onPointerOut={()=>{document.body.style.cursor='';}}></mesh></group></group>;
+ return <mesh ref={mesh} geometry={geometry} material={cardMaterial(texture)} dispose={null} position={[0,place.size[1]/2,0]} onClick={!incoming&&layer.interactive?e=>{e.stopPropagation();if(phase==='EXPLORING')onClick(layer.detail);}:undefined} onPointerOver={!incoming&&layer.interactive?()=>{if(phase==='EXPLORING')document.body.style.cursor='pointer';}:undefined} onPointerOut={()=>{document.body.style.cursor='';}}/>;
+}
+/** A card standing on another card (`on` in src/story.ts), inside that card's hinge so it folds with it (src/popupStack.ts). */
+export function StandingGluedCard({parent,...card}:StandingCardProps&{parent:Layer}){
+ const {layer,hinges,incoming=false}=card;const ref=useRef<Group>(null!);
+ const place=standingPlacement(layer),base=standingPlacement(parent);
+ const key=`${incoming?'incoming:':''}${layer.id}:right`;
+ useEffect(()=>{const group=ref.current;group.userData.glued=true;hinges.current.set(key,group);return()=>{hinges.current.delete(key);};},[key,hinges]);
+ return <group ref={ref} position={[place.x-base.x,surfaceY(place.z)+(place.lift??0)-surfaceY(base.z)-(base.lift??0),place.z-base.z]}><StandingFace {...card}/></group>;
+}
+export function StandingLayer({layer,texture,hinges,onClick,turn,progress,incoming=false,rank=0,children}:StandingCardProps&{turn:StandingTurn;progress:RefObject<{value:number}>;rank?:number;children?:ReactNode}){
+ const place=standingPlacement(layer);
+ const anchor=useRef<Group>(null!),ref=useRef<Group>(null!);
+ const key=`${incoming?'incoming:':''}${layer.id}:right`;
+ useEffect(()=>{const group=ref.current;hinges.current.set(key,group);return()=>{hinges.current.delete(key);};},[key,hinges]);
+ useFrame(()=>{
+  if(turn){const p=progress.current.value;ref.current.rotation.x=incoming?standingFoldIn(p):standingFoldOut(p);anchor.current.visible=incoming?p>.78:p<.3;}else anchor.current.visible=true;
+  // Folded cards stack, front ones on top (src/popupStack.ts); upright the lift is zero.
+  anchor.current.position.set(place.x,surfaceY(place.z)+(place.lift??0)+flatLift(rank,ref.current.rotation.x),place.z);
+ });
+ return <group ref={anchor}><group ref={ref}><StandingFace layer={layer} texture={texture} onClick={onClick} incoming={incoming}/>{children}</group></group>;
 }

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type RefObject } from 'react';
+import { useEffect, useRef, useState, type ReactNode, type RefObject } from 'react';
 import { Canvas, advance, useFrame, useThree } from '@react-three/fiber';
 import { Group, Mesh, Texture, PerspectiveCamera, WebGLRenderTarget, DoubleSide } from 'three';
 import gsap from 'gsap';
@@ -9,8 +9,9 @@ import { prepareBookRenderer } from './bookPreparation';
 import { BOOK_TARGET_Y, BOOK_CAMERA_POSITION, bookZoom, bookFov } from './bookView';
 import { INTRO_PAGE_COUNT } from './introPlayback';
 import { ResolutionGovernor } from './framePacing';
-import { StandingCase, StandingLayer } from './standingBook';
-import { isBackdrop } from './standingLayout';
+import { flatLift, gluedParent, riseOrder, stackRanks } from './popupStack';
+import { StandingCase, StandingGluedCard, StandingLayer } from './standingBook';
+import { isBackdrop, standingPlacement } from './standingLayout';
 import { STANDING_CAMERA_POSITION, STANDING_QUERY, STANDING_TARGET, standingFov } from './standingView';
 import { DeskBackdrop, DeskFog, OPEN_BOOK_MATERIALS, OpenCase, cardMaterial, sheetMaterials, warmMaterials, PrintedPage, TurningPage, createCardGeometry, useDisposable, type BookMaterials } from './bookParts';
 type Turn={from:number;to:number;direction:1|-1;incoming:Record<string,Texture>;restoreDialog:boolean};
@@ -27,23 +28,59 @@ function Camera({standing=false}:{standing?:boolean}){
   else{cam.position.set(...BOOK_CAMERA_POSITION);cam.fov=bookFov(size.width,size.height);cam.lookAt(0,BOOK_TARGET_Y,0);}
   cam.updateProjectionMatrix();gl.domElement.dataset.cameraZoom=String(bookZoom(size.width,size.height));gl.domElement.dataset.cameraFov=cam.fov.toFixed(3);gl.domElement.dataset.cameraX=String(cam.position.x);gl.domElement.dataset.shadows="off";gl.domElement.dataset.standing=String(standing);},[camera,size,gl,standing]);return null;
 }
-function PaperLayer({layer,piece,texture,hinges,onClick,turn,progress,incoming=false}:{layer:Layer;piece:PaperPiece;texture:Texture;hinges:RefObject<Map<string,Group>>;onClick:(detail?:string)=>void;turn:Turn|null;progress:RefObject<{value:number}>;incoming?:boolean}){
- const anchor=useRef<Group>(null!);const ref=useRef<Group>(null!);const mesh=useRef<Mesh>(null!);const phase=useStory(s=>s.phase);
- const key=`${incoming?'incoming:':''}${layer.id}:${piece.side}`;
+type CardProps={layer:Layer;piece:PaperPiece;texture:Texture;hinges:RefObject<Map<string,Group>>;onClick:(detail?:string)=>void;incoming?:boolean};
+/** The card's face: its picture, the click that opens its story and the sway that marks it clickable. */
+function CardFace({layer,piece,texture,onClick,incoming=false}:Omit<CardProps,'hinges'>){
+ const mesh=useRef<Mesh>(null!);const phase=useStory(s=>s.phase);
  const geometry=useDisposable(()=>createCardGeometry(piece,layer.size[1]),[piece.width,piece.u0,piece.u1,layer.size[1]]);
+ // Clickable cards sway a little, each on its own beat, so the reader can tell which ones open a story.
+ useFrame(({clock})=>{mesh.current.rotation.z=layer.interactive&&phase==='EXPLORING'?Math.sin(clock.elapsedTime*1.5+layer.position[0]*1.7)*.025:0;});
+ return <mesh ref={mesh} geometry={geometry} material={cardMaterial(texture)} dispose={null} position={[0,layer.size[1]/2,0]} onClick={!incoming&&layer.interactive?e=>{e.stopPropagation();if(phase==='EXPLORING')onClick(layer.detail);}:undefined} onPointerOver={!incoming&&layer.interactive?()=>{if(phase==='EXPLORING')document.body.style.cursor='pointer';}:undefined} onPointerOut={()=>{document.body.style.cursor='';}}/>;
+}
+/** A card standing on another (a dish on the table, `on` in src/story.ts): placed inside that card's hinge, it folds with it. */
+function GluedCard({parent,parentPiece,...card}:CardProps&{parent:Layer;parentPiece:PaperPiece}){
+ const {layer,piece,hinges,incoming=false}=card;const ref=useRef<Group>(null!);
+ const key=`${incoming?'incoming:':''}${layer.id}:${piece.side}`;
+ useEffect(()=>{const group=ref.current;group.userData.glued=true;hinges.current.set(key,group);return()=>{hinges.current.delete(key);};},[key,hinges]);
+ return <group ref={ref} position={[piece.center-parentPiece.center,layer.position[1]-parent.position[1],layer.position[2]-parent.position[2]]}><CardFace {...card}/></group>;
+}
+function PaperLayer({layer,piece,texture,hinges,onClick,turn,progress,incoming=false,rank,children}:CardProps&{turn:Turn|null;progress:RefObject<{value:number}>;rank:number;children?:ReactNode}){
+ const anchor=useRef<Group>(null!);const ref=useRef<Group>(null!);
+ const key=`${incoming?'incoming:':''}${layer.id}:${piece.side}`;
  useEffect(()=>{const group=ref.current;hinges.current.set(key,group);return()=>{hinges.current.delete(key);};},[key,hinges]);
- useFrame(({clock})=>{
+ useFrame(()=>{
   const root=anchor.current;root.visible=true;
+  // The fold comes from the turn, or from the pop-up tween (openPopup) that drives the hinge directly; folded cards stack (popupStack).
+  const p=turn?progress.current.value:0;if(turn)ref.current.rotation.x=popupFoldAngle(p,incoming);
+  const y=layer.position[1]+flatLift(rank,ref.current.rotation.x);
   if(turn){
-   const p=progress.current.value;const movingSide=turn.direction===1?'right':'left';const ridesSheet=incoming?piece.side!==movingSide:piece.side===movingSide;
-   if(ridesSheet){const face:1|-1=piece.side==='right'?1:-1;const pose=attachedPaperPose(piece.center,layer.position[1],layer.position[2],p,turn.direction,face);root.position.set(...pose.position);root.rotation.z=pose.rotation;root.visible=incoming?p>.35:p<.99999;}
-   else {root.position.set(piece.center,layer.position[1]+.018,layer.position[2]);root.rotation.z=0;const reveal=incoming?pageReveal(p,.5,.95):1-pageReveal(p,.45,.92);root.visible=reveal>.0001;}
-   ref.current.rotation.x=popupFoldAngle(p,incoming);
-  }else{root.position.set(piece.center,layer.position[1]+.018,layer.position[2]);root.rotation.z=0;}
-  // Clickable cards sway a little, each on its own beat, so the reader can tell which ones open a story.
-  mesh.current.rotation.z=layer.interactive&&phase==='EXPLORING'?Math.sin(clock.elapsedTime*1.5+layer.position[0]*1.7)*.025:0;
+   const movingSide=turn.direction===1?'right':'left';const ridesSheet=incoming?piece.side!==movingSide:piece.side===movingSide;
+   if(ridesSheet){const face:1|-1=piece.side==='right'?1:-1;const pose=attachedPaperPose(piece.center,y,layer.position[2],p,turn.direction,face);root.position.set(...pose.position);root.rotation.z=pose.rotation;root.visible=incoming?p>.35:p<.99999;}
+   else {root.position.set(piece.center,y+.018,layer.position[2]);root.rotation.z=0;const reveal=incoming?pageReveal(p,.5,.95):1-pageReveal(p,.45,.92);root.visible=reveal>.0001;}
+  }else{root.position.set(piece.center,y+.018,layer.position[2]);root.rotation.z=0;}
  });
- return <group ref={anchor}><group ref={ref}><mesh ref={mesh} geometry={geometry} material={cardMaterial(texture)} dispose={null} position={[0,layer.size[1]/2,0]} onClick={!incoming&&layer.interactive?e=>{e.stopPropagation();if(phase==='EXPLORING')onClick(layer.detail);}:undefined} onPointerOver={!incoming&&layer.interactive?()=>{if(phase==='EXPLORING')document.body.style.cursor='pointer';}:undefined} onPointerOut={()=>{document.body.style.cursor='';}}></mesh></group></group>;
+ return <group ref={anchor}><group ref={ref}><CardFace layer={layer} piece={piece} texture={texture} onClick={onClick} incoming={incoming}/>{children}</group></group>;
+}
+type SpreadShared={hinges:RefObject<Map<string,Group>>;onClick:(detail?:string)=>void;turn:Turn|null;progress:RefObject<{value:number}>};
+/** A spread's cards: each card that stands on the page, with the cards glued onto it (same page side) inside its hinge. */
+function spreadCards(target:number,art:Record<string,Texture>,shared:SpreadShared,incoming=false){
+ const layers=scenes[target].layers,ranks=stackRanks(layers);
+ const pieceOf=(layer:Layer,side:'left'|'right')=>splitPaperArt(layer.position[0],layer.size[0],side);
+ return layers.flatMap(layer=>(['left','right'] as const).map(side=>{
+  const piece=pieceOf(layer,side),parent=gluedParent(layer,layers);
+  if(!piece||!art[layer.src]||(parent&&pieceOf(parent,side)))return null;
+  const glued=layers.filter(child=>gluedParent(child,layers)===layer).map(child=>{const childPiece=pieceOf(child,side);return childPiece&&art[child.src]?<GluedCard key={child.id} layer={child} piece={childPiece} parent={layer} parentPiece={piece} texture={art[child.src]} hinges={shared.hinges} onClick={shared.onClick} incoming={incoming}/>:null;});
+  return <PaperLayer key={`${target}-${layer.id}-${side}`} layer={layer} piece={piece} texture={art[layer.src]} {...shared} incoming={incoming} rank={ranks.get(layer.id)??0}>{glued}</PaperLayer>;
+ }));
+}
+/** The phone's cards for a spread: each card on the flat page, with the cards glued onto it inside its hinge. */
+function standingCards(target:number,art:Record<string,Texture>,shared:SpreadShared,incoming=false){
+ const layers=scenes[target].layers.filter(l=>!isBackdrop(l)),ranks=stackRanks(layers,l=>standingPlacement(l).z);
+ return layers.map(layer=>{
+  if(!art[layer.src]||gluedParent(layer,layers))return null;
+  const glued=layers.filter(child=>gluedParent(child,layers)===layer&&art[child.src]).map(child=><StandingGluedCard key={child.id} layer={child} parent={layer} texture={art[child.src]} hinges={shared.hinges} onClick={shared.onClick} incoming={incoming}/>);
+  return <StandingLayer key={`${target}-${layer.id}`} layer={layer} texture={art[layer.src]} {...shared} incoming={incoming} rank={ranks.get(layer.id)??0}>{glued}</StandingLayer>;
+ });
 }
 function Book({onReady,onFailure}:{onReady:(director:Director)=>void;onFailure:()=>void}){
  const {gl,scene:world,camera}=useThree();const prepared=useRef(false);
@@ -81,7 +118,7 @@ function Book({onReady,onFailure}:{onReady:(director:Director)=>void;onFailure:(
  async function openPopup(target:number,token:number,alreadyOpen=false){
   useStory.getState().set({phase:'LOADING_PAGE',dialog:false,detail:null});const [art]=await Promise.all([loadScene(target),preparePaper(target)]);if(!mounted.current||token!==generation.current)return;
   setTextures(art);useStory.getState().set({chapter:target});clearTurn();await renderWait();if(!mounted.current||token!==generation.current)return;
-  if(!alreadyOpen){useStory.getState().set({phase:'OPENING_POPUP'});hinges.current.forEach(h=>h.rotation.x=-Math.PI/2);await animate(tl=>scenes[target].layers.forEach((l,i)=>{for(const side of ['left','right']){const hinge=hinges.current.get(`${l.id}:${side}`);if(hinge)tl.to(hinge.rotation,{x:0,duration:.72,ease:'back.out(1.05)'},i*.13);}}));}
+  if(!alreadyOpen){useStory.getState().set({phase:'OPENING_POPUP'});hinges.current.forEach(h=>{if(!h.userData.glued)h.rotation.x=-Math.PI/2;});const layers=scenes[target].layers,ranks=stackRanks(layers);await animate(tl=>layers.forEach(l=>{for(const side of ['left','right']){const hinge=hinges.current.get(`${l.id}:${side}`);if(hinge&&!hinge.userData.glued)tl.to(hinge.rotation,{x:0,duration:.72,ease:'back.out(1.05)'},riseOrder(ranks.get(l.id)??0,layers.length)*.13);}}));}
   if(!mounted.current||token!==generation.current)return;useStory.getState().set({phase:'EXPLORING'});warmChapter(target+1,token);
  }
  /** While the reader looks at a spread, the next chapter's textures are fetched, decoded off-thread and uploaded one per few frames,
@@ -110,7 +147,7 @@ function Book({onReady,onFailure}:{onReady:(director:Director)=>void;onFailure:(
   await renderWait();if(!mounted.current||token!==generation.current)return;
   if(standUp){
    useStory.getState().set({phase:'OPENING_POPUP'});
-   await animate(tl=>{tl.to(stand.current,{value:1,duration:.8,ease:'power2.inOut'},0);scenes[0].layers.forEach((l,i)=>{const hinge=hinges.current.get(`${l.id}:right`);if(hinge)tl.to(hinge.rotation,{x:0,duration:.55,ease:'back.out(1.1)'},.42+i*.06);});});
+   await animate(tl=>{tl.to(stand.current,{value:1,duration:.8,ease:'power2.inOut'},0);const cards=scenes[0].layers.filter(l=>!isBackdrop(l)),ranks=stackRanks(cards,l=>standingPlacement(l).z);cards.forEach(l=>{const hinge=hinges.current.get(`${l.id}:right`);if(hinge&&!hinge.userData.glued)tl.to(hinge.rotation,{x:0,duration:.55,ease:'back.out(1.1)'},.42+riseOrder(ranks.get(l.id)??0,cards.length)*.06);});});
    if(!mounted.current||token!==generation.current)return;
   }
   stand.current.value=1;useStory.getState().set({phase:'EXPLORING'});warmChapter(1,token);
@@ -165,8 +202,8 @@ function Book({onReady,onFailure}:{onReady:(director:Director)=>void;onFailure:(
    <StandingCase materials={materials} backdrop={upright} turnBackdrop={sheet} turning={moving?turn.direction:0} progress={progress} stand={stand}
     floor={paperOf(moving&&turn.direction===1?turn.to:chapter)} sheetFloor={moving?paperOf(turn.direction===1?turn.from:turn.to):undefined}/>
    {/* One group, keyed by chapter: when a turn ends the incoming cards stay mounted and become the spread's own (no rebuild). */}
-   <group>{scenes[chapter].layers.filter(l=>!isBackdrop(l)).map(l=>textures[l.src]?<StandingLayer key={`${chapter}-${l.id}`} layer={l} texture={textures[l.src]} hinges={hinges} onClick={interact} turn={turn} progress={progress}/>:null)}
-   {turn&&turn.to!==chapter&&scenes[turn.to].layers.filter(l=>!isBackdrop(l)).map(l=>turn.incoming[l.src]?<StandingLayer key={`${turn.to}-${l.id}`} layer={l} texture={turn.incoming[l.src]} hinges={hinges} onClick={interact} turn={turn} progress={progress} incoming/>:null)}</group>
+   <group>{standingCards(chapter,textures,{hinges,onClick:interact,turn,progress})}
+   {turn&&turn.to!==chapter&&standingCards(turn.to,turn.incoming,{hinges,onClick:interact,turn,progress},true)}</group>
    <ContextMonitor onFailure={onFailure}/></>;
  }
  return <><Camera/><DeskFog/><DeskBackdrop materials={materials}/><group>
@@ -174,8 +211,8 @@ function Book({onReady,onFailure}:{onReady:(director:Director)=>void;onFailure:(
  {paper[`page-${leftChapter}-left`]&&<PrintedPage texture={paper[`page-${leftChapter}-left`]} edge={materials['paper-edge']} left/>}{paper[`page-${rightChapter}-right`]&&<PrintedPage texture={paper[`page-${rightChapter}-right`]} edge={materials['paper-edge']}/>}
  {sheet&&<TurningPage front={sheet.front} back={sheet.back} progress={progress} direction={sheet.direction} visible={moving}/>}
  {/* One group, keyed by chapter: when a turn ends the incoming cards stay mounted and become the spread's own (no rebuild). */}
- <group>{scenes[chapter].layers.flatMap(l=>(['left','right'] as const).map(side=>{const piece=splitPaperArt(l.position[0],l.size[0],side);return piece&&textures[l.src]?<PaperLayer key={`${chapter}-${l.id}-${side}`} layer={l} piece={piece} texture={textures[l.src]} hinges={hinges} onClick={interact} turn={turn} progress={progress}/>:null;}))}
- {turn&&turn.to!==chapter&&scenes[turn.to].layers.flatMap(l=>(['left','right'] as const).map(side=>{const piece=splitPaperArt(l.position[0],l.size[0],side);return piece&&turn.incoming[l.src]?<PaperLayer key={`${turn.to}-${l.id}-${side}`} layer={l} piece={piece} texture={turn.incoming[l.src]} hinges={hinges} onClick={interact} turn={turn} progress={progress} incoming/>:null;}))}</group>
+ <group>{spreadCards(chapter,textures,{hinges,onClick:interact,turn,progress})}
+ {turn&&turn.to!==chapter&&spreadCards(turn.to,turn.incoming,{hinges,onClick:interact,turn,progress},true)}</group>
  </group><ContextMonitor onFailure={onFailure}/></>;
 }
 /**

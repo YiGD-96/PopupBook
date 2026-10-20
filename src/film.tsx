@@ -2,7 +2,7 @@
  * The intro film, staged with the live book's own parts and rendered frame by frame by scripts/render-intro.mjs.
  * Because both use the same meshes, materials and camera, the film's last frame is the live book's first.
  */
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { flushSync } from 'react-dom';
 import { Canvas, advance, useThree } from '@react-three/fiber';
@@ -18,6 +18,7 @@ import { BLOCK_X, BindingDetails, Board, DESK, Desk, DeskFog, OPEN_BOOK_MATERIAL
 import { BOOK_HINGE_Y, createBoardGeometry, createPaperBlockGeometry, createSpineGeometry } from './bookGeometry';
 import { splitPaperArt, type PaperPiece } from './paperAttachments';
 import type { Layer } from './story';
+import { flatLift, gluedParent, riseOrder, stackRanks } from './popupStack';
 import { FILM_FONT as FONT, TurnedMesh, ease, smooth } from './filmParts';
 import { StandingFilm, loadStandingAssets, standingFilmMeta, type StandingAssets } from './standingFilm';
 import { STANDING_FILM_ASPECT } from './standingMedia';
@@ -90,12 +91,26 @@ function FoldingSpine({materials,fold}:{materials:BookMaterials;fold:number}){
  const geometry=useDisposable(()=>createSpineGeometry(fold),[fold]);
  return <mesh geometry={geometry}><meshBasicMaterial map={materials['cloth-side']} vertexColors side={DoubleSide}/></mesh>;
 }
-function Popup({layer,piece,texture,rise}:{layer:Layer;piece:PaperPiece;texture:Texture;rise:number}){
+function PopupFace({layer,piece,texture}:{layer:Layer;piece:PaperPiece;texture:Texture}){
  const card=useDisposable(()=>createCardGeometry(piece,layer.size[1]),[piece.width,piece.u0,piece.u1,layer.size[1]]);
+ return <mesh geometry={card} position={[0,layer.size[1]/2,0]}><meshBasicMaterial map={texture} transparent alphaTest={.025} side={DoubleSide} depthWrite/></mesh>;
+}
+/** A rising card, stacked while folded and carrying the cards glued onto it, as the live book does (src/popupStack.ts). */
+function Popup({layer,piece,texture,rise,rank,children}:{layer:Layer;piece:PaperPiece;texture:Texture;rise:number;rank:number;children?:ReactNode}){
  const hinge=-(1-rise)*Math.PI/2;
- return <group position={[piece.center,layer.position[1]+.018,layer.position[2]]}>
-  <group rotation={[hinge,0,0]}><mesh geometry={card} position={[0,layer.size[1]/2,0]}><meshBasicMaterial map={texture} transparent alphaTest={.025} side={DoubleSide} depthWrite/></mesh></group>
+ return <group position={[piece.center,layer.position[1]+.018+flatLift(rank,hinge),layer.position[2]]}>
+  <group rotation={[hinge,0,0]}><PopupFace layer={layer} piece={piece} texture={texture}/>{children}</group>
  </group>;
+}
+/** The first spread's cards rising, front to back (src/popupStack.ts riseOrder). */
+function FilmPopups({scenery,time}:{scenery:Record<string,Texture>;time:number}){
+ const layers=scenes[0].layers,ranks=stackRanks(layers);
+ const pieceOf=(layer:Layer,side:'left'|'right')=>splitPaperArt(layer.position[0],layer.size[0],side);
+ return <>{layers.flatMap(layer=>(['left','right'] as const).map(side=>{
+  const piece=pieceOf(layer,side),parent=gluedParent(layer,layers);if(!piece||(parent&&pieceOf(parent,side)))return null;
+  const glued=layers.filter(child=>gluedParent(child,layers)===layer).map(child=>{const childPiece=pieceOf(child,side);return childPiece?<group key={child.id} position={[childPiece.center-piece.center,child.position[1]-layer.position[1],child.position[2]-layer.position[2]]}><PopupFace layer={child} piece={childPiece} texture={scenery[child.src]}/></group>:null;});
+  return <Popup key={layer.id+side} layer={layer} piece={piece} texture={scenery[layer.src]} rise={smooth((time-riseOrder(ranks.get(layer.id)??0,layers.length)*.075)/.85)} rank={ranks.get(layer.id)??0}>{glued}</Popup>;
+ }))}</>;
 }
 function FilmCamera(){
  const {camera,scene}=useThree();
@@ -124,7 +139,7 @@ function Film({assets,t,onCommit}:{assets:Assets;t:number;onCommit:(t:number)=>v
    {/* The ribbon and headband are bound in from the start; the opening sheets uncover them. */}
    <BindingDetails materials={materials}/>
    {f.pages.map((p,i)=>p>0&&p<1?<TurningPage key={i} front={front(i)} back={back(i)} progress={{current:progress.current[i]}} direction={1} lift={.025+(INTRO_PAGE_COUNT-i)*.005}/>:null)}
-   {sceneryOn&&scenes[0].layers.flatMap((layer,index)=>(['left','right'] as const).map(side=>{const piece=splitPaperArt(layer.position[0],layer.size[0],side);return piece?<Popup key={layer.id+side} layer={layer} piece={piece} texture={scenery[layer.src]} rise={smooth((f.scenery-index*.075)/.85)}/>:null;}))}
+   {sceneryOn&&<FilmPopups scenery={scenery} time={f.scenery}/>}
   </group></group>
  </>;
 }

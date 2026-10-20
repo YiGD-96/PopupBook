@@ -3,7 +3,8 @@ export type Phase = 'INIT'|'COVER'|'LOADING_PAGE'|'OPENING_POPUP'|'EXPLORING'|'D
 /** A pop-up card. `detail` makes it clickable: it opens that entry of src/details.ts in the side panel. `phone` places it in the
  *  standing book on phones (src/standingLayout.ts: x across, z depth from the binding, `lift` above the page for a card standing on
  *  another, like a dish on the table); without it the place is derived. On the open book `position[1]` is the card's foot. */
-export type Layer = { id:string; src:string; position:[number,number,number]; size:[number,number]; interactive?:boolean; detail?:string; phone?:{x:number;z:number;size:[number,number];lift?:number} };
+/** `on`: the id of the card this one stands on (a dish on the table): it folds with that card instead of on its own (src/popupStack.ts). */
+export type Layer = { id:string; src:string; position:[number,number,number]; size:[number,number]; interactive?:boolean; detail?:string; on?:string; phone?:{x:number;z:number;size:[number,number];lift?:number} };
 const clickable=(layer:Omit<Layer,'interactive'>&{detail:string}):Layer=>({...layer,interactive:true});
 // Three chapters following the web magazine "당근을 따라, 구좌": the farmer, the people who cook, and menus & recipes.
 // The first version's chapters are kept in _archive/scenes-v1. Sizes keep each texture's proportions (width : height).
@@ -35,22 +36,26 @@ export const scenes = [
   {id:'traveler',src:'char-traveler',position:[-.85,.275,1.2],size:[.7,1.5],phone:{x:-.55,z:2.2,size:[.66,1.42]}},
   {id:'front',src:'village-front',position:[2.05,.285,1.85],size:[2.2,1.02],phone:{x:1.2,z:2.8,size:[2.22,1.03]}}
  ] as Layer[]},
- {id:'recipes',title:'구좌를 요리하는 가장 쉬운 방식',paper:'#ffe9d2',english:'03 · MENU & RECIPE',intro:'식당의 당근 메뉴와\n집에서 따라 하는 레시피를 모았어요.',dialog:'접시마다 메뉴와 레시피가 담겨 있어요. 궁금한 요리를 눌러 보세요.',label:'레시피 보기',color:'#81a69c',detail:'recipe-01',layers:[
-  // Painted layers (GPT, art-src/gpt/page-3 → scripts/prepare-gpt-art.mjs): an evening kitchen, back to front. The racks stand back by
-  // the wall; the table runs along the very front and the food is set out on it: each dish stands just in front of the table card with
-  // its foot on the painted tabletop (about 0.6–0.83 of the table's height), a raised back row and a lower front row in its gaps. Home
-  // recipes on the left page, restaurant menus on the right, each dish wholly on its page.
+ {id:'recipes',title:'구좌를 요리하는 가장 쉬운 방식',paper:'#ffe9d2',english:'03 · MENU & RECIPE',intro:'식당의 당근 메뉴와\n집에서 따라 하는 레시피를 모았어요.',dialog:'벽의 줄에 걸린 메모는 집에서 따라 하는 레시피, 둥근 식탁 위의 음식은 식당의 메뉴예요. 궁금한 것을 눌러 보세요.',label:'레시피 보기',color:'#81a69c',detail:'recipe-01',layers:[
+  // Painted layers (GPT, art-src/gpt/page-3 → scripts/prepare-gpt-art.mjs): an evening kitchen, back to front. The wall is a teal-tiled
+  // kitchen wall with a hood, a utensil rail, a shelf and a string across it (35% down the painting). Left page: three papers clipped to
+  // that string (glued to the wall, so they fold with it) and a basket on the floor; right page: a round table with the three restaurant
+  // dishes in front and a pot and a kettle behind them. Each thing on the table has a contact shadow baked under its foot, so its card
+  // is a little taller than the thing: its foot y is set by the table's ellipse, minus that padding. Sizes keep each texture's aspect.
+  // On the phone the wall is the upright page: the papers stand in a row against it, hung to the height of the painted string.
   {id:'back',src:'kitchen-back',position:[0,.24,-1.7],size:[6.6,2.73]},
-  {id:'rack-left',src:'kitchen-left',position:[-2.75,.26,-1],size:[1.42,2.5],phone:{x:-1.74,z:.45,size:[1.15,2.04]}},
-  {id:'rack-right',src:'kitchen-right',position:[2.78,.26,-1],size:[1.33,2.5],phone:{x:1.77,z:.45,size:[1.08,2.04]}},
-  {id:'table',src:'kitchen-table',position:[0,.27,1.55],size:[6.4,1.56],phone:{x:0,z:3.12,size:[4.6,1.12]}},
-  clickable({id:'pickle',src:'dish-pickle',position:[-2.75,1.42,1.6],size:[.65,1.07],detail:'recipe-03',phone:{x:-1.78,z:3.17,size:[.6,.98],lift:.84}}),
-  clickable({id:'soup',src:'dish-soup',position:[-1.45,1.42,1.6],size:[1.15,.78],detail:'recipe-02',phone:{x:-.95,z:3.17,size:[1.05,.71],lift:.84}}),
-  clickable({id:'plate',src:'dish-plate',position:[1.45,1.42,1.6],size:[1.2,.83],detail:'menu-01',phone:{x:.95,z:3.17,size:[1.1,.76],lift:.84}}),
-  clickable({id:'juice',src:'dish-juice',position:[2.7,1.42,1.6],size:[.8,1.15],detail:'menu-02',phone:{x:1.8,z:3.17,size:[.72,1.03],lift:.84}}),
-  clickable({id:'rape',src:'dish-rape',position:[-2.3,1.25,1.68],size:[1.1,.81],detail:'recipe-01',phone:{x:-1.5,z:3.23,size:[1,.74],lift:.7}}),
-  {id:'board',src:'kitchen-front',position:[0,1.25,1.68],size:[1.9,.68],phone:{x:0,z:3.23,size:[1.6,.57],lift:.7}},
-  clickable({id:'burger',src:'dish-burger',position:[2.25,1.25,1.68],size:[1,.84],detail:'menu-03',phone:{x:1.5,z:3.23,size:[.95,.8],lift:.7}})
+  clickable({id:'note-rape',on:'back',src:'note-rape-card',position:[-2.85,.61,-1.66],size:[1.05,1.12],detail:'recipe-01',phone:{x:-1.5,z:.3,size:[1.43,1.52]}}),
+  clickable({id:'note-soup',on:'back',src:'note-soup-card',position:[-1.82,.61,-1.66],size:[1.05,1.115],detail:'recipe-02',phone:{x:0,z:.3,size:[1.43,1.52]}}),
+  clickable({id:'note-pickle',on:'back',src:'note-pickle-card',position:[-.8,.61,-1.66],size:[1.05,1.145],detail:'recipe-03',phone:{x:1.5,z:.3,size:[1.43,1.56]}}),
+  // The left floor is a home-cooking still life (kettle, basket, soup pot: the home recipes' side); the round table carries only the three
+  // restaurant dishes, spread apart so none covers another. On the phone the floor things stand in front of the table's pedestal.
+  {id:'kettle',src:'kitchen-kettle',position:[-3,.18,1],size:[1,1.067],phone:{x:1.9,z:3.25,size:[.7,.746]}},
+  {id:'basket',src:'kitchen-basket',position:[-1.95,.19,1.55],size:[1.6,1.189],phone:{x:-1.68,z:3.25,size:[1.15,.854]}},
+  {id:'pot',src:'kitchen-pot',position:[-.75,.175,1.2],size:[1.15,1.15],phone:{x:1.05,z:3.25,size:[.85,.85]}},
+  {id:'table',src:'kitchen-table-round',position:[1.78,.2,1.55],size:[3.3,1.99],phone:{x:0,z:3.2,size:[3.4,2.05]}},
+  clickable({id:'burger',on:'table',src:'dish-burger',position:[.88,1.336,1.62],size:[1,.919],detail:'menu-03',phone:{x:-1.18,z:3.25,size:[1.05,.965],lift:1.16}}),
+  clickable({id:'plate',on:'table',src:'dish-plate',position:[2.05,1.277,1.64],size:[1.35,1.026],detail:'menu-01',phone:{x:.15,z:3.25,size:[1.45,1.102],lift:1.13}}),
+  clickable({id:'juice',on:'table',src:'dish-juice',position:[3.02,1.382,1.6],size:[.68,1.048],detail:'menu-02',phone:{x:1.35,z:3.25,size:[.6,.924],lift:1.23}})
  ] as Layer[]}
 ];
 type StoryState = {phase:Phase;chapter:number;dialog:boolean;detail:string|null;visited:number[];audioReady:boolean;introPagesTurned:number;error:string|null;set:(patch:Partial<StoryState>)=>void};

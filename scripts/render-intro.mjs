@@ -7,7 +7,11 @@
  * Options: --raster-only [--all-raster], --materials-only, --stills (skip the MP4),
  * --standing (the phone intro, film.html?mode=standing, portrait 9:16: book-opening-standing.mp4, book-cover-standing.webp,
  *   book-open-standing.webp, … and intro-meta-standing.json; it films with the textures the open-book render baked, so step 1 is skipped).
- * Environment: CODEX_NODE_MODULES (sharp, @napi-rs/canvas), FFMPEG_PATH, CHROME_PATH, INTRO_WIDTH, INTRO_FPS, INTRO_CRF (x264 quality, 19),
+ * Each film is encoded twice from the same frames: H.264 (book-opening*.mp4, plays everywhere) and AV1 (book-opening*-av1.mp4, about half
+ * the size at the same quality; src/Intro.tsx plays it where the browser decodes it smoothly in hardware).
+ * Environment: CODEX_NODE_MODULES (sharp, @napi-rs/canvas), FFMPEG_PATH, CHROME_PATH, INTRO_WIDTH (the book frame's width in pixels:
+ * 1440 desktop, 900 phone (exactly 9:16), so the film stays sharp on large and high-density screens), INTRO_FPS, INTRO_CRF (x264 quality, 19),
+ * INTRO_AV1_CRF (libaom quality, 30),
  * INTRO_INSPECT (comma-separated times: only write those frames as PNG to INTRO_INSPECT_DIR).
  */
 import fs from 'node:fs/promises';
@@ -25,7 +29,7 @@ const {createCanvas,loadImage}=require('@napi-rs/canvas'),sharp=require('sharp')
 const ffmpeg=process.env.FFMPEG_PATH||'C:/Program Files/ffmpeg-8.0.1-essentials_build/bin/ffmpeg.exe';
 const chrome=process.env.CHROME_PATH||'C:/Program Files/Google/Chrome/Application/chrome.exe';
 const standing=process.argv.includes('--standing'),suffix=standing?'-standing':'';
-const width=Number(process.env.INTRO_WIDTH||(standing?720:968)),fps=Number(process.env.INTRO_FPS||60),crf=Number(process.env.INTRO_CRF||19);
+const width=Number(process.env.INTRO_WIDTH||(standing?900:1440)),fps=Number(process.env.INTRO_FPS||60),crf=Number(process.env.INTRO_CRF||19),av1Crf=Number(process.env.INTRO_AV1_CRF||30);
 const media=path.join(project,'public/media');const review=path.join(project,'intro-cache/review');await fs.mkdir(review,{recursive:true});await fs.mkdir(media,{recursive:true});
 const raster=path.join(project,'public/art-raster');await fs.mkdir(raster,{recursive:true});
 
@@ -85,7 +89,7 @@ try{
  const pageMiddle=meta.coverHold+1+(meta.pageCount-1)*.07+.31;
  for(const [name,time] of [['book-cover',0],['book-lowering',meta.coverHold+.55],['book-fan',pageMiddle],['book-rise',meta.uiRevealAt+.28],['book-open',meta.duration]])
   // Only the first and last frames ship (the intro's still and its fallback); the in-between stills and the storyboard are for review.
-  await fs.writeFile(path.join(['book-cover','book-open'].includes(name)?media:review,`${name}${suffix}.webp`),await sharp(await frame(time)).webp({quality:94}).toBuffer());
+  await fs.writeFile(path.join(['book-cover','book-open'].includes(name)?media:review,`${name}${suffix}.webp`),await sharp(await frame(time)).webp({quality:86,effort:6}).toBuffer());
  const tiles=[['book-cover',0,0],['book-lowering',meta.width,0],['book-fan',meta.width*2,0],['book-rise',0,meta.height],['book-open',meta.width,meta.height]];
  const composite=await sharp({create:{width:meta.width*3,height:meta.height*2,channels:3,background:meta.background}}).composite(await Promise.all(tiles.map(async([name,left,top])=>({input:await fs.readFile(path.join(['book-cover','book-open'].includes(name)?media:review,`${name}${suffix}.webp`)),left,top})))).png().toBuffer();
  await fs.writeFile(path.join(review,`intro-storyboard${suffix}.jpg`),await sharp(composite).resize(1440).jpeg({quality:90}).toBuffer());
@@ -96,11 +100,16 @@ try{
   // Both films are converted with the BT.709 matrix and tagged as sRGB, so browsers decode them to the colours the live book renders
   // (untagged, FFmpeg converts with BT.601 while browsers assume BT.709 for HD video, which shifts saturated colours).
   const colour=['-vf','scale=out_color_matrix=bt709:out_range=tv','-colorspace','bt709','-color_primaries','bt709','-color_trc','iec61966-2-1','-color_range','tv'];
-  const encoder=spawn(ffmpeg,['-y','-f','image2pipe','-c:v','png','-framerate',String(fps),'-i','pipe:0','-an',...colour,'-c:v','libx264','-preset','medium','-crf',String(crf),'-pix_fmt','yuv420p','-movflags','+faststart',output],{stdio:['pipe','ignore','pipe']});
-  let log='';encoder.stderr.on('data',chunk=>log+=chunk);encoder.stdin.on('error',()=>{});
-  for(let f=0;f<frames;f++){if(!encoder.stdin.write(await frame(f/fps)))await once(encoder.stdin,'drain');if(f%fps===0)console.log(`Rendered ${f/fps}/${meta.duration}s`);}
-  encoder.stdin.end();const [code]=await once(encoder,'exit');if(code!==0)throw new Error(log);
-  const stat=await fs.stat(output);console.log(`Created ${meta.width}×${meta.height}, ${fps} fps, ${meta.duration}s MP4 (${(stat.size/1048576).toFixed(2)} MiB).`);
+  const av1Output=path.join(media,`book-opening${suffix}-av1.mp4`);
+  const input=['-y','-f','image2pipe','-c:v','png','-framerate',String(fps),'-i','pipe:0','-an',...colour];
+  const encoders=[
+   spawn(ffmpeg,[...input,'-c:v','libx264','-preset','medium','-crf',String(crf),'-pix_fmt','yuv420p','-movflags','+faststart',output],{stdio:['pipe','ignore','pipe']}),
+   spawn(ffmpeg,[...input,'-c:v','libaom-av1','-cpu-used','4','-row-mt','1','-tiles','2x2','-crf',String(av1Crf),'-b:v','0','-pix_fmt','yuv420p','-movflags','+faststart',av1Output],{stdio:['pipe','ignore','pipe']}),
+  ];
+  const logs=encoders.map(encoder=>{const log={text:''};encoder.stderr.on('data',chunk=>log.text+=chunk);encoder.stdin.on('error',()=>{});return log;});
+  for(let f=0;f<frames;f++){const png=await frame(f/fps);for(const encoder of encoders)if(!encoder.stdin.write(png))await once(encoder.stdin,'drain');if(f%fps===0)console.log(`Rendered ${f/fps}/${meta.duration}s`);}
+  for(const [i,encoder] of encoders.entries()){encoder.stdin.end();const [code]=await once(encoder,'exit');if(code!==0)throw new Error(logs[i].text);}
+  for(const file of [output,av1Output]){const stat=await fs.stat(file);console.log(`Created ${path.basename(file)}: ${meta.width}×${meta.height}, ${fps} fps, ${meta.duration}s (${(stat.size/1048576).toFixed(2)} MiB).`);}
  }
  }
 }finally{await cleanup();}
