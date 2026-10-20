@@ -184,3 +184,28 @@ html,body{background:#1a110b}
  /* The phone canvas stops above the reading text: let the desk fade into the room there. */
  .desk-air{background:radial-gradient(95% 85% at 50% 46%,transparent 48%,rgba(12,7,4,.55) 100%),linear-gradient(to bottom,transparent 82%,#1a110b 100%)}
 }
+
+/* The phone's standing book turns by dragging up or down too (src/useBookGestures.ts), so the browser must not take vertical drags as
+   scrolling there; the page does not scroll on the phone. */
+@media (max-width:760px) and (orientation:portrait){
+ .cinematic-reader .hero .book-stage .canvas-wrap{touch-action:none}
+ html,body{overscroll-behavior:none}
+}
+
+/* The spread's title, on its own line under the header and above the book (src/App.tsx). */
+.cinematic-reader .chapter-title{position:absolute;z-index:6;top:76px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:7px;
+ width:max-content;max-width:calc(100% - 36px);text-align:center;pointer-events:none;animation:chapter-title-in .6s ease-out both}
+.cinematic-reader .chapter-title>span{font:600 11px 'Cormorant Garamond',Georgia,serif;letter-spacing:.3em;color:#d9a35f}
+.cinematic-reader .chapter-title>strong{font-family:var(--serif);font-size:clamp(22px,2.1vw,30px);font-weight:400;letter-spacing:-.01em;color:#f5e6c9;line-height:1.25}
+@keyframes chapter-title-in{from{opacity:0;transform:translate(-50%,6px)}to{opacity:1;transform:translate(-50%,0)}}
+@media (max-height:760px) and (min-width:761px){
+ .cinematic-reader .chapter-title{top:66px;gap:4px}
+ .cinematic-reader .chapter-title>strong{font-size:21px}
+}
+@media (max-width:760px){
+ .cinematic-reader .chapter-title{top:68px;gap:6px}
+ .cinematic-reader .chapter-title>span{font-size:10px;letter-spacing:.24em}
+ .cinematic-reader .chapter-title>strong{font-size:21px}
+}
+@media (prefers-reduced-motion:reduce){.cinematic-reader .chapter-title{animation:none}}
+

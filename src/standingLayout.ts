@@ -41,13 +41,17 @@ export function standingSheetProgress(p:number){return smooth((p-STANDING_TURN.s
 /** The upright half (board, text block and page) is drawn this much shorter than a real page, so its painting does not tower over the
  *  stage on a phone; the flat page keeps its full depth. */
 export const UPRIGHT_SCALE=.7;
+/** How far the upright half leans back past 90° on the live phone book: the camera's pitch (34°, src/standingView.ts), so the standing
+ *  page faces the camera squarely and its side edges rise straight up the screen instead of flaring out (the book reads as fully open,
+ *  about 124°). The phone intro film still stands it at 90°; the live book settles into the lean just after the film hands over. */
+export const UPRIGHT_LEAN=34*Math.PI/180;
 export function uprightPagePoint(u:number,v:number):[number,number,number]{
  return [PAGE_BASE_Y+pageRestLift(u)-BOOK_HINGE_Y,BOOK_HINGE_Y+u*UPRIGHT_SCALE*PAGE_WIDTH,(v-.5)*PAGE_HEIGHT];
 }
 /** The turning sheet at q (0 lying flat as the lower page, 1 standing as the upright page, a hair in front of it). The free edge lags a
  *  little while the sheet moves, its curve flips from the flat page's to the upright page's, and it shortens to the upright page's height. */
-export function standingSheetPoint(u:number,v:number,q:number):[number,number,number]{
- const angle=q*Math.PI/2-Math.sin(q*Math.PI)*.28*u*u,lift=pageRestLift(u)*Math.cos(Math.PI*q);
+export function standingSheetPoint(u:number,v:number,q:number,open=Math.PI/2):[number,number,number]{
+ const angle=q*open-Math.sin(q*Math.PI)*.28*u*u,lift=pageRestLift(u)*Math.cos(Math.PI*q);
  const rx=u*PAGE_WIDTH*(1-(1-UPRIGHT_SCALE)*smooth(q)),ry=PAGE_BASE_Y-BOOK_HINGE_Y+lift+.003;
  return [rx*Math.cos(angle)-ry*Math.sin(angle)+.004*q,BOOK_HINGE_Y+rx*Math.sin(angle)+ry*Math.cos(angle),(v-.5)*PAGE_HEIGHT];
 }

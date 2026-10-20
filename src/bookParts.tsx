@@ -1,9 +1,11 @@
-import { useEffect, useMemo, useRef, type RefObject } from 'react';
+import { useEffect, useMemo, useRef, useState, type RefObject } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import { BackSide, Color, DoubleSide, Float32BufferAttribute, Fog, FrontSide, Mesh, MeshBasicMaterial, PerspectiveCamera, PlaneGeometry, RepeatWrapping, Scene, type Camera, type Texture, type WebGLRenderer } from 'three';
 import { BOOK_BOARD, BOOK_PAGES } from './bookStructure';
 import { createBoardGeometry, createPaperBlockGeometry, createRibbonGeometry, createSpineGeometry, lightShade } from './bookGeometry';
 import { createPageSkirt, createPaperGeometry, updatePaperGeometry } from './paperGeometry';
+import { madeHalo, makeHaloSoon, restHalo } from './cardHalo';
+import { useStory, type Layer } from './story';
 import type { PaperPiece } from './paperAttachments';
 
 /** Shared by the live book and the offline intro film, so the movie's last frame is the live book. */
@@ -164,4 +166,20 @@ export function warmMaterials(renderer:Pick<WebGLRenderer,'compile'>,world:Scene
  const temp=new Scene();temp.fog=world.fog;
  for(const material of materials)temp.add(new Mesh(warmGeometry(),material));
  renderer.compile(temp,camera);
+}
+
+const haloPlane=once(()=>new PlaneGeometry(1,1));
+/**
+ * A clickable card's glow (src/cardHalo.ts), just behind the card's face of the given size. Usually made ahead (startup, warmChapter);
+ * if not, it is made in idle time after the card appears, never in a turn's frame, and fades in to its rim on a spread being read.
+ */
+export function CardHalo({layer,texture,width,height,incoming=false}:{layer:Layer;texture:Texture;width:number;height:number;incoming?:boolean}){
+ const [halo,setHalo]=useState(()=>madeHalo(texture));
+ useEffect(()=>{
+  if(halo)return;let live=true;
+  makeHaloSoon(texture,made=>{if(!live)return;setHalo(made);if(!incoming&&useStory.getState().phase==='EXPLORING')restHalo(layer,texture);});
+  return()=>{live=false;};
+ },[halo,texture,layer,incoming]);
+ if(!halo)return null;
+ return <mesh geometry={haloPlane()} material={halo.material} dispose={null} position={[0,height/2,-.008]} scale={[width*halo.scale[0],height*halo.scale[1],1]}/>;
 }
