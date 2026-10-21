@@ -4,7 +4,7 @@
  * The words are the mockup's; the pictures are public/media/webzine (scripts/prepare-webzine.mjs).
  */
 export type WzFlow={p:string}|{q:string};
-export type WzMenu={img:string;alt:string;title:string;text:string;/** Picture on the right, words on the left. */flip?:boolean;shape?:'wide'|'compact'|'tall'|'natural'};
+export type WzMenu={img:string;alt:string;title:string;text:string;/** Picture on the right, words on the left. */flip?:boolean;shape?:'wide'|'compact'|'tall'|'natural'|'square'};
 export type WzBlock=
  | {t:'h1';lines:string[]}
  | {t:'sub';text:string}

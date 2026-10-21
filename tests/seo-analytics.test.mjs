@@ -23,7 +23,7 @@ test('the text version carries every chapter, every story and the FAQ for crawle
 });
 test('structured data describes the recipes completely and the FAQ as questions with answers',()=>{
  const graph=jsonLd('https://example.com')['@graph'];
- const recipes=graph.filter(node=>node['@type']==='Recipe');assert.equal(recipes.length,3);
+ const recipes=graph.filter(node=>node['@type']==='Recipe');assert.equal(recipes.length,4);
  for(const r of recipes){assert.ok(r.recipeIngredient.length>=4);assert.ok(r.recipeInstructions.length>=3);assert.match(r.totalTime,/^P(1D)?T\d+M$/);assert.match(r.image[0],/^https:\/\/example\.com\/art-raster\//);}
  assert.equal(graph.find(node=>node['@type']==='FAQPage').mainEntity.length,FAQ.length);
  assert.equal(graph.find(node=>node['@type']==='CreativeWork'&&node.hasPart).hasPart.length,scenes.length);

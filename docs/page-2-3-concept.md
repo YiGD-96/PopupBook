@@ -91,3 +91,8 @@ Keep the building's design, materials, colors, lighting and every piece of signa
   - `src/story.ts`의 2장 레이어를 위 표대로 다시 짜고, 누르는 사물 셋은 새 가게 3장(`cook-01~03`)에 연결한다.
   - 웹과 휴대폰 위치를 둘 다 잡고, 가운데 길 틈으로 뒤 배경의 바다가 보이는지, 여행자와 가족이 가게를 가리지 않는지를 화면에서 본다. `tests/`의 2장 관련 테스트도 같이 고친다.
 - **지금은 코드를 바꾸지 않았다.** 지금 화면은 이전 배치(소농로드 왼쪽, 버거캐럿 오른쪽)가 그대로이고, 새 그림이 오면 한 번에 바꾼다.
+
+## 적용 (폰 모드 · 모바일 가게 그림)
+- 2p 폰: 가게는 `*-mobile.png`(→ `sonongroad-phone`, `manoa-phone`, `buggercarrot-phone`), 뒷배경은 `village-back-narrow.png`(→ `village-back-phone`)을 `phoneSrc`로 사용. 배치는 `바닥 참조.png` 기준(버거캐럿 왼쪽 앞, 마노아 가운데 뒤, 소농로드 오른쪽, 가족은 길 위).
+- 3p: 책상·레시피 북의 그림자는 `cast`(모양을 따라가는 그림자, scripts/prepare-gpt-art.mjs)로 붙여서 공중에 뜬 느낌을 없앰.
+- 웹 모드도 같은 그림으로 통일: `sonongroad`/`manoa`/`buggercarrot` 텍스처가 `*-mobile.png`, `village-back`이 `village-back-narrow.png`(가로 띠로 잘라 사용).

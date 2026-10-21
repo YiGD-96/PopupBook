@@ -11,7 +11,7 @@ import type { Layer } from './story.ts';
 /** The flat page: as wide as the binding is long, as deep as a page is wide. Cards keep a little margin from its edges. */
 export const STAGE={halfWidth:PAGE_HEIGHT/2,depth:PAGE_WIDTH,margin:.06};
 /** `lift`: how far the card's foot stands above the page (a dish set on the table card in front of it). */
-export type Placement={x:number;z:number;size:[number,number];lift?:number};
+export type Placement={x:number;z:number;size:[number,number];lift?:number;edge?:boolean};
 /** The spread's backdrop is printed on the upright page instead of standing as a card. */
 export const isBackdrop=(layer:Layer)=>layer.id==='back';
 /** Where a card stands on the flat page: its hand-made phone placement, or one derived from the open-book layout (narrower, the

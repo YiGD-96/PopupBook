@@ -1,0 +1,38 @@
+/* The recipe-poster book (src/PosterBook.tsx). The close button and the bar under the book share the web-magazine book's styles (.wz-close,
+   .wz-nav, .wz-related in cinematic.css). */
+/* Wide screens: two 2:3 pages (the posters' own shape), so the poster fills the right page to its edges with nothing to scroll. */
+.poster-book{position:relative;display:flex;flex-direction:column;align-items:center;gap:14px;width:min(1240px,94vw,calc((100svh - 100px)*4/3));transform-origin:50% 100%;transform:translateY(38vh) rotateX(62deg) scale(.82);opacity:0;transition:transform .42s cubic-bezier(.2,.75,.25,1),opacity .16s ease-out;font-family:'Pretendard Variable',Pretendard,'Noto Sans KR',system-ui,sans-serif;font-synthesis:none}
+.is-open>.poster-book{transform:none;opacity:1}
+.pb-sheet{position:relative;width:100%;aspect-ratio:4/3;display:grid;grid-template-columns:1fr 1fr;border-radius:6px 6px 4px 4px;overflow:hidden;outline:none;background:linear-gradient(rgba(255,251,240,.6),rgba(255,251,240,.6)),#f6edd9 url('/art-raster/intro-pages.webp') center/cover;box-shadow:0 30px 60px rgba(70,50,30,.3),0 2px 0 #c89b80,0 6px 0 #b9806a;color:#3e3125}
+/* The gutter: a soft fold shadow down the middle, over the poster's inner edge too. */
+.pb-sheet::after{content:'';position:absolute;top:0;bottom:0;left:50%;width:56px;transform:translateX(-50%);pointer-events:none;background:linear-gradient(90deg,transparent,rgba(110,80,50,.16) 46%,rgba(80,56,34,.26) 50%,rgba(110,80,50,.16) 54%,transparent)}
+.pb-page{position:relative;min-height:0;display:flex;flex-direction:column}
+.pb-page.is-left{gap:18px;padding:34px 40px 36px 42px}
+.pb-page.is-left header span{display:block;font-size:12px;font-weight:600;letter-spacing:.16em;color:#9a7f5e}
+.pb-page.is-left h2{margin:6px 0 0;font-size:clamp(24px,2.6vw,34px);font-weight:800;letter-spacing:-.02em;color:#5e3a1c;outline:none}
+.pb-media{flex:1;min-height:0;margin:0;border-radius:10px;overflow:hidden;background:#efe2c8}
+.pb-media img,.pb-media video{display:block;width:100%;height:100%;object-fit:cover}
+.pb-media.is-empty{display:grid;place-items:center;border:2px dashed #cdb48e;background:rgba(239,226,200,.55)}
+.pb-media figcaption{display:grid;justify-items:center;gap:10px;padding:16px;font-size:14px;font-weight:500;color:#9a7f5e;text-align:center}
+.pb-media figcaption>span{display:flex;gap:10px;color:#c39a6b}
+.pb-page.is-right{overflow:hidden}
+.pb-page.is-right img{display:block;width:100%;height:100%;object-fit:cover}
+/* Only phones scroll (below). */
+.pb-hint{display:none}
+@media(prefers-reduced-motion:reduce){.poster-book{transition:none}.pb-hint{animation:none;opacity:0}}
+/* Phones: the photo or video frame and the poster run on as one page, scrolled as a whole. */
+@media(max-width:760px){
+ .detail-book-backdrop:has(.poster-book){padding:8px}
+ .poster-book{width:100%;gap:10px}
+ .pb-sheet{display:block;aspect-ratio:auto;max-height:calc(100svh - 76px);overflow-y:auto;overscroll-behavior:contain;border-radius:6px}
+ .pb-sheet::after{display:none}
+ .pb-page.is-left{gap:10px;padding:16px 16px 14px}
+ .pb-page.is-left header{padding-right:40px}
+ .pb-page.is-left h2{font-size:22px;margin-top:4px}
+ .pb-media{flex:none;aspect-ratio:4/3}
+ .pb-media figcaption{gap:6px;padding:10px;font-size:13px}
+ .pb-page.is-right{overflow:visible;border-top:1px solid #cdb995}
+ .pb-page.is-right img{height:auto}
+ .pb-hint{display:block;position:absolute;left:50%;bottom:58px;transform:translateX(-50%);padding:5px 12px;border-radius:999px;background:rgba(62,52,40,.62);color:#fbf3e3;font-size:12px;pointer-events:none;animation:pb-hint 3.2s ease-out .6s both}
+}
+@keyframes pb-hint{0%{opacity:0}12%,70%{opacity:1}100%{opacity:0}}

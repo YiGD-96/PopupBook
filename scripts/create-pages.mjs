@@ -11,7 +11,8 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {createRequire} from 'node:module';
-import {streetFloor} from './street-floor.mjs';
+import {pathFloor} from './street-floor.mjs';
+import {farmFloor} from './farm-floor.mjs';
 const project=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const runtime=process.env.CODEX_NODE_MODULES||'C:/Users/eh1al/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules';
 const sharp=createRequire(path.join(runtime,'package.json'))('sharp');
@@ -31,9 +32,13 @@ const PAPER=[
  {wash:'#dc9a5c',washOpacity:.18,frame:'#b08b64',corner:'#9d7a54',kicker:'#8b6646',sub:'#7a5c44'},
 ];
 const sheet=sharp(papyrus).resize(PRINT_W,PRINT_H,{fit:'cover'});
-// A spread with a printed floor (chapter 2: a cobbled street, scripts/street-floor.mjs) draws it across both pages (left page = left half,
-// right page = right half) instead of the frame and wash; the printed lines sit on a small paper label so they stay readable on the stones.
-const FLOORS={1:path.join(project,'art-src/gpt/page-2/village-floor.png')};
+// A spread with a printed floor (chapter 1: a muddy farmyard, scripts/farm-floor.mjs; chapter 2: a cobbled street, scripts/street-floor.mjs)
+// draws it across both pages (left page = left half, right page = right half) instead of the frame and wash; the printed lines lie on
+// plain paper (`clear`) so they stay readable.
+const FLOORS={
+ 0:(w,h,clear)=>farmFloor(sharp,project,w,h,{clear}),
+ 1:(w,h,clear)=>pathFloor(sharp,project,w,h,{clear,widenRight:{dx:.075,u0:.55,v0:.46,v1:1}}),
+};
 const only=process.argv[2]; // e.g. "1": write just that chapter's pages
 for(const [chapter,[n,kicker,title,subtitle]] of chapters.entries())for(const side of ['left','right']){
  if(only!==undefined&&Number(only)!==chapter)continue;
@@ -47,11 +52,9 @@ for(const [chapter,[n,kicker,title,subtitle]] of chapters.entries())for(const si
   const tag='';
   const pill='';
   const labelled=`<linearGradient id="g"${gutter}><stop stop-color="#5a3f28" stop-opacity=".3"/><stop offset=".08" stop-color="#5a3f28" stop-opacity=".1"/><stop offset=".26" stop-color="#5a3f28" stop-opacity="0"/></linearGradient><rect width="620" height="830" fill="url(#g)"/>${tag}${pill}${text}<text x="310" y="793" text-anchor="middle" font-family="Georgia,serif" font-size="13" fill="${tone.kicker}">— 0${page} —</text>`;
-  // The stone yard in front of sonongroad's porch (the right shop), joined to the path, so the right of the floor is not left bare.
-  const SONO_YARD=[[.5,.5],[.62,.5],[.76,.53],[.9,.56],[.975,.6],[.985,.76],[.97,.93],[.9,1.01],[.66,1.01],[.58,.9],[.54,.72]];
   const K=PRINT_W/PAGE_W,spreadClear=[[62*K,672*K,440*K,760*K],[PRINT_W+170*K,684*K,PRINT_W+575*K,760*K],[PRINT_W-110*K,776*K,PRINT_W+110*K,806*K]];
-  const base=sharp(await streetFloor(sharp,project,PRINT_W*2,PRINT_H,{clear:spreadClear,spurs:[SONO_YARD]})).extract({left:side==='left'?0:PRINT_W,top:0,width:PRINT_W,height:PRINT_H});
-  await fs.writeFile(path.join(raster,`page-${chapter}-${side}.webp`),await base.composite([{input:overlay(labelled)}]).webp({quality:84,effort:5}).toBuffer());
+  const base=sharp(await floor(PRINT_W*2,PRINT_H,spreadClear)).extract({left:side==='left'?0:PRINT_W,top:0,width:PRINT_W,height:PRINT_H});
+  await fs.writeFile(path.join(raster,`page-${chapter}-${side}.webp`),await base.composite([{input:overlay(labelled)}]).webp({quality:90,effort:5}).toBuffer());
   continue;
  }
  await fs.writeFile(path.join(raster,`page-${chapter}-${side}.webp`),await sheet.clone().composite([{input:overlay(body)}]).webp({quality:82,effort:5}).toBuffer());

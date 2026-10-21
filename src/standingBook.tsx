@@ -128,8 +128,10 @@ export function StandingCase({materials,backdrop,turnBackdrop,turning,progress,s
  // floor never changes tone while the old cards stand on it (or before the sheet that carries the old tone has appeared).
  const page=useRef<Group>(null!),tones=useMemo(()=>({floor:new Color(stages?.floor?'#ffffff':floor??'#ffffff'),sheet:new Color(stages?.sheetFloor?'#ffffff':sheetFloor??'#ffffff')}),[floor,sheetFloor,stages?.floor,stages?.sheetFloor]);
  useFrame(()=>{const material=(page.current?.children[0] as Mesh|undefined)?.material as MeshBasicMaterial|undefined;if(!material?.map)return;
-  const old=turning===1&&standingSheetProgress(progress.current.value)<=0;material.color.copy(old?tones.sheet:tones.floor);
-  const wanted=(old?stages?.sheetFloor:stages?.floor)??materials.endpaper;if(wanted&&material.map!==wanted){material.map=wanted;material.needsUpdate=true;}});
+  // Turning back, the sheet brings the earlier spread's floor down onto the page: once it has landed (and hidden), the page shows that
+  // floor, not the one being left, while the cards rise.
+  const p=standingSheetProgress(progress.current.value),sheet=(turning===1&&p<=0)||(turning===-1&&p>=.998);material.color.copy(sheet?tones.sheet:tones.floor);
+  const wanted=(sheet?stages?.sheetFloor:stages?.floor)??materials.endpaper;if(wanted&&material.map!==wanted){material.map=wanted;material.needsUpdate=true;}});
  return <group rotation={[0,-Math.PI/2,0]}>
   <Board materials={materials} x={BOOK_BOARD.x}/><PaperBlock materials={materials} x={BLOCK_X}/>
   {materials.endpaper&&<group ref={page}><PrintedPage texture={stages?.floor??materials.endpaper} edge={materials['paper-edge']} tint={stages?.floor?undefined:floor}/></group>}
@@ -147,7 +149,7 @@ function StandingFace({layer,texture,onClick,incoming=false}:Omit<StandingCardPr
  const geometry=useDisposable(()=>createCardGeometry({center:0,width:place.size[0],u0:0,u1:1,side:'right'},place.size[1]),[place.size[0],place.size[1]]);
  // Clickable cards glow (src/cardHalo.ts) instead of swaying.
  const glows=!!layer.interactive,live=!incoming&&glows;
- return <>{glows&&<CardHalo layer={layer} texture={texture} width={place.size[0]} height={place.size[1]} incoming={incoming} grounded/>}<mesh geometry={geometry} material={cardMaterial(texture)} dispose={null} position={[0,place.size[1]/2,0]} onClick={live?e=>{e.stopPropagation();if(phase==='EXPLORING')onClick(layer.detail);}:undefined} onPointerOver={live?()=>{if(phase==='EXPLORING'){document.body.style.cursor='pointer';lightHalo(texture);}}:undefined} onPointerOut={()=>{document.body.style.cursor='';if(live&&useStory.getState().detail!==layer.detail)restHalo(layer,texture);}}/></>;
+ return <>{glows&&<CardHalo layer={layer} texture={texture} width={place.size[0]} height={place.size[1]} incoming={incoming} reach={layer.glow}/>}<mesh geometry={geometry} material={cardMaterial(texture)} dispose={null} position={[0,place.size[1]/2,0]} onClick={live?e=>{e.stopPropagation();if(phase==='EXPLORING'||phase==='ENDING')onClick(layer.detail);}:undefined} onPointerOver={live?()=>{if(phase==='EXPLORING'||phase==='ENDING'){document.body.style.cursor='pointer';lightHalo(texture);}}:undefined} onPointerOut={()=>{document.body.style.cursor='';if(live&&useStory.getState().detail!==layer.detail)restHalo(layer,texture);}}/></>;
 }
 /** A card standing on another card (`on` in src/story.ts), inside that card's hinge so it folds with it (src/popupStack.ts). */
 export function StandingGluedCard({parent,...card}:StandingCardProps&{parent:Layer}){

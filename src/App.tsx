@@ -6,12 +6,14 @@ import { useBookGestures } from './useBookGestures';
 import Intro,{type IntroReport} from './Intro';
 import {canRevealReader,INTRO_PAGE_COUNT} from './introPlayback';
 import {BOOK_FRAME_WIDTH,BOOK_FRAME_HEIGHT,FILM_SPAN,bookZoom} from './bookView';
-import {standingMediaSize} from './standingMedia';
+import {STANDING_DROP,STANDING_QUERY,standingMediaSize} from './standingMedia';
 import {artSource} from './artSource';
 import DetailPanel from './DetailPanel';
 import DetailBook from './DetailBook';
 import WebzineBook from './WebzineBook';
 import { webzines } from './webzine';
+import PosterBook from './PosterBook';
+import { posters } from './posters';
 import Prologue from './Prologue';
 import Guide from './Guide';
 import LanguageMenu from './LanguageMenu';
@@ -52,7 +54,7 @@ function StaticBook({closed,onInteract}:{closed:boolean;onInteract:(detail?:stri
 function DeskAir(){
   return <div className="desk-air" aria-hidden="true"/>;
 }
-function Modal({title,children,onClose}:{title:string;children:ReactNode;onClose:()=>void}) {
+function Modal({title,children,onClose,className=''}:{title:string;children:ReactNode;onClose:()=>void;className?:string}) {
   const ref=useRef<HTMLDivElement>(null);
   useEffect(()=>{
     const previous=document.activeElement as HTMLElement;
@@ -70,7 +72,7 @@ function Modal({title,children,onClose}:{title:string;children:ReactNode;onClose
     return()=>{document.removeEventListener('keydown',handler);previous?.focus();};
   },[onClose]);
   return <div className="modal-backdrop" onClick={e=>{if(e.target===e.currentTarget)onClose();}}>
-    <div className="modal" role="dialog" aria-modal="true" aria-label={title} ref={ref}>
+    <div className={"modal "+className} role="dialog" aria-modal="true" aria-label={title} ref={ref}>
       <div className="modal-head"><h2>{title}</h2><button className="icon-button" onClick={onClose} aria-label="닫기"><X size={21}/></button></div>
       {children}
     </div>
@@ -253,6 +255,8 @@ export default function App() {
       const standing=standingMediaSize(surface.clientWidth,surface.clientHeight);
       surface.style.setProperty('--standing-media-width',String(standing.width)+'px');
       surface.style.setProperty('--standing-media-height',String(standing.height)+'px');
+      // The standing book is drawn this far below the centre (Storybook.tsx Camera); the film and the page arrows move with it.
+      surface.parentElement?.style.setProperty('--standing-drop',(matchMedia(STANDING_QUERY).matches?STANDING_DROP:0)+'px');
     };
     update();const observer=new ResizeObserver(update);observer.observe(surface);return()=>observer.disconnect();
   },[]);
@@ -261,17 +265,20 @@ export default function App() {
   const detailOpen=!!state.detail&&!introVisible&&!ending;
   return <div className={"app-shell reader-mode cinematic-reader"+(introVisible?" intro-active":"")+(detailOpen?" has-detail":"")}>
     {!introVisible&&<a className="skip-link" href="#main">이야기로 바로 가기</a>}
-    <LanguageMenu/>
+    {/* Top right, side by side: the contents (once the reader's header shows) and the language switch, as two matching pills. */}
+    <div className="top-actions">
+      {chromeVisible&&<nav aria-label="메인 메뉴"><button className="top-pill" onClick={()=>{setModal('about');track('about_open');}}>목차</button></nav>}
+      <LanguageMenu/>
+    </div>
     {chromeVisible&&<header className="site-header">
       <a href="/" className="brand" aria-label={SITE.name+' 홈으로'}><img className="brand-logo" src="/media/logo.webp" alt="carrot" width={87} height={26}/><span className="brand-name">{SITE.name}</span></a>
-      <div className="header-chapter" aria-label={(chapter+1)+'장 '+scene.title}><span>0{chapter+1} / 03</span></div><nav aria-label="메인 메뉴"><button className="nav-link" onClick={openText}>글로 읽기</button><button className="nav-link" onClick={()=>{setModal('about');track('about_open');}}>이야기 소개</button></nav>
     </header>}
-    {/* The spread's title, on its own above the book (the header keeps only the page count). Read by screen readers from the h1 below. */}
-    {chromeVisible&&!ending&&<div className="chapter-title" key={chapter} aria-hidden="true"><span>{scene.english}</span><strong>{scene.title}</strong></div>}
+    {/* The spread's title, on its own above the book, with a dot per chapter (the one being read lit). Read by screen readers from the h1 below. */}
+    {chromeVisible&&!ending&&<div className="chapter-title" key={chapter} aria-hidden="true"><span>{scene.english}</span><strong>{scene.title}</strong><div className="chapter-dots">{scenes.map((item,index)=><i key={item.id} className={index===chapter?'is-on':''}/>)}</div></div>}
     <main id="main"><section className={'hero '+(intro?'is-cover':'is-open')+(ending?' is-ending':'')} aria-label={SITE.title+' 팝업북'}>
       {chromeVisible&&<div className="hero-copy">
         {coverMode?<div className="cover-intro"><span>{SITE.label}</span><h1>{SITE.title}</h1><p role="status"><LoaderCircle size={14} className="spin"/>{introText}</p></div>:
-        ending?<><span className="eyebrow">{SITE.label}</span><h1>{SITE.title}</h1><p className="hero-description">{SITE.tagline[0]}<br/>{SITE.tagline[1]}<span className="hand-underline">{SITE.tagline[2]}</span>{SITE.tagline[3]}</p><div className="ending-stamp"><Check size={15}/> 01 · 02 · 03 이야기를 모두 만났어요</div><a className="secondary-button ending-link" href={SITE.url} target="_blank" rel="noreferrer">웹진에서 이어 읽기<span className="sr-only"> (새 창에서 열림)</span></a><button className="primary-button" onClick={beginIntro}><RotateCcw size={18}/> 처음부터 다시 보기<ArrowRight size={18}/></button></>:
+        ending?<><span className="eyebrow">{SITE.label}</span><h1>{SITE.title}</h1><p className="hero-description">{SITE.tagline[0]}<br/>{SITE.tagline[1]}<span className="hand-underline">{SITE.tagline[2]}</span>{SITE.tagline[3]}</p><div className="ending-stamp"><Check size={15}/> 01 · 02 · 03 이야기를 모두 만났어요</div><a className="secondary-button ending-link" href={SITE.article} target="_blank" rel="noreferrer">관련 기사 보기<span className="sr-only"> (새 창에서 열림)</span></a><button className="primary-button" onClick={beginIntro}><RotateCcw size={18}/> 처음부터 다시 보기<ArrowRight size={18}/></button></>:
         <><h1 className="sr-only" aria-label={scene.title} ref={storyRef} tabIndex={-1}>{scene.title}</h1>
 
         </>}
@@ -295,7 +302,17 @@ export default function App() {
     </section></main>
     {prologue!=='none'&&<Prologue ready={phase==='PROLOGUE'||prologue==='closing'} closing={prologue==='closing'} onStart={startReading}/>}
     {guide!==0&&<Guide step={guide} locate={guide===1?locateCard:locateArrow} onNext={nextGuide}/>}
-    {detailOpen&&state.detail&&(webzines[state.detail]?<WebzineBook key={state.detail} id={state.detail} onClose={closeDetail} onOpen={openDetail}/>:details[state.detail]?.spread?<DetailBook key={state.detail} id={state.detail} onClose={closeDetail} onOpen={openDetail}/>:<DetailPanel id={state.detail} onClose={closeDetail} onOpen={openDetail}/>)}
-    {modal==='about'&&<Modal title={SITE.name} onClose={closeModal}><div className="about-art"><img src="/media/logo.webp" alt="carrot" width={134} height={40}/><span>{SITE.title}</span></div><p className="about-text">{SITE.description}</p><ol className="about-chapters">{scenes.map((item,index)=><li key={item.id}><span>0{index+1}</span>{item.title}</li>)}</ol><div className="about-help"><MousePointer2 size={18}/><p>클릭하거나 터치해요.<br/><span>Tab과 Enter, 방향키로도 여행할 수 있어요.</span></p></div><button className="primary-button" onClick={closeModal}>책으로 돌아가기<ArrowRight size={18}/></button></Modal>}
+    {detailOpen&&state.detail&&(webzines[state.detail]?<WebzineBook key={state.detail} id={state.detail} onClose={closeDetail} onOpen={openDetail}/>:posters[state.detail]?<PosterBook key={state.detail} id={state.detail} onClose={closeDetail} onOpen={openDetail}/>:details[state.detail]?.spread?<DetailBook key={state.detail} id={state.detail} onClose={closeDetail} onOpen={openDetail}/>:<DetailPanel id={state.detail} onClose={closeDetail} onOpen={openDetail}/>)}
+    {/* The contents ("목차" in the header): the three chapters, each one a way in; the one being read is marked. */}
+    {modal==='about'&&<Modal title="목차" className="contents-modal" onClose={closeModal}>
+      <p className="contents-lead">{SITE.title} · 세 장면</p>
+      <ol className="contents-list">{scenes.map((item,index)=><li key={item.id}>
+        <button type="button" className={index===chapter?'is-current':''} aria-current={index===chapter?'page':undefined} onClick={()=>{closeModal();if(index!==chapter){noteTurn('link');api.current?.go(index);}}}>
+          <span className="contents-no">0{index+1}</span>
+          <span className="contents-body"><small>{item.english}</small><strong>{item.title}</strong><em>{item.intro.replace(/\n/g,' ')}</em></span>
+          {index===chapter?<span className="contents-here">읽는 중</span>:<ArrowRight size={18} aria-hidden="true"/>}
+        </button>
+      </li>)}</ol>
+    </Modal>}
   </div>;
 }

@@ -120,3 +120,16 @@ A single blank piece of paper hung from a string by a small wooden clothespin cl
 - **식탁:** 둥근 식탁을 오른쪽 책장 안에 놓고(가로 약 3.3), 접시 발이 타원 안쪽에 닿게 높이를 맞춘다. 접시와 냄비·주전자 밑에 둥근 접촉 그림자를 `prepare-gpt-art.mjs`에서 구워 넣는다.
 - **냄비 김:** 가벼운 효과(투명도와 이동만)로 움직이고, 넣기 전후로 프레임을 재서 끊김이 없는지 본다.
 - **휴대폰:** 종이 윗변이 줄에 닿는지, 식탁이 종이 아랫부분만 가리는지 확인하고 위치를 맞춘다. `tests/`의 3장 관련 테스트(접시 목록, 깊이 한계 z≤3.25, 카메라 안)도 같이 고친다.
+
+## 적용 (v3 · 폰/웹 조정)
+- 뒷벽은 `art-src/gpt/page-3/new/kitchen-wal.png`. 폰에서는 확대 없이 원본 비율에 가깝게(`kitchen-back-phone`, backdrop top 20 / bottom 824), 웹은 `kitchen-back`.
+- 눌리는 것은 `note-carrot-burger`(레시피 상세 `recipe-burger`)와 `recipe-booklet`(참여형 `recipe-share`)뿐.
+- 폰: 테이블 `{x:.1,z:2.7,size:[4.2,1.87]}`, 레시피 북 `{x:-1.5,z:3.15,size:[1.2,.829]}`로 앞쪽·크게. 웹: 테이블 `[3.6,1.603]`(20% 축소).
+- 공유 채널(인스타/메일)은 `src/site.ts`의 `SHARE`에 넣으면 패널에 버튼이 생김(비어 있으면 "곧 열려요").
+
+## 적용 (v4 · 2026-10-22)
+- 뒷벽은 `art-src/gpt/page-3/kitchen-wall-910x360.png` 전체(웹 `[6.45,2.559]`). 폰도 같은 그림을 쓰고 양옆만 잘림(`kitchen-back-phone`은 더 쓰지 않음).
+- 벽 판에 메모 4장을 한 줄로: 당근 뇨끼·당근 김밥·당근 치즈전(장식) + 빈 메모(`note-blank`, 누르면 `recipe-share`). 예전 메모 6장은 벽에서 뺐고, 그림 파일은 구조화 데이터(`src/seo.ts`)용으로 남김.
+- 폰: 테이블 `{x:.45,z:3.05,size:[3.5,1.626]}`로 책 안에 들어오게, 레시피 북 `{x:-1.6,z:3.2}`로 테이블 앞에 보이게.
+- 엔딩의 "웹진에서 이어 읽기"는 "관련 기사 보기"(`SITE.article`, 한국경제 기사)로 바뀜.
+- 레시피 포스터(2026-10-22): 뇨끼·김밥·당근전 메모를 누르면 `src/PosterBook.tsx`가 열림. 오른쪽 쪽은 언어별 포스터(웹: 2:3 쪽에 여백 없이 꽉 차서 스크롤 없음, 폰: 사진 자리와 포스터가 한 쪽으로 이어져 통째로 스크롤; `public/media/posters/{gnocchi,gimbap,jeon}-{ko,en,zh}.webp`, 원본 `art-src/gpt/page-3/new/poster` → `node scripts/prepare-posters.mjs`)를 안에서 스크롤, 왼쪽 쪽은 실사 사진·영상 자리. 사진이나 영상은 `src/posters.ts`의 `media`에 넣으면 빈 틀 대신 나옴. 언어는 오른쪽 위 언어 선택을 따름(책 안 언어 버튼은 없앰). 웹 메모는 책 가운데 접힘에서 0.12 이상 떨어져야 해서(테스트) 폭 .72로 조금 줄임.

@@ -10,10 +10,11 @@ import { BOOK_TARGET_Y, BOOK_CAMERA_POSITION, bookZoom, bookFov } from './bookVi
 import { INTRO_PAGE_COUNT } from './introPlayback';
 import { ResolutionGovernor } from './framePacing';
 import { flatLift, gluedParent, riseOrder, stackRanks } from './popupStack';
-import { darkHalo, idle, lightHalo, loadHalo, pulseHalos, restHalo, seenStories } from './cardHalo';
+import { darkHalo, haloTone, idle, lightHalo, loadHalo, pulseHalos, restHalo, seenStories } from './cardHalo';
 import { StandingCase, StandingGluedCard, StandingLayer } from './standingBook';
 import { isBackdrop, standingPlacement } from './standingLayout';
 import { STANDING_CAMERA_POSITION, STANDING_QUERY, STANDING_TARGET, standingFov } from './standingView';
+import { STANDING_DROP } from './standingMedia';
 import { CardHalo, DeskBackdrop, DeskFog, OPEN_BOOK_MATERIALS, OpenCase, cardMaterial, sheetMaterials, warmMaterials, PrintedPage, TurningPage, createCardGeometry, useDisposable, type BookMaterials } from './bookParts';
 type Turn={from:number;to:number;direction:1|-1;incoming:Record<string,Texture>;restoreDialog:boolean};
 /** Phones held upright show the standing book (src/standingBook.tsx); the story director below is the same for both. */
@@ -25,8 +26,9 @@ function useStanding(){
 function Camera({standing=false}:{standing?:boolean}){
  const {camera,size,gl}=useThree();
  useEffect(()=>{const cam=camera as PerspectiveCamera;cam.aspect=size.width/size.height;
-  if(standing){cam.position.set(...STANDING_CAMERA_POSITION);cam.fov=standingFov(size.width,size.height);cam.lookAt(...STANDING_TARGET);}
-  else{cam.position.set(...BOOK_CAMERA_POSITION);cam.fov=bookFov(size.width,size.height);cam.lookAt(0,BOOK_TARGET_Y,0);}
+  // Standing, the picture is drawn a little low (room for the chapter title above), as the phone film is (App.tsx --standing-drop).
+  if(standing){cam.position.set(...STANDING_CAMERA_POSITION);cam.fov=standingFov(size.width,size.height);cam.lookAt(...STANDING_TARGET);cam.setViewOffset(size.width,size.height,0,-STANDING_DROP,size.width,size.height);}
+  else{cam.position.set(...BOOK_CAMERA_POSITION);cam.fov=bookFov(size.width,size.height);cam.lookAt(0,BOOK_TARGET_Y,0);cam.clearViewOffset();}
   cam.updateProjectionMatrix();gl.domElement.dataset.cameraZoom=String(bookZoom(size.width,size.height));gl.domElement.dataset.cameraFov=cam.fov.toFixed(3);gl.domElement.dataset.cameraX=String(cam.position.x);gl.domElement.dataset.shadows="off";gl.domElement.dataset.standing=String(standing);},[camera,size,gl,standing]);return null;
 }
 type CardProps={layer:Layer;piece:PaperPiece;texture:Texture;hinges:RefObject<Map<string,Group>>;onClick:(detail?:string)=>void;incoming?:boolean};
@@ -36,7 +38,7 @@ function CardFace({layer,piece,texture,onClick,incoming=false}:Omit<CardProps,'h
  const geometry=useDisposable(()=>createCardGeometry(piece,layer.size[1]),[piece.width,piece.u0,piece.u1,layer.size[1]]);
  // Clickable cards glow (src/cardHalo.ts): a rim at rest, full when pointed at. They are wholly on one page, so the halo is the whole card's.
  const glows=!!layer.interactive&&piece.u0<1e-6&&piece.u1>1-1e-6,live=!incoming&&glows;
- return <>{glows&&<CardHalo layer={layer} texture={texture} width={piece.width} height={layer.size[1]} incoming={incoming}/>}<mesh geometry={geometry} material={cardMaterial(texture)} dispose={null} position={[0,layer.size[1]/2,0]} onClick={live?e=>{e.stopPropagation();if(phase==='EXPLORING')onClick(layer.detail);}:undefined} onPointerOver={live?()=>{if(phase==='EXPLORING'){document.body.style.cursor='pointer';lightHalo(texture);}}:undefined} onPointerOut={()=>{document.body.style.cursor='';if(live&&useStory.getState().detail!==layer.detail)restHalo(layer,texture);}}/></>;
+ return <>{glows&&<CardHalo layer={layer} texture={texture} width={piece.width} height={layer.size[1]} incoming={incoming}/>}<mesh geometry={geometry} material={cardMaterial(texture)} dispose={null} position={[0,layer.size[1]/2,0]} onClick={live?e=>{e.stopPropagation();if(phase==='EXPLORING'||phase==='ENDING')onClick(layer.detail);}:undefined} onPointerOver={live?()=>{if(phase==='EXPLORING'||phase==='ENDING'){document.body.style.cursor='pointer';lightHalo(texture);}}:undefined} onPointerOut={()=>{document.body.style.cursor='';if(live&&useStory.getState().detail!==layer.detail)restHalo(layer,texture);}}/></>;
 }
 /** A card standing on another (a dish on the table, `on` in src/story.ts): placed inside that card's hinge, it folds with it. */
 function GluedCard({parent,parentPiece,...card}:CardProps&{parent:Layer;parentPiece:PaperPiece}){
@@ -76,7 +78,7 @@ function spreadCards(target:number,art:Record<string,Texture>,shared:SpreadShare
 }
 /** The phone's cards for a spread: each card on the flat page, with the cards glued onto it inside its hinge. */
 function standingCards(target:number,art:Record<string,Texture>,shared:SpreadShared,incoming=false){
- const layers=scenes[target].layers.filter(l=>!isBackdrop(l)),ranks=stackRanks(layers,l=>standingPlacement(l).z);
+ const layers=scenes[target].layers.filter(l=>!isBackdrop(l)&&!l.phoneHidden),ranks=stackRanks(layers,l=>standingPlacement(l).z);
  return layers.map(layer=>{
   if(!art[layer.src]||gluedParent(layer,layers))return null;
   const glued=layers.filter(child=>gluedParent(child,layers)===layer&&art[child.src]).map(child=><StandingGluedCard key={child.id} layer={child} parent={layer} texture={art[child.src]} hinges={shared.hinges} onClick={shared.onClick} incoming={incoming}/>);
@@ -130,7 +132,7 @@ function Book({onReady,onFailure}:{onReady:(director:Director)=>void;onFailure:(
  /** Makes and uploads a spread's halos ahead of time (startup, or while the reader looks at the previous spread). */
  async function prepareHalos(art:Record<string,Texture>,target:number){
   const materials:MeshBasicMaterial[]=[];
-  for(const layer of scenes[target].layers.filter(l=>l.interactive&&art[l.src])){await idle();if(!mounted.current)break;const halo=await loadHalo(art[layer.src]);gl.initTexture(halo.texture);materials.push(halo.material);}
+  for(const layer of scenes[target].layers.filter(l=>l.interactive&&art[l.src])){await idle();if(!mounted.current)break;const halo=await loadHalo(art[layer.src],haloTone(layer),...(standingRef.current?[Math.max(...standingPlacement(layer).size),layer.glow] as const:[Math.max(...layer.size)] as const));gl.initTexture(halo.texture);materials.push(halo.material);}
   return materials;
  }
  function warmChapter(target:number,token:number){
@@ -226,7 +228,8 @@ function Book({onReady,onFailure}:{onReady:(director:Director)=>void;onFailure:(
    const x=rect.left+(p.x+1)/2*rect.width,y=rect.top+(1-p.y)/2*rect.height;x0=Math.min(x0,x);y0=Math.min(y0,y);x1=Math.max(x1,x);y1=Math.max(y1,y);}
   return {x:x0,y:y0,width:x1-x0,height:y1-y0};
  }
- function interact(detail?:string){const state=useStory.getState();if(state.phase!=='EXPLORING')return;const scene=scenes[state.chapter],id=detail??scene.detail;state.set({dialog:true,detail:id,visited:[...new Set([...state.visited,state.chapter])]});playSound('hello');const layer=scene.layers.find(l=>l.detail===id)??scene.layers.find(l=>l.interactive);if(!layer)return;const target=hinges.current.get(`${layer.id}:right`)??hinges.current.get(`${layer.id}:left`);if(target)gsap.fromTo(target.scale,{x:1,y:1,z:1},{x:1.08,y:1.08,z:1.08,duration:.2,yoyo:true,repeat:1,overwrite:true,onComplete:()=>target.scale.set(1,1,1)});}
+ // A card stays clickable under the closing message (ENDING): its story opens in place of the message.
+ function interact(detail?:string){if(!readable())return;const state=useStory.getState();const scene=scenes[state.chapter],id=detail??scene.detail;state.set({dialog:true,detail:id,visited:[...new Set([...state.visited,state.chapter])]});playSound('hello');const layer=scene.layers.find(l=>l.detail===id)??scene.layers.find(l=>l.interactive);if(!layer)return;const target=hinges.current.get(`${layer.id}:right`)??hinges.current.get(`${layer.id}:left`);if(target)gsap.fromTo(target.scale,{x:1,y:1,z:1},{x:1.08,y:1.08,z:1.08,duration:.2,yoyo:true,repeat:1,overwrite:true,onComplete:()=>target.scale.set(1,1,1)});}
  function retry(){const state=useStory.getState();state.set({error:null});const token=++generation.current;if(!prepared.current)void prepareStartup(token).catch(error=>{if(mounted.current&&token===generation.current)fail(error);});else void openPopup(state.chapter,token,true).catch(fail);}
  // While a card's story is open its halo stays lit; closed, the card keeps the fainter rim of a story already read.
  useEffect(()=>useStory.subscribe((state,previous)=>{

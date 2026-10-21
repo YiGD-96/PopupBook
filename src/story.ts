@@ -5,24 +5,29 @@ export type Phase = 'INIT'|'COVER'|'LOADING_PAGE'|'PROLOGUE'|'OPENING_POPUP'|'EX
  *  standing book on phones (src/standingLayout.ts: x across, z depth from the binding, `lift` above the page for a card standing on
  *  another, like a dish on the table); without it the place is derived. On the open book `position[1]` is the card's foot. */
 /** `on`: the id of the card this one stands on (a dish on the table): it folds with that card instead of on its own (src/popupStack.ts). */
-export type Layer = { id:string; src:string; position:[number,number,number]; size:[number,number]; interactive?:boolean; detail?:string; on?:string; phone?:{x:number;z:number;size:[number,number];lift?:number} };
+export type Layer = { id:string; src:string; position:[number,number,number]; size:[number,number]; interactive?:boolean; detail?:string; on?:string; phone?:{x:number;z:number;size:[number,number];lift?:number;/** Meets the flat page's side edge on purpose (no margin). */edge?:boolean}; /** Left out of the phone's standing book (the open book keeps it). */phoneHidden?:boolean; /** The least width of a clickable card's glow on the phone's standing book, in world units (src/cardHalo.ts): a card shown too small there to carry the usual rim. */glow?:number; /** Another picture for the phone's standing book (the card's own src is kept as its name). */phoneSrc?:string };
 const clickable=(layer:Omit<Layer,'interactive'>&{detail:string}):Layer=>({...layer,interactive:true});
 // Three chapters following the web magazine "당근을 따라, 구좌": the farmer, the people who cook, and menus & recipes.
 // The first version's chapters are kept in _archive/scenes-v1. Sizes keep each texture's proportions (width : height).
 export const scenes = [
- {id:'farmer',title:'구좌를 길러내는 묵묵한 방식',paper:'#ffe4cd',english:'01 · FARMER',intro:'검은 화산토와 겨울 바람이 키운 당근.\n밭에서 시작되는 이야기예요.',dialog:'“겨울을 제대로 맞아야 진짜 맛이 들어요.” 농부님과 당근 바구니를 눌러 보세요.',label:'농부님 이야기 보기',color:'#96a780',detail:'farmer',layers:[
-  // Painted layers (GPT, art-src/gpt/page-1 → scripts/prepare-gpt-art.mjs): dusk over Gujwa, back to front. Sizes keep each texture's aspect.
-  {id:'back',src:'farm-back',position:[0,.24,-1.7],size:[6.9,2.72]},
-  // The windbreaks stand at the very front, inside the page, and frame the scene; the field comes forward and the rest gathers in the
-  // middle in rows (pony and farmer, the low wall, the crate and lantern). The phone layout keeps the same rows.
-  {id:'trees-left',src:'farm-trees-left',position:[-2.25,.29,2],size:[2,2.95],phone:{x:-1.53,z:2.95,size:[1.56,2.3]}},
-  {id:'trees-right',src:'farm-trees-right',position:[2.3,.29,2],size:[1.81,2.95],phone:{x:1.6,z:2.95,size:[1.42,2.3]}},
-  {id:'field',src:'farm-field',position:[0,.25,.45],size:[6.6,1.85],phone:{x:0,z:1.05,size:[4.63,1.29]}},
-  {id:'pony',src:'char-pony',position:[-1.25,.255,.6],size:[1.4,1.15],phone:{x:-.55,z:1.2,size:[1.14,.94]}},
-  clickable({id:'farmer',src:'char-farmer',position:[1.05,.27,.9],size:[1.3,2.37],detail:'farmer',phone:{x:.75,z:1.55,size:[1.14,2.08]}}),
-  {id:'wall',src:'farm-wall',position:[-.2,.28,1.3],size:[2.6,.75],phone:{x:-.1,z:1.95,size:[2.4,.68]}},
-  clickable({id:'crate',src:'farm-crate',position:[-.92,.285,1.72],size:[1.55,1.02],detail:'harvest',phone:{x:-.75,z:2.4,size:[1.44,.95]}}),
-  clickable({id:'lantern',src:'farm-lantern',position:[1.55,.285,1.7],size:[.75,1.49],detail:'night-watch',phone:{x:1.25,z:2.3,size:[.6,1.2]}})
+ {id:'farmer',title:'구좌를 길러내는 묵묵한 방식',stage:'farm-floor-stage',halo:{color:'#ff9418',boost:2.4,rest:.7,seen:.32},paper:'#ffe4cd',english:'01 · FARMER',intro:'검은 화산토와 겨울 바람이 키운 당근.\n밭에서 시작되는 이야기예요.',dialog:'“겨울을 제대로 맞아야 진짜 맛이 들어요.” 농부님, 당근 상자, 헛간에 걸린 파리채와 손전등을 눌러 보세요.',label:'농부님 이야기 보기',color:'#96a780',detail:'farmer',layers:[
+  // Painted layers (GPT, art-src/gpt/page-1/new → scripts/prepare-gpt-art.mjs), laid out after the sketch 전체화면.png: a sunny view over
+  // Gujwa's oreum and wind turbines, and in front of it the farmyard. The page itself is the yard: one painting of a muddy path with
+  // basalt rubble and three small boot prints, printed on the page
+  // (scripts/farm-floor.mjs; on the phone the flat page carries it as its `stage` texture). The tool shed stands on the left page with the
+  // fly swatter and torch for the night rounds on a free hook of its wall (glued to it, so it folds with the shed), the farmer and the
+  // crate of carrots on the right.
+  {id:'back',src:'farm-back',phoneSrc:'farm-back-phone',position:[0,.24,-1.7],size:[6.9,2.636]},
+  {id:'shed',src:'farm-shed',position:[-1.8,.27,.45],size:[3.1,2.189],phone:{x:-1.1,z:1.3,size:[2.4,1.695]}},
+  clickable({id:'swatter',on:'shed',src:'farm-swatter',glow:.1,position:[-2,.73,.49],size:[.42,.866],detail:'night-watch',phone:{x:-1.24,z:1.34,size:[.31,.639],lift:.39}}),
+  // The carrot field in morning light behind a Jeju basalt wall (art-src/gpt/page-1/new/당근밭-제주현무암재배치-직각윤곽-1500x450.png)
+  // runs behind the farmer and the crate from behind the shed to the right page's outer edge: the wall's lower right corner meets the
+  // corner of the page as the reader sees it (open book: right end 3.42, a little inside the page's 3.55 width, since the page dips at
+  // its outer edge and the card's foot stands above it; phone: 1.075 + 1.3 = 2.375, half the page's height).
+  {id:'carrots',src:'farm-carrots',position:[1.27,.27,.3],size:[4.3,1.319],phone:{x:1.075,z:1.15,size:[2.6,.798],edge:true}},
+  // The farmer has a contact shadow baked under his boots, so his card is a little taller: foot y = 0.255 minus that padding.
+  clickable({id:'farmer',src:'char-farmer',position:[.75,.16,1.1],size:[1.227,2.45],detail:'farmer',phone:{x:.4,z:2.15,size:[1.102,2.2]}}),
+  clickable({id:'crate',src:'farm-crate',position:[1.9,.285,1.68],size:[1.3,1.061],detail:'harvest',phone:{x:1.1,z:3.2,size:[1.1,.898]}})
  ] as Layer[]},
  {id:'cooks',title:'구좌를 맛보는 다채로운 방식',stage:'village-floor-stage',paper:'#fff6e3',english:'02 · PEOPLE WHO COOK',intro:'구좌 당근으로 새로운 맛을 만드는\n식당 사장님들을 만났어요.',dialog:'세 곳의 식당이 구좌 당근으로 저마다의 한 접시를 만들어요. 가게를 눌러 이야기를 펼쳐 보세요.',label:'식당 이야기 보기',color:'#b89970',detail:'cook-01',layers:[
   // Painted layers (GPT, art-src/gpt/page-2 → scripts/prepare-gpt-art.mjs): a Gujwa seaside village in late morning, back to front. The page
@@ -32,32 +37,25 @@ export const scenes = [
   // where the painted sea shows at the end. Each shop is wholly on one page. A thing standing on the page has a contact shadow baked under its
   // foot, so its card is a little taller: foot y = 0.255 minus that padding.
   {id:'back',src:'village-back',position:[0,.24,-1.7],size:[6.8,2.72]},
-  clickable({id:'shop-b',src:'manoa',position:[-1.28,.255,.35],size:[2.2,1.579],detail:'cook-02',phone:{x:-.55,z:1.35,size:[1.8,1.292]}}),
-  clickable({id:'shop-c',src:'buggercarrot',position:[-2.68,.255,.7],size:[1.7,2.471],detail:'cook-03',phone:{x:-1.55,z:2.9,size:[1.5,2.180]}}),
-  clickable({id:'shop-a',src:'sonongroad',position:[1.95,.255,.55],size:[3.1,2.437],detail:'cook-01',phone:{x:1.1,z:1.5,size:[2.4,1.887]}}),
-  {id:'traveler',src:'char-traveler',position:[-1,.215,2],size:[.68,1.518],phone:{x:-.75,z:2.4,size:[.55,1.228]}},
-  {id:'family',src:'family-walk',position:[.95,.2,2.05],size:[1.8,1.55],phone:{x:.55,z:2.7,size:[1.8,1.55]}}
+  clickable({id:'shop-b',src:'manoa',position:[-1.02,.255,-1],size:[1.8,1.487],detail:'cook-02',phone:{x:-.25,z:.3,size:[1.9,1.569]}}),
+  clickable({id:'shop-c',src:'buggercarrot',position:[-2.1,.255,1.6],size:[2.09,2.973],detail:'cook-03',phone:{x:-1.38,z:2.4,size:[1.85,2.632]}}),
+  clickable({id:'shop-a',src:'sonongroad',position:[1.85,.255,.15],size:[3.24,2.813],detail:'cook-01',phone:{x:1.25,z:1.5,size:[2.1,1.823]}}),
+  {id:'traveler',src:'char-traveler',position:[-1,.215,2],size:[.68,1.518],phoneHidden:true,phone:{x:-.75,z:2.4,size:[.55,1.228]}},
+  {id:'family',src:'family-walk',position:[.95,.2,2.05],size:[1.8,1.55],phone:{x:.55,z:3.1,size:[1.5,1.29]}}
  ] as Layer[]},
- {id:'recipes',title:'구좌를 요리하는 가장 쉬운 방식',paper:'#ffe9d2',english:'03 · MENU & RECIPE',intro:'식당의 당근 메뉴와\n집에서 따라 하는 레시피를 모았어요.',dialog:'벽의 줄에 걸린 메모는 집에서 따라 하는 레시피, 둥근 식탁 위의 음식은 식당의 메뉴예요. 궁금한 것을 눌러 보세요.',label:'레시피 보기',color:'#81a69c',detail:'recipe-01',layers:[
-  // Painted layers (GPT, art-src/gpt/page-3 → scripts/prepare-gpt-art.mjs): an evening kitchen, back to front. The wall is a teal-tiled
-  // kitchen wall with a hood, a utensil rail, a shelf and a string across it (35% down the painting). Left page: three papers clipped to
-  // that string (glued to the wall, so they fold with it) and a basket on the floor; right page: a round table with the three restaurant
-  // dishes in front and a pot and a kettle behind them. Each thing on the table has a contact shadow baked under its foot, so its card
-  // is a little taller than the thing: its foot y is set by the table's ellipse, minus that padding. Sizes keep each texture's aspect.
-  // On the phone the wall is the upright page: the papers stand in a row against it, hung to the height of the painted string.
-  {id:'back',src:'kitchen-back',position:[0,.24,-1.7],size:[6.6,2.73]},
-  clickable({id:'note-rape',on:'back',src:'note-rape-card',position:[-2.85,.61,-1.66],size:[1.05,1.12],detail:'recipe-01',phone:{x:-1.5,z:.3,size:[1.43,1.52]}}),
-  clickable({id:'note-soup',on:'back',src:'note-soup-card',position:[-1.82,.61,-1.66],size:[1.05,1.115],detail:'recipe-02',phone:{x:0,z:.3,size:[1.43,1.52]}}),
-  clickable({id:'note-pickle',on:'back',src:'note-pickle-card',position:[-.8,.61,-1.66],size:[1.05,1.145],detail:'recipe-03',phone:{x:1.5,z:.3,size:[1.43,1.56]}}),
-  // The left floor is a home-cooking still life (kettle, basket, soup pot: the home recipes' side); the round table carries only the three
-  // restaurant dishes, spread apart so none covers another. On the phone the floor things stand in front of the table's pedestal.
-  {id:'kettle',src:'kitchen-kettle',position:[-3,.18,1],size:[1,1.067],phone:{x:1.9,z:3.25,size:[.7,.746]}},
-  {id:'basket',src:'kitchen-basket',position:[-1.95,.19,1.55],size:[1.6,1.189],phone:{x:-1.68,z:3.25,size:[1.15,.854]}},
-  {id:'pot',src:'kitchen-pot',position:[-.75,.175,1.2],size:[1.15,1.15],phone:{x:1.05,z:3.25,size:[.85,.85]}},
-  {id:'table',src:'kitchen-table-round',position:[1.78,.2,1.55],size:[3.3,1.99],phone:{x:0,z:3.2,size:[3.4,2.05]}},
-  clickable({id:'burger',on:'table',src:'dish-burger',position:[.88,1.336,1.62],size:[1,.919],detail:'menu-03',phone:{x:-1.18,z:3.25,size:[1.05,.965],lift:1.16}}),
-  clickable({id:'plate',on:'table',src:'dish-plate',position:[2.05,1.277,1.64],size:[1.35,1.026],detail:'menu-01',phone:{x:.15,z:3.25,size:[1.45,1.102],lift:1.13}}),
-  clickable({id:'juice',on:'table',src:'dish-juice',position:[3.02,1.382,1.6],size:[.68,1.048],detail:'menu-02',phone:{x:1.35,z:3.25,size:[.6,.924],lift:1.23}})
+ {id:'recipes',title:'구좌를 요리하는 가장 쉬운 방식',paper:'#ffe9d2',english:'03 · MENU & RECIPE',intro:'식당의 당근 메뉴와\n집에서 따라 하는 레시피를 모았어요.',dialog:'벽 판에는 당근 뇨끼, 당근 김밥, 당근전 레시피가 붙어 있어요. 메모를 눌러 레시피 포스터를 보고, 빈 메모나 레시피 책을 눌러 여러분의 당근 레시피도 보내 주세요.',label:'레시피 보기',color:'#81a69c',detail:'poster-gnocchi',layers:[
+  // Painted layers (GPT, art-src/gpt/page-3 → scripts/prepare-gpt-art.mjs): a kitchen wall with a wooden board and four notes clipped to it in a row
+  // (glued to the wall, so they fold with it): gnocchi, gimbap and cheese-jeon open their recipe posters (src/PosterBook.tsx), and a blank note
+  // that, like the booklet of more recipes on the left page, asks readers to send their own recipe. A prep table stands in front.
+  // On the phone the wall is the upright page (its sides cropped): the notes stand in one row just in front of it, lifted to the board; the table
+  // stays inside the page and the booklet stands in front of its left end.
+  {id:'back',src:'kitchen-back',position:[0,.24,-1.7],size:[6.45,2.559]},
+  clickable({id:'note-gnocchi',on:'back',src:'note-gnocchi',position:[-1.25,1.27,-1.66],size:[.72,.727],detail:'poster-gnocchi',phone:{x:-1.2,z:.3,size:[.8,.808],lift:1.1}}),
+  clickable({id:'note-gimbap',on:'back',src:'note-gimbap',position:[-.49,1.27,-1.66],size:[.72,.723],detail:'poster-gimbap',phone:{x:-.4,z:.3,size:[.8,.803],lift:1.1}}),
+  clickable({id:'note-cheese-jeon',on:'back',src:'note-cheese-jeon',position:[.49,1.27,-1.66],size:[.72,.725],detail:'poster-jeon',phone:{x:.4,z:.3,size:[.8,.805],lift:1.1}}),
+  clickable({id:'note-blank',on:'back',src:'note-blank',position:[1.25,1.27,-1.66],size:[.72,.725],detail:'recipe-share',phone:{x:1.2,z:.3,size:[.8,.806],lift:1.1}}),
+  {id:'table',src:'prep-table',position:[.45,.27,2.4],size:[4.1,1.905],phone:{x:.45,z:3.05,size:[3.5,1.626]}},
+  clickable({id:'booklet',src:'recipe-booklet',position:[-2.2,.27,1.7],size:[1.5,1.084],detail:'recipe-share',phone:{x:-1.6,z:3.2,size:[1.2,.867]}})
  ] as Layer[]}
 ];
 type StoryState = {phase:Phase;chapter:number;dialog:boolean;detail:string|null;visited:number[];audioReady:boolean;introPagesTurned:number;error:string|null;set:(patch:Partial<StoryState>)=>void};
