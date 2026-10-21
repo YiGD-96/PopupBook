@@ -5,7 +5,6 @@
  */
 import { useEffect, useMemo, useRef, type ReactNode, type RefObject } from 'react';
 import { useFrame } from '@react-three/fiber';
-import gsap from 'gsap';
 import { BackSide, BufferGeometry, Color, DoubleSide, Float32BufferAttribute, Group, Mesh, type MeshBasicMaterial, type Texture } from 'three';
 import { BOOK_BOARD, BOOK_PAGES } from './bookStructure';
 import { BOOK_HINGE_Y, createBoardGeometry, createPaperBlockGeometry, createSpineGeometry, relightTurned } from './bookGeometry';
@@ -50,7 +49,7 @@ export const createStandingSpine=(fold:number)=>createSpineGeometry(fold,32);
  */
 export const UPRIGHT_STACK=.15;
 const STACK_TOP=BOOK_PAGES.y+BOOK_PAGES.thickness/2;
-function thinStack(geometry:BufferGeometry,base:Float32Array,offset:[number,number],amount:number){
+export function thinStack(geometry:BufferGeometry,base:Float32Array,offset:[number,number],amount:number){
  const position=geometry.getAttribute('position'),array=position.array as Float32Array;
  for(let i=0;i<array.length;i+=3){
   const x=base[i]+offset[0],y=base[i+1]+offset[1],t=Math.max(0,Math.min(1,(-x/PAGE_WIDTH-.12)/.45)),reach=1-(1-UPRIGHT_STACK)*amount*t*t*(3-2*t);
@@ -70,7 +69,7 @@ function StandingHalf({materials,backdrop,stand,settle}:{materials:BookMaterials
   thinStack(board,bases[0],[-BOOK_BOARD.x,BOOK_BOARD.y],amount);thinStack(block,bases[1],[-BLOCK_X,BOOK_PAGES.y],amount);thinStack(skirt,bases[2],[0,0],amount);});
  // Shortened to UPRIGHT_SCALE as it stands (the outward axis, before the turn), so it is full size only while lying open; settled, it
  // leans back by UPRIGHT_LEAN (a smaller turn from lying open).
- useFrame(()=>{const s=stand.current.value;pivot.current.rotation.z=UP*s+UPRIGHT_LEAN*settle.current.value;pivot.current.scale.x=1+(UPRIGHT_SCALE-1)*s;});
+ useFrame(()=>{const s=stand.current.value;pivot.current.rotation.z=(UP+UPRIGHT_LEAN*settle.current.value)*s;pivot.current.scale.x=1+(UPRIGHT_SCALE-1)*s;});
  const edge=materials['paper-edge'],endpaper=materials.endpaper;
  return <group position={[0,BOOK_HINGE_Y,0]}><group ref={pivot}><group position={[0,-BOOK_HINGE_Y,0]}>
   <mesh geometry={board} position={[-BOOK_BOARD.x,BOOK_BOARD.y,0]}><Surface attach="material-0" map={materials.inside}/><Surface attach="material-1" map={materials['cloth-side']}/><Surface attach="material-2" map={materials['cloth-side']}/></mesh>
@@ -80,17 +79,12 @@ function StandingHalf({materials,backdrop,stand,settle}:{materials:BookMaterials
  </group></group></group>;
 }
 /**
- * The live book's settle (0 → 1): the upright half leans back by UPRIGHT_LEAN and its page stack thins (UPRIGHT_STACK). It starts at 0,
- * as the phone intro film ends, and eases to 1 just after the film hands over; a book shown later (turning the phone, say) starts settled.
+ * The live book's settle: the upright half leans back by UPRIGHT_LEAN and its page stack is thinned (UPRIGHT_STACK). Always 1 now: the
+ * phone intro film ends in this very shape.
  */
 function useSettle(){
- const settle=useRef({value:['EXPLORING','ENDING'].includes(useStory.getState().phase)?1:0});
- useEffect(()=>{
-  if(settle.current.value>=1)return;
-  const unsubscribe=useStory.subscribe(state=>{if(state.phase==='EXPLORING'&&settle.current.value<1){unsubscribe();gsap.to(settle.current,{value:1,duration:.8,delay:.35,ease:'sine.inOut'});}});
-  return unsubscribe;
- },[]);
- return settle;
+ // The phone film now opens straight to this shape (src/standingFilm.tsx), so the live book is settled from the start: no second opening.
+ return useRef({value:1});
 }
 /** The cloth spine around the fold. Built for a few fold steps only (it is costly), swapped while the book stands up and settles. */
 function StandingSpine({materials,stand,settle}:{materials:BookMaterials;stand:RefObject<{value:number}>;settle:RefObject<{value:number}>}){
@@ -126,19 +120,22 @@ function StandingSheet({paper,paperTint,backdrop,progress,direction,settle}:{pap
 /** The case: the second half lying open (its page the flat stage), the first half standing with the backdrop, the spine around the fold.
  *  Drawn in the open book's frame and turned −90° about y, so the binding runs across the screen and the flat page reaches the reader. */
 /** `floor` tones the flat page to the spread's paper (src/story.ts `paper`); `sheetFloor` the turning sheet's paper face. */
-export function StandingCase({materials,backdrop,turnBackdrop,turning,progress,stand,floor,sheetFloor}:{materials:BookMaterials;backdrop?:Texture;turnBackdrop?:Texture;turning:1|-1|0;progress:RefObject<{value:number}>;stand:RefObject<{value:number}>;floor?:string;sheetFloor?:string}){
+/** `stages`: a spread may print its own floor (src/story.ts `stage`): `floor` the flat page's, `sheetFloor` the flat page of the spread being turned, `sheetFace` the turning sheet's paper face (the same painting, laid out for that sheet's UVs). */
+export type Stages={floor?:Texture;sheetFloor?:Texture;sheetFace?:Texture};
+export function StandingCase({materials,backdrop,turnBackdrop,turning,progress,stand,floor,sheetFloor,stages}:{materials:BookMaterials;backdrop?:Texture;turnBackdrop?:Texture;turning:1|-1|0;progress:RefObject<{value:number}>;stand:RefObject<{value:number}>;floor?:string;sheetFloor?:string;stages?:Stages}){
  const upright=useBackdrop(backdrop),sheetBack=useBackdrop(turnBackdrop),settle=useSettle();
  // Turning forward, the flat page still shows the spread being turned until the sheet starts to lift and uncovers the next one, so the
  // floor never changes tone while the old cards stand on it (or before the sheet that carries the old tone has appeared).
- const page=useRef<Group>(null!),tones=useMemo(()=>({floor:new Color(floor??'#ffffff'),sheet:new Color(sheetFloor??'#ffffff')}),[floor,sheetFloor]);
+ const page=useRef<Group>(null!),tones=useMemo(()=>({floor:new Color(stages?.floor?'#ffffff':floor??'#ffffff'),sheet:new Color(stages?.sheetFloor?'#ffffff':sheetFloor??'#ffffff')}),[floor,sheetFloor,stages?.floor,stages?.sheetFloor]);
  useFrame(()=>{const material=(page.current?.children[0] as Mesh|undefined)?.material as MeshBasicMaterial|undefined;if(!material?.map)return;
-  material.color.copy(turning===1&&standingSheetProgress(progress.current.value)<=0?tones.sheet:tones.floor);});
+  const old=turning===1&&standingSheetProgress(progress.current.value)<=0;material.color.copy(old?tones.sheet:tones.floor);
+  const wanted=(old?stages?.sheetFloor:stages?.floor)??materials.endpaper;if(wanted&&material.map!==wanted){material.map=wanted;material.needsUpdate=true;}});
  return <group rotation={[0,-Math.PI/2,0]}>
   <Board materials={materials} x={BOOK_BOARD.x}/><PaperBlock materials={materials} x={BLOCK_X}/>
-  {materials.endpaper&&<group ref={page}><PrintedPage texture={materials.endpaper} edge={materials['paper-edge']} tint={floor}/></group>}
+  {materials.endpaper&&<group ref={page}><PrintedPage texture={stages?.floor??materials.endpaper} edge={materials['paper-edge']} tint={stages?.floor?undefined:floor}/></group>}
   <BindingDetails materials={materials}/><StandingSpine materials={materials} stand={stand} settle={settle}/>
   <StandingHalf materials={materials} backdrop={upright} stand={stand} settle={settle}/>
-  {turning!==0&&<StandingSheet paper={materials.endpaper} paperTint={sheetFloor} backdrop={sheetBack} progress={progress} direction={turning} settle={settle}/>}
+  {turning!==0&&<StandingSheet paper={stages?.sheetFace??materials.endpaper} paperTint={stages?.sheetFace?undefined:sheetFloor} backdrop={sheetBack} progress={progress} direction={turning} settle={settle}/>}
  </group>;
 }
 type StandingTurn={direction:1|-1}|null;
@@ -150,7 +147,7 @@ function StandingFace({layer,texture,onClick,incoming=false}:Omit<StandingCardPr
  const geometry=useDisposable(()=>createCardGeometry({center:0,width:place.size[0],u0:0,u1:1,side:'right'},place.size[1]),[place.size[0],place.size[1]]);
  // Clickable cards glow (src/cardHalo.ts) instead of swaying.
  const glows=!!layer.interactive,live=!incoming&&glows;
- return <>{glows&&<CardHalo layer={layer} texture={texture} width={place.size[0]} height={place.size[1]} incoming={incoming}/>}<mesh geometry={geometry} material={cardMaterial(texture)} dispose={null} position={[0,place.size[1]/2,0]} onClick={live?e=>{e.stopPropagation();if(phase==='EXPLORING')onClick(layer.detail);}:undefined} onPointerOver={live?()=>{if(phase==='EXPLORING'){document.body.style.cursor='pointer';lightHalo(texture);}}:undefined} onPointerOut={()=>{document.body.style.cursor='';if(live&&useStory.getState().detail!==layer.detail)restHalo(layer,texture);}}/></>;
+ return <>{glows&&<CardHalo layer={layer} texture={texture} width={place.size[0]} height={place.size[1]} incoming={incoming} grounded/>}<mesh geometry={geometry} material={cardMaterial(texture)} dispose={null} position={[0,place.size[1]/2,0]} onClick={live?e=>{e.stopPropagation();if(phase==='EXPLORING')onClick(layer.detail);}:undefined} onPointerOver={live?()=>{if(phase==='EXPLORING'){document.body.style.cursor='pointer';lightHalo(texture);}}:undefined} onPointerOut={()=>{document.body.style.cursor='';if(live&&useStory.getState().detail!==layer.detail)restHalo(layer,texture);}}/></>;
 }
 /** A card standing on another card (`on` in src/story.ts), inside that card's hinge so it folds with it (src/popupStack.ts). */
 export function StandingGluedCard({parent,...card}:StandingCardProps&{parent:Layer}){

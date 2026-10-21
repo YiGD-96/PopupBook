@@ -44,7 +44,7 @@ for(const name of names){
  const destination=path.join(raster,`${name}.webp`);
  try{await fs.access(destination);}catch{
   // Texture width follows how large the card can appear (about 1.3 world units for a dish, 2.1 for a shop, 7 for a backdrop).
-  const textureWidth={cover:1128,carrot:360,favicon:64,'farm-crate':560}[name]??(name.startsWith('dish-')?480:name.startsWith('shop-')?720:name.startsWith('page-')?1080:1440);
+  const textureWidth={cover:1128,carrot:360,favicon:64,'farm-crate':560}[name]??(name.startsWith('dish-')?480:(name.startsWith('shop-')||name==='manoa')?720:name.startsWith('page-')?1080:1440);
   await fs.writeFile(destination,await sharp(path.join(project,`public/art/${name}.svg`)).resize(textureWidth).webp({quality:90,alphaQuality:100,effort:5}).toBuffer());console.log(`Rasterized ${name}`);
  }
 }
@@ -56,7 +56,9 @@ if(process.argv.includes('--materials-only')){console.log('Prepared the baked bo
 // 2. Serve the project and open the film page in an isolated headless Chrome.
 const projectRequire=createRequire(path.join(project,'package.json'));
 const {createServer}=await import(pathToFileURL(projectRequire.resolve('vite')).href);
-const server=await createServer({root:project,logLevel:'warn',server:{host:'127.0.0.1',port:0,strictPort:false}});await server.listen();
+// No file watching or hot reload: an edit anywhere in the project during a render would reload the film page mid-film (and leave a
+// truncated MP4 behind).
+const server=await createServer({root:project,logLevel:'warn',server:{host:'127.0.0.1',port:0,strictPort:false,hmr:false,watch:null}});await server.listen();
 const base=server.resolvedUrls.local[0];
 const profile=await fs.mkdtemp(path.join(os.tmpdir(),'jeju-film-'));const port=9400+Math.floor(Math.random()*400);
 const browser=spawn(chrome,['--headless=new',`--remote-debugging-port=${port}`,`--user-data-dir=${profile}`,'--no-first-run','--no-default-browser-check','--ignore-gpu-blocklist','--hide-scrollbars','about:blank'],{stdio:'ignore'});

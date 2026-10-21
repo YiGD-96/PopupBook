@@ -1,5 +1,6 @@
 import { create } from 'zustand';
-export type Phase = 'INIT'|'COVER'|'LOADING_PAGE'|'OPENING_POPUP'|'EXPLORING'|'DRAGGING_PAGE'|'TURNING_PAGE'|'ENDING'|'ERROR';
+/** PROLOGUE: the book lies open with its cards folded flat under the prologue (src/Prologue.tsx), until the reader starts reading. */
+export type Phase = 'INIT'|'COVER'|'LOADING_PAGE'|'PROLOGUE'|'OPENING_POPUP'|'EXPLORING'|'DRAGGING_PAGE'|'TURNING_PAGE'|'ENDING'|'ERROR';
 /** A pop-up card. `detail` makes it clickable: it opens that entry of src/details.ts in the side panel. `phone` places it in the
  *  standing book on phones (src/standingLayout.ts: x across, z depth from the binding, `lift` above the page for a card standing on
  *  another, like a dish on the table); without it the place is derived. On the open book `position[1]` is the card's foot. */
@@ -23,18 +24,19 @@ export const scenes = [
   clickable({id:'crate',src:'farm-crate',position:[-.92,.285,1.72],size:[1.55,1.02],detail:'harvest',phone:{x:-.75,z:2.4,size:[1.44,.95]}}),
   clickable({id:'lantern',src:'farm-lantern',position:[1.55,.285,1.7],size:[.75,1.49],detail:'night-watch',phone:{x:1.25,z:2.3,size:[.6,1.2]}})
  ] as Layer[]},
- {id:'cooks',title:'구좌를 맛보는 다채로운 방식',paper:'#fff6e3',english:'02 · PEOPLE WHO COOK',intro:'구좌 당근으로 새로운 맛을 만드는\n식당 사장님들을 만났어요.',dialog:'세 곳의 식당이 구좌 당근으로 저마다의 한 접시를 만들어요. 가게를 눌러 이야기를 펼쳐 보세요.',label:'식당 이야기 보기',color:'#b89970',detail:'cook-01',layers:[
-  // Painted layers (GPT, art-src/gpt/page-2 → scripts/prepare-gpt-art.mjs): a Gujwa seaside village in late morning, back to front.
-  // The hackberry frames the scene at the front left, the basalt wall with the carrot cart at the front right; the three restaurants
-  // stand in one row, each wholly on one page, so all of them show.
+ {id:'cooks',title:'구좌를 맛보는 다채로운 방식',stage:'village-floor-stage',paper:'#fff6e3',english:'02 · PEOPLE WHO COOK',intro:'구좌 당근으로 새로운 맛을 만드는\n식당 사장님들을 만났어요.',dialog:'세 곳의 식당이 구좌 당근으로 저마다의 한 접시를 만들어요. 가게를 눌러 이야기를 펼쳐 보세요.',label:'식당 이야기 보기',color:'#b89970',detail:'cook-01',layers:[
+  // Painted layers (GPT, art-src/gpt/page-2 → scripts/prepare-gpt-art.mjs): a Gujwa seaside village in late morning, back to front. The page
+  // itself is the street (a winding path of small cobbles printed on the page, scripts/create-pages.mjs; on the phone the flat
+  // page carries it as its `stage` texture): the three real shops are drawn turned toward the middle of the street, buggercarrot at the left
+  // end, manoa behind it, sonongroad at the right, and the traveler and a mother with her daughter and a stroller walk down the open middle,
+  // where the painted sea shows at the end. Each shop is wholly on one page. A thing standing on the page has a contact shadow baked under its
+  // foot, so its card is a little taller: foot y = 0.255 minus that padding.
   {id:'back',src:'village-back',position:[0,.24,-1.7],size:[6.8,2.72]},
-  {id:'tree-left',src:'village-tree-left',position:[-2.45,.29,2.05],size:[1.9,2.75],phone:{x:-1.53,z:2.95,size:[1.56,2.26]}},
-  {id:'lane',src:'village-lane',position:[0,.25,-.75],size:[6.6,1.85],phone:{x:0,z:.6,size:[4.63,1.3]}},
-  clickable({id:'shop-a',src:'shop-a',position:[-1.25,.255,-.05],size:[1.9,1.26],detail:'cook-01',phone:{x:-1.41,z:1.35,size:[1.8,1.19]}}),
-  clickable({id:'shop-b',src:'shop-b',position:[1.08,.255,-.05],size:[1.9,1.27],detail:'cook-02',phone:{x:0,z:1.35,size:[1.8,1.2]}}),
-  clickable({id:'shop-c',src:'shop-c',position:[2.66,.255,0],size:[1.25,1.27],detail:'cook-03',phone:{x:1.55,z:1.4,size:[1.32,1.34]}}),
-  {id:'traveler',src:'char-traveler',position:[-.85,.275,1.2],size:[.7,1.5],phone:{x:-.55,z:2.2,size:[.66,1.42]}},
-  {id:'front',src:'village-front',position:[2.05,.285,1.85],size:[2.2,1.02],phone:{x:1.2,z:2.8,size:[2.22,1.03]}}
+  clickable({id:'shop-b',src:'manoa',position:[-1.28,.255,.35],size:[2.2,1.579],detail:'cook-02',phone:{x:-.55,z:1.35,size:[1.8,1.292]}}),
+  clickable({id:'shop-c',src:'buggercarrot',position:[-2.68,.255,.7],size:[1.7,2.471],detail:'cook-03',phone:{x:-1.55,z:2.9,size:[1.5,2.180]}}),
+  clickable({id:'shop-a',src:'sonongroad',position:[1.95,.255,.55],size:[3.1,2.437],detail:'cook-01',phone:{x:1.1,z:1.5,size:[2.4,1.887]}}),
+  {id:'traveler',src:'char-traveler',position:[-1,.215,2],size:[.68,1.518],phone:{x:-.75,z:2.4,size:[.55,1.228]}},
+  {id:'family',src:'family-walk',position:[.95,.2,2.05],size:[1.8,1.55],phone:{x:.55,z:2.7,size:[1.8,1.55]}}
  ] as Layer[]},
  {id:'recipes',title:'구좌를 요리하는 가장 쉬운 방식',paper:'#ffe9d2',english:'03 · MENU & RECIPE',intro:'식당의 당근 메뉴와\n집에서 따라 하는 레시피를 모았어요.',dialog:'벽의 줄에 걸린 메모는 집에서 따라 하는 레시피, 둥근 식탁 위의 음식은 식당의 메뉴예요. 궁금한 것을 눌러 보세요.',label:'레시피 보기',color:'#81a69c',detail:'recipe-01',layers:[
   // Painted layers (GPT, art-src/gpt/page-3 → scripts/prepare-gpt-art.mjs): an evening kitchen, back to front. The wall is a teal-tiled
@@ -133,5 +135,10 @@ export function playSound(kind:'page'|'flip'|'hello') {
  };
  if(audioContext?.state==='running')emit();else if(audioUnlock)void audioUnlock.then(emit);
 }
-/** `reveal(standingFilmed)`: true when the intro played the phone film, which ends on the standing book. */
-export interface Director {reveal:(standingFilmed?:boolean)=>void;go:(chapter:number)=>void;finish:()=>void;interact:(detail?:string)=>void;retry:()=>void;previewTurn:(direction:1|-1,progress:number)=>boolean;settleTurn:(commit:boolean)=>void}
+/** `reveal(standingFilmed, hold)`: standingFilmed is true when the intro played the phone film, which ends on the standing book; with
+ *  `hold` the book waits open with its cards flat (PROLOGUE) and `rise` stands them up when the reader starts. */
+export interface Director {reveal:(standingFilmed?:boolean,hold?:boolean)=>void;rise:()=>void;go:(chapter:number)=>void;finish:()=>void;interact:(detail?:string)=>void;retry:()=>void;previewTurn:(direction:1|-1,progress:number)=>boolean;settleTurn:(commit:boolean)=>void;
+ /** Where a clickable card is on screen (CSS pixels, viewport): the spread's main story card, or the one with `detail`. */
+ locate?:(detail?:string)=>{x:number;y:number;width:number;height:number}|null;
+ /** The spread's clickable cards blink again (after the reading guide). */
+ highlight?:()=>void}

@@ -36,7 +36,10 @@
  .cinematic-reader .site-header .brand{font-size:17px;gap:8px}
  .cinematic-reader .header-chapter strong{display:none}
  .cinematic-reader .site-header nav .nav-link:first-child{display:block;font-size:10px}
- .cinematic-reader .hero .book-stage .canvas-wrap{inset:0 -18px 122px}
+ /* The book takes the full height (nothing sits under it any more), so it stands in the middle of the screen and the intro film is not
+    cut off; only the ending keeps room below for its card. */
+ .cinematic-reader .hero .book-stage .canvas-wrap{inset:0 -18px 0}
+ .cinematic-reader .hero.is-ending .book-stage .canvas-wrap{bottom:122px}
  .cinematic-reader .reader-arrow{top:46%;width:38px;height:52px}
  .cinematic-reader .reader-arrow svg{width:22px;height:22px}
  .cinematic-reader .hero-copy .narration{left:0;right:0;bottom:59px;width:100%;max-width:none;padding:8px 0;display:block}
@@ -47,7 +50,7 @@
  .cinematic-reader .hero-copy{animation-duration:.3s}
 }
 @media(max-height:680px) and (max-width:760px){
- .cinematic-reader .hero .book-stage .canvas-wrap{bottom:116px}
+ .cinematic-reader .hero.is-ending .book-stage .canvas-wrap{bottom:116px}
  .cinematic-reader .site-header{height:55px}
  .cinematic-reader .hero-copy .narration{bottom:50px}
  .cinematic-reader .hero-copy .interaction-button{bottom:9px}
@@ -60,7 +63,7 @@
 .detail-kicker{margin:0 0 10px;font:11px Georgia,serif;letter-spacing:2px;color:#a1977c;text-transform:uppercase}
 .detail-panel h2{margin:0 0 14px;font-family:var(--serif);font-size:23px;line-height:1.4;font-weight:700;outline:none}
 .detail-panel h3{margin:22px 0 8px;font-size:13px;letter-spacing:1px;color:#8a7a62}
-.detail-lead{margin:0;font-size:14px;line-height:1.85}
+.detail-lead{margin:0;font-size:14px;line-height:1.85;word-break:break-all;text-align:justify}
 .detail-panel blockquote{margin:18px 0 0;padding:12px 16px;border-left:3px solid #e88d51;background:#f6ecd9;border-radius:0 10px 10px 0;font-family:var(--serif);font-size:15px;line-height:1.6}
 .detail-facts{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:18px 0 0}
 .detail-facts div{background:#f3ead6;border-radius:10px;padding:9px 10px}
@@ -119,7 +122,7 @@
 .detail-book-kicker{margin:0 0 10px;font:11px Georgia,serif;letter-spacing:2px;color:#a1977c}
 .detail-book h2{margin:0;font-family:var(--serif);font-size:24px;line-height:1.4;font-weight:700;color:#4a3b2f;outline:none}
 .detail-book-byline{margin:8px 0 0;font-size:12px;color:#8c7d66}
-.detail-book-text{margin-top:16px;font-family:var(--serif);font-size:14px;line-height:1.85;word-break:keep-all}
+.detail-book-text{margin-top:16px;font-family:var(--serif);font-size:14px;line-height:1.85;word-break:break-all;text-align:justify}
 .detail-book-text p{margin:0 0 10px;text-indent:1em}
 .detail-book-text blockquote{margin:12px 0 4px;padding:2px 0 2px 16px;border-left:2px solid #e88d51;font-size:16px;color:#6b4a37}
 .detail-book-page footer{margin-top:auto;padding-top:12px;display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px}
@@ -209,3 +212,183 @@ html,body{background:#1a110b}
 }
 @media (prefers-reduced-motion:reduce){.cinematic-reader .chapter-title{animation:none}}
 
+
+/* ───────── The prologue (src/Prologue.tsx): the room dims over the open book, its cards still flat, and the book introduces itself. */
+.prologue{position:fixed;inset:0;z-index:7;display:grid;place-items:center;padding:24px;overflow:auto;color:#efe1c6;
+ background:radial-gradient(85% 75% at 50% 44%,rgba(16,9,4,.6) 0%,rgba(10,6,3,.84) 100%);animation:prologue-in .55s ease-out both}
+.prologue.is-closing{animation:prologue-out .5s ease-in both;pointer-events:none}
+/* The words sit in a pool of deeper dark, so the book behind reads as a backdrop and never competes with them. */
+.prologue-card{width:min(600px,100%);padding:36px 24px;display:flex;flex-direction:column;align-items:center;text-align:center;animation:prologue-rise .7s cubic-bezier(.2,.7,.2,1) both;
+ background:radial-gradient(closest-side,rgba(10,6,3,.78) 55%,rgba(10,6,3,0) 100%)}
+.is-closing .prologue-card{animation:none}
+.prologue-kicker{font:600 11px 'Cormorant Garamond',Georgia,serif;letter-spacing:.3em;text-transform:uppercase;color:#d9a35f}
+.prologue h2{margin:14px 0 10px;font-family:var(--serif);font-size:clamp(30px,3.6vw,46px);font-weight:400;letter-spacing:-.02em;line-height:1.25;color:#f8ead1}
+.prologue-lead{font-family:var(--serif);font-size:16px;line-height:1.75;color:#e8cfa5}
+.prologue-lead em{font-style:normal;color:#f5a25a}
+.prologue-text{margin-top:14px;max-width:460px;font-size:14px;line-height:1.8;color:#dcc6a0;word-break:keep-all}
+/* The contents: the three chapters, one per line, large; numbers lined up (the list is as wide as its longest title, centred). */
+.prologue-chapters{display:flex;flex-direction:column;align-items:flex-start;gap:10px;width:max-content;max-width:100%;margin:24px auto 0;padding:0;list-style:none;font-family:var(--serif);font-size:20px;line-height:1.35;color:#ecdcbc;word-break:keep-all}
+.prologue-chapters span{display:inline-block;min-width:2.1em;margin-right:10px;font:17px Georgia,serif;color:#e08a3a}
+.cinematic-reader .prologue-start{margin-top:26px;min-width:228px;min-height:50px;gap:10px;background:#c4531f;color:#fff6e6;box-shadow:0 10px 28px rgba(0,0,0,.35)}
+.cinematic-reader .prologue-start:hover:not(:disabled){background:#d5602a}
+.cinematic-reader .prologue-start:disabled{opacity:.7;background:#5a3f2b;cursor:wait}
+.prologue-start svg:last-child{margin-left:0}
+@keyframes prologue-in{from{opacity:0}to{opacity:1}}
+@keyframes prologue-out{from{opacity:1}to{opacity:0}}
+@keyframes prologue-rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@media(max-width:760px){
+ /* Centred top to bottom; auto margins (not grid centring) so a card taller than the screen still scrolls from its top. */
+ .prologue{padding:18px;display:flex}
+ .prologue-card{margin:auto;padding-top:24px}
+ .prologue h2{font-size:28px}
+ .prologue-lead{font-size:14px}
+ .prologue-text{font-size:12px}.prologue-text br{display:none}
+ .prologue-chapters{gap:8px;font-size:17px}
+ .prologue-chapters span{font-size:15px;margin-right:8px}
+ 
+ 
+}
+@media(prefers-reduced-motion:reduce){.prologue,.prologue.is-closing,.prologue-card{animation:none}}
+
+/* ───────── The language switch (src/LanguageMenu.tsx) at the top right, over everything but a story or dialog. */
+.lang-menu{position:fixed;top:21px;right:max(18px,6.2%);z-index:9}
+.lang-button{display:inline-flex;align-items:center;gap:6px;min-height:32px;padding:0 10px 0 11px;border:1px solid rgba(255,236,205,.22);border-radius:999px;background:rgba(26,17,11,.55);color:#e2d0b2;font:500 12px/1 Georgia,serif;letter-spacing:.06em;transition:background .2s,color .2s}
+.lang-button:hover,.lang-button[aria-expanded=true]{background:rgba(46,30,18,.85);color:#f5a25a}
+.lang-list{position:absolute;right:0;top:calc(100% + 6px);min-width:136px;margin:0;padding:6px;list-style:none;background:#2b1b10;border:1px solid rgba(255,236,205,.18);border-radius:12px;box-shadow:0 14px 34px rgba(0,0,0,.45);animation:fade .15s ease-out}
+.lang-list button{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;padding:8px 10px;border-radius:8px;background:none;font-size:13px;color:#e2d0b2;text-align:left}
+.lang-list button:hover{background:rgba(255,236,205,.08)}
+.lang-list [aria-selected=true] button{color:#f5a25a}
+/* The header's menu moves in from under the switch. */
+.cinematic-reader .site-header nav{padding-right:88px}
+@media(max-width:760px){.lang-menu{top:15px;right:18px}.cinematic-reader .site-header nav{padding-right:74px}}
+
+/* ───────── The reading guide (src/Guide.tsx): a spotlight on what to press, an arrow to it, a short bubble. Tap anywhere to go on. */
+.guide{position:fixed;inset:0;z-index:40;cursor:pointer;animation:guide-in .2s ease-out both;-webkit-tap-highlight-color:transparent}
+.guide-spot{position:fixed;border-radius:20px;box-shadow:0 0 0 200vmax rgba(8,5,2,.62),0 0 0 2px rgba(255,214,140,.85),0 0 26px 6px rgba(255,190,90,.35);pointer-events:none}
+.guide-dim{position:fixed;inset:0;background:rgba(8,5,2,.62)}
+.guide-arrow{position:fixed;inset:0;pointer-events:none;overflow:visible}
+.guide-arrow path{fill:none;stroke:#ffd27a;stroke-width:3;stroke-linecap:round}
+.guide-arrow marker path{fill:#ffd27a;stroke:none}
+.guide-arrow .is-up{animation:guide-bob-up 1.1s ease-in-out infinite alternate}
+.guide-arrow .is-down{animation:guide-bob-down 1.1s ease-in-out infinite alternate}
+.guide-bubble{position:fixed;display:flex;flex-direction:column;gap:5px;padding:15px 18px;border-radius:14px;background:#2a1a10;border:1px solid rgba(255,214,140,.35);color:#f1e2c6;text-align:center;pointer-events:none}
+.guide-bubble strong{font-family:var(--serif);font-size:18px;font-weight:400;color:#ffe2ad;word-break:keep-all}
+.guide-bubble span{font-size:13px;color:#d9c4a0;word-break:keep-all}
+/* Which step: two small dots, the current one lit. */
+.guide-dots{display:flex;justify-content:center;gap:7px;margin-top:8px}
+.guide-dots i{width:7px;height:7px;border-radius:50%;background:rgba(255,226,173,.25)}
+.guide-dots i.is-on{background:#ffd27a}
+@keyframes guide-in{from{opacity:0}to{opacity:1}}
+@keyframes guide-bob-up{from{transform:translateY(0)}to{transform:translateY(-7px)}}
+@keyframes guide-bob-down{from{transform:translateY(0)}to{transform:translateY(7px)}}
+@media (prefers-reduced-motion:reduce){.guide,.guide-arrow g{animation:none}}
+
+/* The shops' web-magazine pages (src/WebzineBook.tsx): a mockup-sized spread (the unit --u is 1/1672 of the book's width, so it scales as one
+   picture), set in Pretendard; below 760px the two pages stack and the type keeps a readable size. */
+.webzine-book{position:relative;display:flex;flex-direction:column;align-items:center;gap:14px;width:min(1180px,96vw,calc((100svh - 124px)*1.775));transform-origin:50% 100%;transform:translateY(38vh) rotateX(62deg) scale(.82);opacity:0;transition:transform .42s cubic-bezier(.2,.75,.25,1),opacity .16s ease-out;font-family:'Pretendard Variable',Pretendard,'Noto Sans KR',system-ui,sans-serif;font-synthesis:none}
+.is-open>.webzine-book{transform:none;opacity:1}
+.wz-sheet{position:relative;width:100%;aspect-ratio:836/471;container-type:inline-size;border-radius:6px 6px 4px 4px;overflow:hidden;background:linear-gradient(rgba(255,251,240,.6),rgba(255,251,240,.6)),#f6edd9 url('/art-raster/intro-pages.webp') center/cover;box-shadow:0 30px 60px rgba(70,50,30,.3),0 2px 0 #c89b80,0 6px 0 #b9806a}
+.wz-inner{--u:calc(100cqw/1672);--h1:calc(var(--u)*64);--sub:calc(var(--u)*26);--lead-h:calc(var(--u)*23);--lead:calc(var(--u)*20.5);--h2:calc(var(--u)*37);--body:calc(var(--u)*19);--small:calc(var(--u)*17.5);--quote:calc(var(--u)*24);--menu-h:calc(var(--u)*25);--bar:calc(var(--u)*17);--gap:calc(var(--u)*16);
+ position:absolute;inset:0;display:flex;flex-direction:column;padding:calc(var(--u)*40) calc(var(--u)*56) calc(var(--u)*32);color:#3e3125}
+.wz-bar{display:flex;align-items:center;gap:calc(var(--u)*18);flex:none;height:calc(var(--u)*34);margin-bottom:calc(var(--u)*26);font-size:var(--bar);font-weight:500;letter-spacing:.14em;color:#7a6a55;text-transform:uppercase}
+.wz-bar i{flex:1;border-top:1px solid #c2aa84}
+.wz-bar em{font:italic 400 calc(var(--u)*24)/1.05 Georgia,serif;color:#bda982;text-align:left;text-transform:none;letter-spacing:0;transform:rotate(-7deg)}
+.wz-spread{flex:1;min-height:0;display:grid;grid-template-columns:1fr 1fr;animation:wz-in .38s ease-out both;outline:none}
+.wz-spread.is-next{--turn:1}.wz-spread.is-prev{--turn:-1}
+@keyframes wz-in{from{opacity:0;transform:translateX(calc(var(--turn,1)*26px))}to{opacity:1;transform:none}}
+.wz-page{display:flex;flex-direction:column;min-height:0;overflow:hidden}
+.wz-page.is-left{padding-right:calc(var(--u)*46)}
+.wz-page.is-right{padding-left:calc(var(--u)*46);border-left:1px solid #cdb995;position:relative}
+.wz-page.is-right::after{content:'';position:absolute;right:calc(var(--u)*-6);bottom:calc(var(--u)*-6);width:calc(var(--u)*582);aspect-ratio:458/250;opacity:1;pointer-events:none;background:url('/media/webzine/corner-art.webp') no-repeat right bottom/contain}
+.wz-page>*{flex:none}
+/* A page with pictures keeps its closing lines at the foot; a page of words alone reads from the top, set looser to fill it. */
+.wz-page.has-media>:last-child{margin-top:auto}
+.wz-page>:last-child>.wz-p:last-child,.wz-page>:last-child>div>.wz-p:last-child,.wz-page>.wz-flow>:last-child{margin-bottom:0}
+.wz-page>.wz-flow.is-tight{margin-top:0}
+.wz-page:not(.has-media) .wz-p{font-size:calc(var(--body)*1.08);line-height:1.8;margin-bottom:calc(var(--u)*24)}
+.wz-h1{margin:0;font-size:var(--h1);font-weight:800;line-height:1.26;letter-spacing:-.035em;color:#2a1f16;word-break:keep-all;outline:none}
+.wz-h1 span{display:block}
+.wz-sub{margin:calc(var(--u)*16) 0 calc(var(--u)*22);font-size:var(--sub);font-weight:500;letter-spacing:-.02em;color:#3a2e22}
+.wz-hero{margin:0 0 calc(var(--u)*20);flex:0 1 auto;min-height:0}
+.wz-hero img{display:block;width:100%;aspect-ratio:1.86;object-fit:cover;box-shadow:0 1px 0 rgba(255,255,255,.6),0 3px 12px rgba(80,60,40,.2);background:#e6d7bb}
+.wz-lead{position:relative;padding-top:calc(var(--u)*16)}
+.wz-lead::before{content:'';position:absolute;top:0;left:0;width:calc(var(--u)*44);border-top:2px solid #c08a4b}
+.wz-lead strong{display:block;margin-bottom:calc(var(--u)*6);font-size:var(--lead-h);font-weight:700;color:#2f241a}
+.wz-lead p{margin:0;font-size:var(--lead);line-height:1.62;color:#43372b;word-break:break-all;text-align:justify}
+.wz-h2{margin:0 0 calc(var(--u)*20);font-size:var(--h2);font-weight:800;line-height:1.32;letter-spacing:-.035em;color:#2a1f16;word-break:keep-all}
+.wz-h2 b{margin-right:.2em;color:#75612f;font-weight:800}
+.wz-page.is-left .wz-h2{font-size:calc(var(--h2)*1.1)}
+.wz-p{margin:0 0 calc(var(--u)*13);font-size:var(--body);line-height:1.68;color:#43372b;letter-spacing:-.01em;word-break:break-all;text-align:justify}
+.wz-quote{position:relative;margin:calc(var(--u)*34) 0 calc(var(--u)*36);padding:0 0 0 calc(var(--u)*34)}
+.wz-quote::before{content:'\201C';position:absolute;left:0;top:calc(var(--u)*-16);font:700 calc(var(--u)*58)/1 Georgia,serif;color:#c6a780}
+.wz-quote p{margin:0;font-size:calc(var(--quote) + 2pt);font-weight:600;font-style:italic;line-height:1.7;letter-spacing:-.02em;color:#a35c2d;word-break:break-all;text-align:justify}
+.wz-flow{min-height:0}
+.wz-photo-text{display:grid;gap:calc(var(--u)*30);margin-bottom:calc(var(--u)*18);align-items:start}
+.wz-photo-text.is-portrait{grid-template-columns:43% 1fr}
+.wz-photo-text.is-wide{grid-template-columns:62% 1fr}
+.wz-photo-text figure{margin:0}
+.wz-photo-text img,.wz-menu img{display:block;width:100%;object-fit:cover;box-shadow:0 1px 0 rgba(255,255,255,.6),0 3px 12px rgba(80,60,40,.2);background:#e6d7bb}
+.wz-photo-text.is-portrait img{aspect-ratio:.62}
+.wz-photo-text.is-wide img{aspect-ratio:1.38}
+.wz-photo-text.is-natural{grid-template-columns:54% 1fr}
+.wz-photo-text.is-natural img,.wz-menu.is-natural img{height:auto;aspect-ratio:auto;object-fit:contain}
+.wz-menu.is-natural{grid-template-columns:31% 1fr;gap:calc(var(--u)*24);margin-bottom:calc(var(--u)*6);align-items:center}
+.wz-menu.is-natural.is-flip{grid-template-columns:1fr 31%}
+.wz-photo-text .wz-p{font-size:var(--small);line-height:1.7;margin-bottom:calc(var(--u)*10)}
+.wz-photo-text .wz-quote{margin:calc(var(--u)*28) 0 calc(var(--u)*30)}
+.wz-photo-text .wz-quote p{font-size:calc(var(--quote)*.95 + 2pt)}
+.wz-menu{display:grid;gap:calc(var(--u)*28);align-items:center;margin-bottom:calc(var(--u)*14)}
+.wz-menu.is-wide{grid-template-columns:64% 1fr}
+.wz-menu.is-wide.is-flip{grid-template-columns:1fr 64%}.wz-menu.is-flip>img{order:2}
+.wz-menu.is-compact{grid-template-columns:50% 1fr;gap:calc(var(--u)*26);margin-bottom:calc(var(--u)*10)}
+.wz-menu.is-compact.is-flip{grid-template-columns:1fr 50%}
+.wz-menu.is-compact img{aspect-ratio:2.2}
+.wz-menu.is-wide img{aspect-ratio:1.83}
+.wz-menu.is-tall{grid-template-columns:50% 1fr;gap:calc(var(--u)*20);align-items:start}
+.wz-menu.is-tall img{aspect-ratio:.75}
+.wz-menu h4{margin:0 0 calc(var(--u)*8);font-size:var(--menu-h);font-weight:800;color:#5e3a1c;letter-spacing:-.02em}
+.wz-menu p{margin:0;font-size:var(--small);line-height:1.66;color:#43372b;word-break:break-all;text-align:justify}
+.wz-menus{display:grid;grid-template-columns:1fr 1fr;gap:calc(var(--u)*24);margin-bottom:calc(var(--u)*14)}
+.wz-captions{display:grid;grid-template-columns:1fr 1fr;gap:calc(var(--u)*30);margin-top:calc(var(--u)*14)}
+.wz-captions>div+div{border-left:1px solid #cdb995;padding-left:calc(var(--u)*26)}
+.wz-captions h4{margin:0 0 calc(var(--u)*6);font-size:var(--menu-h);font-weight:800;color:#5e3a1c}
+.wz-captions p{margin:0;font-size:var(--small);line-height:1.6;color:#43372b;word-break:break-all;text-align:justify}
+.wz-rule{width:100%;margin:calc(var(--u)*10) 0;border:0;border-top:1px solid #cdb995}
+.wz-close{position:absolute;top:-6px;right:-6px;z-index:3;width:38px;height:38px;border-radius:50%;border:0;background:rgba(255,250,240,.92);color:#7d6b55;display:grid;place-items:center;cursor:pointer;box-shadow:0 2px 8px rgba(60,40,20,.25)}
+.wz-nav{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px 12px;color:#fbf3e3;font-size:13px}
+.wz-nav>span{min-width:46px;text-align:center;font-weight:600;letter-spacing:.06em}
+.wz-nav>button{width:34px;height:34px;border-radius:50%;border:0;background:rgba(255,250,240,.92);color:#6b5a48;display:grid;place-items:center;cursor:pointer}
+.wz-nav>button:disabled{opacity:.35;cursor:default}
+.wz-link{display:inline-flex;align-items:center;gap:5px;margin-left:10px;padding:7px 13px;border-radius:999px;background:rgba(255,250,240,.92);color:#6b4a37;font-weight:600;text-decoration:none}
+.wz-related{display:flex;flex-wrap:wrap;gap:6px}
+.wz-related button{border:1px solid rgba(255,250,240,.5);background:rgba(62,52,40,.55);border-radius:999px;padding:6px 12px;font:inherit;font-size:12px;color:#fbf3e3;cursor:pointer}
+@media(prefers-reduced-motion:reduce){.webzine-book{transition:none}.wz-spread{animation:none}}
+@media(max-width:760px){
+ .detail-book-backdrop:has(.webzine-book){padding:8px}
+ .webzine-book{width:100%;gap:10px;max-height:calc(100svh - 16px)}
+ .wz-sheet{aspect-ratio:auto;container-type:normal;overflow:auto;overscroll-behavior:contain;max-height:calc(100svh - 76px);border-radius:6px}
+ .wz-inner{--u:1px;--h1:27px;--sub:15px;--lead-h:17px;--lead:15px;--h2:21px;--body:15px;--small:14.5px;--quote:17px;--menu-h:17px;--bar:11px;--gap:14px;position:static;padding:18px 18px 30px}
+ .wz-bar{height:auto;margin-bottom:16px;padding-right:44px}
+ .wz-bar i,.wz-bar em{display:none}
+ .wz-spread{grid-template-columns:1fr;gap:26px}
+ .wz-page{overflow:visible}
+ .wz-page.is-left{padding-right:0}
+ .wz-page.is-right{padding-left:0;border-left:0;border-top:1px solid #cdb995;padding-top:22px}
+ .wz-page.is-right::after{display:none}
+ .wz-page.has-media>:last-child{margin-top:0}
+ .wz-page:not(.has-media) .wz-p{font-size:var(--body);line-height:1.72;margin-bottom:12px}
+ .wz-sub{margin:10px 0 14px}.wz-hero{margin-bottom:14px}.wz-lead{padding-top:12px}.wz-lead::before{width:40px}
+ .wz-h2{margin-bottom:12px}.wz-p{margin-bottom:12px;line-height:1.72}.wz-quote{margin:24px 0 26px;padding-left:28px}.wz-quote::before{top:-10px;font-size:44px}
+ .wz-photo-text.is-portrait,.wz-photo-text.is-wide,.wz-photo-text.is-natural{grid-template-columns:1fr;gap:14px}
+ .wz-photo-text.is-portrait img{aspect-ratio:1.2;object-position:50% 22%}
+ .wz-photo-text.is-wide img{aspect-ratio:1.5}
+ .wz-photo-text .wz-p{font-size:var(--body)}
+ .wz-menu.is-wide,.wz-menu.is-wide.is-flip,.wz-menu.is-compact,.wz-menu.is-compact.is-flip,.wz-menu.is-natural,.wz-menu.is-natural.is-flip{grid-template-columns:42% 1fr;gap:14px;align-items:start}
+ .wz-menu.is-wide img,.wz-menu.is-compact img{aspect-ratio:1.2}
+ .wz-menu.is-flip>img{order:0}
+ .wz-menus{grid-template-columns:1fr;gap:14px}
+ .wz-menu.is-tall{grid-template-columns:42% 1fr;gap:14px}
+ .wz-captions{grid-template-columns:1fr;gap:12px}.wz-captions>div+div{border-left:0;padding-left:0;border-top:1px solid #cdb995;padding-top:12px}
+ .wz-close{top:6px;right:6px;width:34px;height:34px}
+ .wz-link{margin-left:0}
+}

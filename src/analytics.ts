@@ -104,7 +104,7 @@ export function initAnalytics() {
  document.addEventListener('click', event => {
   const link = (event.target as Element | null)?.closest?.('a[href]') as HTMLAnchorElement | null;
   if (!link || link.getAttribute('href')?.startsWith('#')) return;
-  const where = link.closest('.detail-panel,.detail-book') ? 'story' : link.closest('.is-ending') ? 'ending' : link.closest('.site-header') ? 'header' : link.closest('[role="dialog"]') ? 'about' : 'page';
+  const where = link.closest('.detail-panel,.detail-book,.webzine-book') ? 'story' : link.closest('.is-ending') ? 'ending' : link.closest('.site-header') ? 'header' : link.closest('[role="dialog"]') ? 'about' : 'page';
   track('story_link_click', { link_url: link.href, link_text: link.textContent?.trim().slice(0, 100), link_location: where, content_id: useStory.getState().detail ?? undefined, outbound: link.host !== location.host });
  }, true);
 }

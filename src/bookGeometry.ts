@@ -120,5 +120,6 @@ export function createRibbonGeometry(width=BOOK_RIBBON.width){
  const geometry=new BufferGeometry();geometry.setAttribute('position',new Float32BufferAttribute(positions,3));geometry.setAttribute('normal',new Float32BufferAttribute(normals,3));
  // The ribbon samples one flat texel of the shared texture; its colour comes from the baked tint.
  geometry.setAttribute('uv',new Float32BufferAttribute(new Float32Array(positions.length/3*2).fill(.5),2));geometry.setIndex(indices);
- return bakeLight(geometry,()=>[.76,.36,.3]);
+ // Satin gold like the cover's gilt rule (224,186,110), a little brighter where it bends over the board's edge and catches the light.
+ return bakeLight(geometry,i=>{const p=Math.floor(i/2);return p>=3&&p<=6?[.98,.8,.46]:[.86,.67,.36];});
 }

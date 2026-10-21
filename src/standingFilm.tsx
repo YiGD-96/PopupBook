@@ -1,10 +1,10 @@
 /**
  * The phone intro film (film.html?mode=standing), staged with the standing book's own parts (src/standingBook.tsx) under its camera
  * (src/standingView.ts). The closed book stands facing the reader with the magazine's cover moving on it, lies down with its binding
- * across the screen, opens its first half to 90°, a few sheets swing up onto the upright page and the first spread's cards rise:
+ * across the screen, opens its first half to 90° and the lean that makes it face the camera (UPRIGHT_LEAN), a few sheets swing up onto the upright page and the first spread's cards rise:
  * its last frame is the live standing book.
  */
-import { useEffect, type ReactNode } from 'react';
+import { useEffect, useMemo, type ReactNode } from 'react';
 import { useThree } from '@react-three/fiber';
 import { BackSide, CanvasTexture, Color, DoubleSide, Euler, Matrix4, Quaternion, SRGBColorSpace, Vector3, type PerspectiveCamera, type Texture } from 'three';
 import { loadScene, loadTexture } from './assets';
@@ -15,8 +15,10 @@ import { BOOK_BOARD, BOOK_PAGES, BOOK_SPINE } from './bookStructure';
 import { BOOK_HINGE_Y, createBoardGeometry, createPaperBlockGeometry } from './bookGeometry';
 import { BLOCK_X, BindingDetails, Board, DESK, Desk, DeskFog, PaperBlock, PrintedPage, Surface, createCardGeometry, useDisposable, type BookMaterials } from './bookParts';
 import { INTRO_COVER_HOLD, INTRO_PAGES_START, INTRO_PAGE_TURN, STANDING_INTRO_DURATION, STANDING_INTRO_PAGE_COUNT, STANDING_INTRO_PAGE_STAGGER, STANDING_INTRO_UI_AT } from './introPlayback';
-import { cropBackdrop, createStandingPage, createStandingSheetGeometry, createStandingSkirt, createStandingSpine, poseStandingSheet } from './standingBook';
-import { UPRIGHT_SCALE, isBackdrop, standingPlacement, surfaceY } from './standingLayout';
+import { cropBackdrop, createStandingPage, createStandingSheetGeometry, createStandingSkirt, createStandingSpine, poseStandingSheet, thinStack } from './standingBook';
+import { UPRIGHT_LEAN, UPRIGHT_SCALE, isBackdrop, standingPlacement, surfaceY } from './standingLayout';
+/** The upright half's final turn from closed: 90° and the live book's lean (it faces the camera squarely). */
+const OPEN_TO=Math.PI/2+UPRIGHT_LEAN;
 import { STANDING_CAMERA_POSITION, STANDING_TARGET, standingFov } from './standingView';
 import { STANDING_FILM_ASPECT } from './standingMedia';
 import { FILM_FONT, TurnedMesh, ease, smooth } from './filmParts';
@@ -47,9 +49,13 @@ export function StandingFilmCamera({width,height}:{width:number;height:number}){
 }
 /** The first half turning about the binding from closed (−π) to standing (−π/2), shortening from the closed book's full size to the
  *  upright half's (`height`, along its outward axis): standing, exactly the live StandingHalf. */
-function FilmStandingHalf({materials,angle,swell,page,height}:{materials:BookMaterials;angle:number;swell:number;page:Texture;height:number}){
+function FilmStandingHalf({materials,angle,swell,page,height,thin}:{materials:BookMaterials;angle:number;swell:number;page:Texture;height:number;thin:number}){
  const board=useDisposable(()=>createBoardGeometry(true),[]),block=useDisposable(()=>createPaperBlockGeometry(),[]);
  const sheet=useDisposable(()=>createStandingPage(swell),[swell]),skirt=useDisposable(()=>createStandingSkirt(swell),[swell]);
+ // Its page stack thins as it opens, to the live book's (src/standingBook.tsx thinStack).
+ const bases=useMemo(()=>[board,block].map(g=>Float32Array.from(g.getAttribute('position').array as Float32Array)),[board,block]);
+ thinStack(board,bases[0],[-BOOK_BOARD.x,BOOK_BOARD.y],thin);thinStack(block,bases[1],[-BLOCK_X,BOOK_PAGES.y],thin);
+ const skirtBase=useMemo(()=>Float32Array.from(skirt.getAttribute('position').array as Float32Array),[skirt]);thinStack(skirt,skirtBase,[0,0],thin);
  const edge=materials['paper-edge'],endpaper=materials.endpaper;
  return <group position={[0,BOOK_HINGE_Y,0]} rotation={[0,0,angle]} scale={[height,1,1]}><group position={[0,-BOOK_HINGE_Y,0]}>
   <TurnedMesh geometry={board} angle={angle} position={[-BOOK_BOARD.x,BOOK_BOARD.y,0]} maps={[materials.inside,materials.cover,materials['cloth-side']]}/>
@@ -63,7 +69,7 @@ function FoldingSpine({materials,fold}:{materials:BookMaterials;fold:number}){
 }
 /** A sheet swinging up as in the live standing turn: paper while it lies, its painting on the face that ends up upright. */
 function FilmSheet({paper,paperTint,backdrop,q,lift}:{paper?:Texture;paperTint?:string;backdrop:Texture;q:number;lift:number}){
- const geometry=useDisposable(createStandingSheetGeometry,[]);poseStandingSheet(geometry,q);
+ const geometry=useDisposable(createStandingSheetGeometry,[]);poseStandingSheet(geometry,q,OPEN_TO);
  return <group position={[0,lift,0]}><mesh geometry={geometry} renderOrder={4}><meshBasicMaterial map={paper} color={paperTint??'#ffffff'} vertexColors side={DoubleSide}/></mesh><mesh geometry={geometry} renderOrder={5}><meshBasicMaterial map={backdrop} vertexColors transparent side={BackSide} depthWrite={false}/></mesh></group>;
 }
 /** A card rising on the flat page, built like the live StandingLayer. */
@@ -119,8 +125,8 @@ export function StandingFilm({materials,assets,t,width,height}:{materials:BookMa
   <group position={pivot} quaternion={turn} scale={scale}><group position={[0,-BOOK_HINGE_Y,-BOOK_BOARD.x]}><group rotation={[0,-Math.PI/2,0]}>
    <Board materials={materials} x={BOOK_BOARD.x}/><PaperBlock materials={materials} x={BLOCK_X}/>
    {materials.endpaper&&<PrintedPage texture={materials.endpaper} edge={materials['paper-edge']} swell={f.swell} tint={paperOf(started-1)}/>}
-   <BindingDetails materials={materials}/><FoldingSpine materials={materials} fold={f.open/2}/>
-   <FilmStandingHalf materials={materials} angle={-Math.PI+f.open*Math.PI/2} swell={f.swell} page={upright} height={1+(UPRIGHT_SCALE-1)*f.open}/>
+   <BindingDetails materials={materials}/><FoldingSpine materials={materials} fold={f.open*OPEN_TO/Math.PI}/>
+   <FilmStandingHalf materials={materials} angle={-Math.PI+f.open*OPEN_TO} swell={f.swell} page={upright} height={1+(UPRIGHT_SCALE-1)*f.open} thin={f.open}/>
    {f.sheets.map((q,i)=>q>0&&q<1?<FilmSheet key={i} paper={materials.endpaper} paperTint={paperOf(i-1)} backdrop={assets.backs[i]} q={q} lift={.008+(STANDING_INTRO_PAGE_COUNT-i)*.004}/>:null)}
   </group></group></group>
   {f.cards>=0&&<StandingPopups cards={cards} scenery={assets.scenery} time={f.cards}/>}

@@ -8,6 +8,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {createRequire} from 'node:module';
+import {streetFloor} from './street-floor.mjs';
 const project=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const runtime=process.env.CODEX_NODE_MODULES||'C:/Users/eh1al/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules';
 const sharp=createRequire(path.join(runtime,'package.json'))('sharp');
@@ -24,14 +25,18 @@ const art=[
  {dir:'page-1',name:'farm-wall',width:1280},
  {dir:'page-1',name:'farm-lantern',width:280},
  {dir:'page-2',name:'village-back',width:1440,backdrop:{top:200,bottom:800}},
- {dir:'page-2',name:'village-tree-left',width:440},
- {dir:'page-2',name:'village-tree-right',width:400},
- {dir:'page-2',name:'village-lane',width:1440},
- {dir:'page-2',name:'shop-a',width:720},
- {dir:'page-2',name:'shop-b',width:720},
- {dir:'page-2',name:'shop-c',width:560},
- {dir:'page-2',name:'char-traveler',width:300},
- {dir:'page-2',name:'village-front',width:1280},
+ // Chapter 2 (v3): the three real shops (sonongroad, manoa, buggercarrot), the traveler and a mother walking with her
+ // daughter and a stroller. Things standing on the page get a soft contact shadow (see the `shadow` note below).
+ // The cobbled street (scripts/street-floor.mjs) as the phone's flat page: 'stage' is laid out for the flat page's UVs (the road runs along the page's depth, far edge on
+ // the left), 'stage-sheet' for the turning sheet's (near edge at the top, upright). Both are full-bleed page textures, 1080 × 1446 / 1446 × 1080.
+ {dir:'page-2',name:'village-floor-stage',src:'village-floor',stage:'page'},
+ {dir:'page-2',name:'village-floor-stage-sheet',src:'village-floor',stage:'sheet'},
+ // The shops are drawn turned toward the street's centre line (the v4 renderings): buggercarrot at the left end, manoa behind it, sonongroad at the right.
+ {dir:'page-2',name:'sonongroad',src:'sonongroad-right-v4',width:1100,clean:48},
+ {dir:'page-2',name:'manoa',src:'manoa-turn-v4',width:1000,clean:48},
+ {dir:'page-2',name:'buggercarrot',src:'buggercarrot-left-v4',width:900,clean:48},
+ {dir:'page-2',name:'char-traveler',width:300,clean:48,shadow:{pad:.04,spread:.6,alpha:.45}},
+ {dir:'page-2',name:'family-walk',width:900,clean:48,shadow:{pad:.05,spread:.8,alpha:.45}},
  // The kitchen (v2): tiled wall with a string for the notes, a round table, the table's things, post-it papers. Cards that stand on the table
  // or the page get a soft contact shadow under their foot (`shadow`: padding as a fraction of the card's height, ellipse width as a fraction of its width).
  {dir:'page-3',name:'kitchen-back',width:1440,backdrop:{top:56,bottom:677}},
@@ -119,7 +124,11 @@ async function backdrop(file,width,{top,bottom,overlays=[]}){
 const only=process.argv[2]; // e.g. "page-3": prepare just that page's art
 for(const item of art){
  if(only&&item.dir!==only)continue;
- let file=path.join(project,'art-src/gpt',item.dir,`${item.name}.png`);
+ let file=path.join(project,'art-src/gpt',item.dir,`${item.src??item.name}.png`);
+ if(item.stage){
+  const flat=item.stage==='page',buf=await sharp(await streetFloor(sharp,project,1446,1080)).rotate(flat?270:180).webp({quality:84,effort:5}).toBuffer();
+  await fs.writeFile(path.join(project,'public/art-raster',`${item.name}.webp`),buf);console.log(`${item.name}: ${(buf.length/1024).toFixed(0)} KiB (floor texture)`);continue;
+ }
  if(item.clean)file=await cleaned(file,item.clean);
  let {image,w,h}=item.backdrop?await backdrop(file,item.width,item.backdrop):item.plain?await plain(file,item.width):await cutout(file,item.width);
  let padNote='';
