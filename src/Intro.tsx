@@ -18,6 +18,18 @@ async function filmSource(standing:boolean){
 }
 /** `standing`: the phone film played (or its open still showed), which ends on the standing book. */
 export type IntroReport={coverHoldMs:number;videoFrames:number|null;droppedFrames:number|null;mediaFailed:boolean;standing:boolean};
+/** The film pauses this much before its cards start to rise (uiAt), so no card has lifted on the frame it stops on. */
+const HOLD_BEFORE=.04;
+/**
+ * The live book is mounted this long before the film pauses (onNearEnd), while its pages still flip: its preparation (upload, shaders)
+ * is then done by the pause, instead of running under the prologue's entrance and making it stutter. Only once the film is fully
+ * downloaded, so it never competes with the film for bandwidth.
+ */
+const MOUNT_LEAD=2.2;
+/**
+ * `onUnfolding` is called with the film's time when it pauses on the open book, just before its cards would rise; `onFinished` follows
+ * at once (the rest of the film — the cards rising — is left to the live book, which stands them up after the prologue).
+ */
 type Props={onFinished:(report:IntroReport)=>void;onUnfolding:(time:number)=>void;onBuffered?:()=>void;onNearEnd?:()=>void;leaving:boolean};
 export default function Intro({onFinished,onUnfolding,onBuffered,onNearEnd,leaving}:Props){
  const nearEnd=useRef(false);
@@ -60,11 +72,20 @@ export default function Intro({onFinished,onUnfolding,onBuffered,onNearEnd,leavi
   const v=e.currentTarget,ranges=v.buffered;if(bufferedOnce.current||!ranges.length||!(v.duration>0))return;
   if(ranges.end(ranges.length-1)>=v.duration-.1){bufferedOnce.current=true;onBuffered?.();}
  },[onBuffered]);
+ /** Stops the film on the open book, before its cards rise, and hands over: the live book waits under the prologue from here. */
+ const hold=useCallback((element:HTMLVideoElement,time:number)=>{
+  if(unfolded.current)return;unfolded.current=true;
+  element.pause();onNearEnd?.();onUnfolding(time);finish();
+ },[onNearEnd,onUnfolding,finish]);
  const play=useCallback(()=>{
   const element=video.current;if(!element)return;
   setManual(false);
-  void element.play().catch(()=>{started.current=false;setManual(true);});
- },[]);
+  void element.play().then(()=>{
+   // Frame-accurate where the browser reports presented frames; onTimeUpdate (a few times a second) stands in elsewhere.
+   const watch=(_:number,frame:{mediaTime:number})=>{if(unfolded.current)return;if(frame.mediaTime>=uiAt-HOLD_BEFORE)hold(element,frame.mediaTime);else element.requestVideoFrameCallback(watch);};
+   if('requestVideoFrameCallback' in element)element.requestVideoFrameCallback(watch);
+  }).catch(()=>{started.current=false;setManual(true);});
+ },[hold,uiAt]);
  useEffect(()=>{
   if(!holdFinished||(!src&&!failed))return;
   if(failed){finish();return;}
@@ -75,7 +96,7 @@ export default function Intro({onFinished,onUnfolding,onBuffered,onNearEnd,leavi
   <img className="intro-cover intro-media" src={`/media/book-cover${media}.webp`} alt={SITE.title+' 그림책 표지 — '+SITE.coverAlt} onLoad={()=>setCoverReady(true)} onError={e=>{if(!e.currentTarget.src.endsWith('/art-raster/cover.webp'))e.currentTarget.src='/art-raster/cover.webp';else setCoverReady(true);}} hidden={stage!=='cover'}/>
   <video className={'intro-media intro-video'+(stage==='cover'?' is-waiting':'')} ref={video} src={src??undefined} muted playsInline preload="auto" tabIndex={-1} aria-hidden="true"
    onPlaying={()=>{actualHold.current||=Math.round(performance.now()-(shownAt.current??performance.now()));setHoldDuration(actualHold.current);setStage('opening');}}
-   onTimeUpdate={e=>{const time=e.currentTarget.currentTime;if(!nearEnd.current&&bufferedOnce.current&&e.currentTarget.duration-time<=1.1){nearEnd.current=true;onNearEnd?.();}if(time>=uiAt&&!unfolded.current){unfolded.current=true;onUnfolding(time);}if(time<INTRO_COVER_HOLD)return;const page=Math.floor((time-INTRO_COVER_HOLD)*3);if(page!==soundPage.current){soundPage.current=page;playSound('flip');}}}
+   onTimeUpdate={e=>{const element=e.currentTarget,time=element.currentTime;if(!nearEnd.current&&bufferedOnce.current&&time>=uiAt-MOUNT_LEAD){nearEnd.current=true;onNearEnd?.();}if(time>=uiAt-HOLD_BEFORE&&!unfolded.current){hold(element,time);return;}if(time<INTRO_COVER_HOLD)return;const page=Math.floor((time-INTRO_COVER_HOLD)*3);if(page!==soundPage.current){soundPage.current=page;playSound('flip');}}}
    onProgress={buffered} onCanPlayThrough={buffered} onEnded={finish} onError={()=>{setFailed(true);onBuffered?.();}}/>
   {failed&&stage==='ready'&&<img className="intro-media" src={`/media/book-open${media}.webp`} alt={'펼쳐진 '+SITE.title+' 그림책'}/>}
   {manual&&<button className="primary-button intro-play" onClick={play}>책 펼치기</button>}

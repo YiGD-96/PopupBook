@@ -21,6 +21,8 @@ export function loadTexture(name:string):Promise<Texture>{
  const promise=(typeof createImageBitmap==='function'?bitmapTexture(url).catch(()=>imageTexture(url)):imageTexture(url)).then(texture=>{texture.colorSpace=SRGBColorSpace;texture.needsUpdate=true;ready.set(name,texture);return texture;},error=>{cache.delete(name);ready.delete(name);throw error;});
  cache.set(name,promise);return promise;
 }
-export async function loadScene(chapter:number):Promise<Record<string,Texture>>{return Object.fromEntries(await Promise.all(scenes[chapter].layers.map(async l=>[l.src,await loadTexture(l.src)])));}
-export function readyScene(chapter:number):Record<string,Texture>|null {const layers=scenes[chapter].layers;if(layers.some(l=>!ready.has(l.src)))return null;return Object.fromEntries(layers.map(l=>[l.src,ready.get(l.src)!]));}
+/** The art names a spread needs: its cards and, if it has one, the painted floor of the phone's flat page (`stage`, src/story.ts). */
+const sceneArt=(chapter:number)=>{const scene=scenes[chapter] as {stage?:string;layers:{src:string}[]};return [...scene.layers.map(l=>l.src),...(scene.stage?[scene.stage,scene.stage+'-sheet']:[])];};
+export async function loadScene(chapter:number):Promise<Record<string,Texture>>{return Object.fromEntries(await Promise.all(sceneArt(chapter).map(async src=>[src,await loadTexture(src)])));}
+export function readyScene(chapter:number):Record<string,Texture>|null {const names=sceneArt(chapter);if(names.some(src=>!ready.has(src)))return null;return Object.fromEntries(names.map(src=>[src,ready.get(src)!]));}
 export function preloadScene(chapter:number){if(chapter<scenes.length)void loadScene(chapter).catch(()=>{});}

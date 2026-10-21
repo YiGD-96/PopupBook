@@ -173,7 +173,8 @@ const haloPlane=once(()=>new PlaneGeometry(1,1));
  * A clickable card's glow (src/cardHalo.ts), just behind the card's face of the given size. Usually made ahead (startup, warmChapter);
  * if not, it is made in idle time after the card appears, never in a turn's frame, and fades in to its rim on a spread being read.
  */
-export function CardHalo({layer,texture,width,height,incoming=false}:{layer:Layer;texture:Texture;width:number;height:number;incoming?:boolean}){
+/** `grounded`: the card stands on a floor that would hide the part of the glow below its foot (the phone's flat page), so the halo is lifted until its lower edge meets the foot. */
+export function CardHalo({layer,texture,width,height,incoming=false,grounded=false}:{layer:Layer;texture:Texture;width:number;height:number;incoming?:boolean;grounded?:boolean}){
  const [halo,setHalo]=useState(()=>madeHalo(texture));
  useEffect(()=>{
   if(halo)return;let live=true;
@@ -181,5 +182,5 @@ export function CardHalo({layer,texture,width,height,incoming=false}:{layer:Laye
   return()=>{live=false;};
  },[halo,texture,layer,incoming]);
  if(!halo)return null;
- return <mesh geometry={haloPlane()} material={halo.material} dispose={null} position={[0,height/2,-.008]} scale={[width*halo.scale[0],height*halo.scale[1],1]}/>;
+ return <mesh geometry={haloPlane()} material={halo.material} dispose={null} position={[0,height/2+(grounded?height*(halo.scale[1]-1)/2:0),-.008]} scale={[width*halo.scale[0],height*halo.scale[1],1]}/>;
 }

@@ -45,7 +45,7 @@ function timeline(t:number){
 const JOURNAL=[
  {title:'첫째 장 · 구좌의 밭',lines:['검은 화산토는 물 빠짐이 좋아','당근 뿌리가 땅속 깊이','곧게 내린다.','','겨울 눈보라를 맞으면 당근은','당분을 뿌리로 밀어 넣는다.'],art:'char-farmer'},
  {title:'',lines:['“겨울을 제대로 맞아야','진짜 맛이 들어요.”','','농약 대신 랜턴과 파리채를 들고','밤마다 밭고랑을 살피는 농부.','','“생으로 먹어보세요.”']},
- {title:'둘째 장 · 구좌의 식탁',lines:['곁들임이던 채소가','한 접시의 주인공이 된다.','','수프가 되고, 버거가 되고,','커피와도 어우러진다.'],art:'shop-b'},
+ {title:'둘째 장 · 구좌의 식탁',lines:['곁들임이던 채소가','한 접시의 주인공이 된다.','','수프가 되고, 버거가 되고,','커피와도 어우러진다.'],art:'manoa'},
  {title:'',lines:['구좌 당근으로 새로운 맛을 만드는','식당 사장님들을 만났다.','','익숙한 재료로 만드는','새로운 맛, 그리고','계절을 식탁에 올리는 사람들.']},
  {title:'셋째 장 · 구좌의 부엌',lines:['집에서도 쉽게 따라 하는','당근 레시피.','','라페, 수프, 피클.','한 입 베어 물면','익숙했던 맛이 새로워진다.'],art:'dish-soup'},
  {title:'',lines:['평범한 채소 하나를 따라간 길.','','그 길에서 제주를 이루는','또 하나의 색과 맛을','발견할 수 있었다.','','당근을 따라, 구좌.']},
@@ -53,7 +53,7 @@ const JOURNAL=[
 async function journalPages(){
  await Promise.all(['400','700'].map(weight=>document.fonts.load(`${weight} 30px ${FONT}`,'제주')));
  const image=async(src:string)=>{const img=new Image();img.src=src;await img.decode();return img;};
- const paper=await image(artSource('intro-pages'));const art:Record<string,HTMLImageElement>={};for(const name of ['char-farmer','shop-b','dish-soup'])art[name]=await image(artSource(name));
+ const paper=await image(artSource('intro-pages'));const art:Record<string,HTMLImageElement>={};for(const name of ['char-farmer','manoa','dish-soup'])art[name]=await image(artSource(name));
  const toTexture=(canvas:HTMLCanvasElement)=>{const texture=new CanvasTexture(canvas);texture.colorSpace=SRGBColorSpace;texture.anisotropy=4;return texture;};
  const pages=JOURNAL.map((page,index)=>{
   const canvas=document.createElement('canvas');canvas.width=900;canvas.height=1205;const c=canvas.getContext('2d')!;
@@ -135,7 +135,8 @@ function Film({assets,t,onCommit}:{assets:Assets;t:number;onCommit:(t:number)=>v
    <Board materials={materials} x={BOOK_BOARD.x}/><PaperBlock materials={materials} x={BLOCK_X}/>
    <FoldingSpine materials={materials} fold={f.open}/>
    <PrintedPage texture={rightPage} edge={materials['paper-edge']} swell={f.swell}/>
-   <FirstHalf materials={materials} angle={-(1-f.open)*Math.PI} swell={f.swell} page={leftPage}/>
+   {/* The swinging half's sheet stays pressed flat in the air and relaxes only as the half lands (it curled out past the cover). */}
+   <FirstHalf materials={materials} angle={-(1-f.open)*Math.PI} swell={f.swell*smooth((f.open-.75)/.25)} page={leftPage}/>
    {/* The ribbon and headband are bound in from the start; the opening sheets uncover them. */}
    <BindingDetails materials={materials}/>
    {f.pages.map((p,i)=>p>0&&p<1?<TurningPage key={i} front={front(i)} back={back(i)} progress={{current:progress.current[i]}} direction={1} lift={.025+(INTRO_PAGE_COUNT-i)*.005}/>:null)}

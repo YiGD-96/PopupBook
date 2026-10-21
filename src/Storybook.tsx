@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode, type RefObject } from 'react';
 import { Canvas, advance, useFrame, useThree } from '@react-three/fiber';
-import { Group, Mesh, Texture, PerspectiveCamera, WebGLRenderTarget, DoubleSide, type MeshBasicMaterial } from 'three';
+import { Box3, Group, Mesh, Texture, PerspectiveCamera, Vector3, WebGLRenderTarget, DoubleSide, type MeshBasicMaterial } from 'three';
 import gsap from 'gsap';
 import { loadTexture, loadScene, readyScene } from './assets';
 import { type Director, type Layer, scenes, useStory, playSound } from './story';
@@ -147,23 +147,40 @@ function Book({onReady,onFailure}:{onReady:(director:Director)=>void;onFailure:(
    requestAnimationFrame(step);
   }).catch(()=>{});},700);
  }
+ /** Folds every card flat on the page (a glued card folds with the card it stands on). */
+ function foldCards(){hinges.current.forEach(h=>{if(!h.userData.glued)h.rotation.x=-Math.PI/2;});}
+ /** The first spread's cards standing up on the timeline from `at` seconds, front to back (src/popupStack.ts riseOrder). */
+ function riseCards(tl:gsap.core.Timeline,at=0){
+  if(standingRef.current){const cards=scenes[0].layers.filter(l=>!isBackdrop(l)),ranks=stackRanks(cards,l=>standingPlacement(l).z);cards.forEach(l=>{const hinge=hinges.current.get(`${l.id}:right`);if(hinge&&!hinge.userData.glued)tl.to(hinge.rotation,{x:0,duration:.55,ease:'back.out(1.1)'},at+riseOrder(ranks.get(l.id)??0,cards.length)*.06);});return;}
+  const layers=scenes[0].layers,ranks=stackRanks(layers);layers.forEach(l=>{for(const side of ['left','right']){const hinge=hinges.current.get(`${l.id}:${side}`);if(hinge&&!hinge.userData.glued)tl.to(hinge.rotation,{x:0,duration:.72,ease:'back.out(1.05)'},at+riseOrder(ranks.get(l.id)??0,layers.length)*.13);}});
+ }
+ function startReading(token:number){stand.current.value=1;useStory.getState().set({phase:'EXPLORING'});pulseHalos(clickableCards(0));warmChapter(1,token);}
+ /** The cards stand up (and, `standUp`, the standing book's first half rises with them) and the reader may read. */
+ async function standAndRise(standUp:boolean,token:number){
+  useStory.getState().set({phase:'OPENING_POPUP'});
+  await animate(tl=>{if(standUp)tl.to(stand.current,{value:1,duration:.8,ease:'power2.inOut'},0);riseCards(tl,standUp?.42:0);});
+  if(!mounted.current||token!==generation.current)return;
+  startReading(token);
+ }
  // The intro film ends on this exact open spread (on phones, the phone film on the standing book), so revealing it is only a state change.
- async function reveal(standingFilmed=false){
+ // With `hold` the film has paused just before its cards rise: the book waits open with its cards flat under the prologue (PROLOGUE,
+ // src/Prologue.tsx) and `rise` stands them up when the reader starts.
+ const held=useRef(false);
+ async function reveal(standingFilmed=false,hold=false){
   if(useStory.getState().phase!=='COVER'||!prepared.current)return;
   const token=++generation.current;hinges.current.forEach(h=>h.rotation.x=0);
   useStory.getState().set({phase:'LOADING_PAGE',chapter:0,dialog:false,detail:null,introPagesTurned:INTRO_PAGE_COUNT});
   // Only when the standing book follows the open book's film (the phone was turned during the intro) does it first lie open and stand
   // its first half up while the cards pop up.
   const standUp=standingRef.current&&!standingFilmed;
-  if(standUp){stand.current.value=0;hinges.current.forEach(h=>h.rotation.x=-Math.PI/2);}
+  if(standUp)stand.current.value=0;
+  if(standUp||hold)foldCards();
   await renderWait();if(!mounted.current||token!==generation.current)return;
-  if(standUp){
-   useStory.getState().set({phase:'OPENING_POPUP'});
-   await animate(tl=>{tl.to(stand.current,{value:1,duration:.8,ease:'power2.inOut'},0);const cards=scenes[0].layers.filter(l=>!isBackdrop(l)),ranks=stackRanks(cards,l=>standingPlacement(l).z);cards.forEach(l=>{const hinge=hinges.current.get(`${l.id}:right`);if(hinge&&!hinge.userData.glued)tl.to(hinge.rotation,{x:0,duration:.55,ease:'back.out(1.1)'},.42+riseOrder(ranks.get(l.id)??0,cards.length)*.06);});});
-   if(!mounted.current||token!==generation.current)return;
-  }
-  stand.current.value=1;useStory.getState().set({phase:'EXPLORING'});pulseHalos(clickableCards(0));warmChapter(1,token);
+  // Drawn once now (nothing is drawn under the intro film otherwise), so the canvas shows the waiting book the moment the film fades.
+  if(hold){held.current=standUp;useStory.getState().set({phase:'PROLOGUE'});advance(performance.now(),true);return;}
+  if(standUp)await standAndRise(true,token);else startReading(token);
  }
+ function rise(){if(useStory.getState().phase!=='PROLOGUE')return;const token=++generation.current;void standAndRise(held.current,token).catch(fail);}
  function configureTurn(target:number){
   for(const {texture} of clickableCards(useStory.getState().chapter))darkHalo(texture);for(const {texture} of clickableCards(target))darkHalo(texture,0);
   const state=useStory.getState();const info:Turn={from:state.chapter,to:target,direction:target>state.chapter?1:-1,incoming:readyScene(target)??{},restoreDialog:state.dialog};turnRef.current=info;setTurn(info);progress.current.value=0;
@@ -193,6 +210,22 @@ function Book({onReady,onFailure}:{onReady:(director:Director)=>void;onFailure:(
   }catch(e){fail(e);}
  }
  /** Opens a story in the side panel: a clicked card's own detail, or (from the button) the chapter's main one; the card answers with a hop. */
+ /** The on-screen box of a clickable card (for the reading guide, src/Guide.tsx): its picture's bounds (not its glow), projected, as it
+  *  stands upright (measured with its hinge stood up for the moment, then put back), so a guide shown while the cards still rise points
+  *  at where the card will be. */
+ function locate(detail?:string){
+  const scene=scenes[useStory.getState().chapter];
+  const layer=scene.layers.find(l=>l.interactive&&l.detail===(detail??scene.detail))??scene.layers.find(l=>l.interactive);if(!layer)return null;
+  const group=hinges.current.get(`${layer.id}:right`)??hinges.current.get(`${layer.id}:left`);if(!group)return null;
+  const fold=group.rotation.x,box=new Box3();group.rotation.x=0;group.updateWorldMatrix(true,true);
+  group.traverse(o=>{const mesh=o as Mesh;if(mesh.isMesh&&(mesh.material as MeshBasicMaterial).depthWrite!==false)box.expandByObject(mesh);});
+  group.rotation.x=fold;group.updateWorldMatrix(false,true);
+  if(box.isEmpty())return null;
+  const rect=gl.domElement.getBoundingClientRect();let x0=Infinity,y0=Infinity,x1=-Infinity,y1=-Infinity;
+  for(let i=0;i<8;i++){const p=new Vector3(i&1?box.max.x:box.min.x,i&2?box.max.y:box.min.y,i&4?box.max.z:box.min.z).project(camera);
+   const x=rect.left+(p.x+1)/2*rect.width,y=rect.top+(1-p.y)/2*rect.height;x0=Math.min(x0,x);y0=Math.min(y0,y);x1=Math.max(x1,x);y1=Math.max(y1,y);}
+  return {x:x0,y:y0,width:x1-x0,height:y1-y0};
+ }
  function interact(detail?:string){const state=useStory.getState();if(state.phase!=='EXPLORING')return;const scene=scenes[state.chapter],id=detail??scene.detail;state.set({dialog:true,detail:id,visited:[...new Set([...state.visited,state.chapter])]});playSound('hello');const layer=scene.layers.find(l=>l.detail===id)??scene.layers.find(l=>l.interactive);if(!layer)return;const target=hinges.current.get(`${layer.id}:right`)??hinges.current.get(`${layer.id}:left`);if(target)gsap.fromTo(target.scale,{x:1,y:1,z:1},{x:1.08,y:1.08,z:1.08,duration:.2,yoyo:true,repeat:1,overwrite:true,onComplete:()=>target.scale.set(1,1,1)});}
  function retry(){const state=useStory.getState();state.set({error:null});const token=++generation.current;if(!prepared.current)void prepareStartup(token).catch(error=>{if(mounted.current&&token===generation.current)fail(error);});else void openPopup(state.chapter,token,true).catch(fail);}
  // While a card's story is open its halo stays lit; closed, the card keeps the fainter rim of a story already read.
@@ -202,7 +235,7 @@ function Book({onReady,onFailure}:{onReady:(director:Director)=>void;onFailure:(
   if(previous.detail){seenStories.add(previous.detail);const c=card(previous.detail);if(c&&state.phase==='EXPLORING')restHalo(c.layer,c.texture);}
   const opened=card(state.detail);if(opened)lightHalo(opened.texture);
  }),[]);
- useEffect(()=>{mounted.current=true;const current=++generation.current;void prepareStartup(current).catch(error=>{if(mounted.current&&current===generation.current)fail(error);});const director:Director={reveal:standingFilmed=>void reveal(standingFilmed),go:n=>void go(n),finish:()=>{if(useStory.getState().phase==='EXPLORING'&&useStory.getState().chapter===scenes.length-1)useStory.getState().set({phase:'ENDING',dialog:false});},interact,previewTurn,settleTurn:commit=>void settle(commit),retry};onReady(director);return()=>{mounted.current=false;generation.current++;timeline.current?.kill();pending.current?.();hinges.current.forEach(g=>gsap.killTweensOf(g.scale));document.body.style.cursor='';};},[]);
+ useEffect(()=>{mounted.current=true;const current=++generation.current;void prepareStartup(current).catch(error=>{if(mounted.current&&current===generation.current)fail(error);});const director:Director={reveal:(standingFilmed,hold)=>void reveal(standingFilmed,hold),rise,go:n=>void go(n),finish:()=>{if(useStory.getState().phase==='EXPLORING'&&useStory.getState().chapter===scenes.length-1)useStory.getState().set({phase:'ENDING',dialog:false});},interact,previewTurn,settleTurn:commit=>void settle(commit),retry,locate,highlight:()=>{if(useStory.getState().phase==='EXPLORING')pulseHalos(clickableCards(useStory.getState().chapter));}};onReady(director);return()=>{mounted.current=false;generation.current++;timeline.current?.kill();pending.current?.();hinges.current.forEach(g=>gsap.killTweensOf(g.scale));document.body.style.cursor='';};},[]);
  const paper=paperRef.current;
  const moving=turn!==null;const leftChapter=moving&&turn.direction===-1?turn.to:chapter;const rightChapter=moving&&turn.direction===1?turn.to:chapter;const front=moving?paper[`page-${turn.direction===1?turn.from:turn.to}-right`]:null;const back=moving?paper[`page-${turn.direction===1?turn.to:turn.from}-left`]:null;
  // The turning sheet keeps its last pictures between turns (hidden); before the first turn it holds the first spread's right page.
@@ -216,11 +249,15 @@ function Book({onReady,onFailure}:{onReady:(director:Director)=>void;onFailure:(
   // The flat page under the cards takes the spread's paper tone (src/story.ts `paper`); the sheet's paper face the one it turns over.
   const paperOf=(target:number)=>(scenes[target] as {paper?:string}).paper;
   const backdropOf=(target:number,art:Record<string,Texture>)=>{const layer=scenes[target].layers.find(isBackdrop);return layer?art[layer.src]:undefined;};
+  // A spread's own floor for the flat page (`stage` in src/story.ts, with a '-sheet' twin laid out for the turning sheet), if it has one.
+  const artOf=(target:number)=>target===chapter?textures:moving&&turn.to===target?turn.incoming:{};
+  const stageOf=(target:number|undefined,suffix='')=>{if(target===undefined)return undefined;const name=(scenes[target] as {stage?:string}).stage;return name?artOf(target)[name+suffix]:undefined;};
+  const stagesOf=(floorChapter:number,sheetChapter:number|undefined)=>({floor:stageOf(floorChapter),sheetFloor:stageOf(sheetChapter),sheetFace:stageOf(sheetChapter,'-sheet')});
   const upright=moving&&turn.direction===-1?backdropOf(turn.to,turn.incoming)??backdropOf(chapter,textures):backdropOf(chapter,textures);
   const sheet=moving?(turn.direction===1?backdropOf(turn.to,turn.incoming):backdropOf(chapter,textures)):undefined;
   return <><Camera standing/><DeskFog/><DeskBackdrop materials={materials}/>
    <StandingCase materials={materials} backdrop={upright} turnBackdrop={sheet} turning={moving?turn.direction:0} progress={progress} stand={stand}
-    floor={paperOf(moving&&turn.direction===1?turn.to:chapter)} sheetFloor={moving?paperOf(turn.direction===1?turn.from:turn.to):undefined}/>
+    floor={paperOf(moving&&turn.direction===1?turn.to:chapter)} sheetFloor={moving?paperOf(turn.direction===1?turn.from:turn.to):undefined} stages={stagesOf(moving&&turn.direction===1?turn.to:chapter,moving?(turn.direction===1?turn.from:turn.to):undefined)}/>
    {/* One group, keyed by chapter: when a turn ends the incoming cards stay mounted and become the spread's own (no rebuild). */}
    <group>{standingCards(chapter,textures,{hinges,onClick:interact,turn,progress})}
    {turn&&turn.to!==chapter&&standingCards(turn.to,turn.incoming,{hinges,onClick:interact,turn,progress},true)}</group>
@@ -256,7 +293,7 @@ function FramePacer({onDpr}:{onDpr:(dpr:number)=>void}){
    else drawnUnderIntro=false;
    // Still (reading a spread, nothing animating): nothing is drawn, except a few frames after anything changes (the story state, the
    // canvas size) and one a second as a safety net. Nothing on a still spread moves since the halos replaced the sway.
-   const still=(phase==='EXPLORING'||phase==='ENDING')&&!gsap.globalTimeline.getChildren(false,true,true).length;
+   const still=(phase==='EXPLORING'||phase==='ENDING'||phase==='PROLOGUE')&&!gsap.globalTimeline.getChildren(false,true,true).length;
    const canvas=get().gl.domElement,size=canvas.width*10000+canvas.height;if(size!==lastSize){lastSize=size;dirty=3;}
    if(still&&dirty<=0&&now-last<HEARTBEAT_MS)return;
    if(dirty>0)dirty--;

@@ -1,9 +1,10 @@
-# 2·3장 컨셉 초안과 GPT 이미지 프롬프트
+# 2·3장 컨셉과 GPT 이미지 프롬프트
 
 1장(해질녘 당근밭)과 같은 방식이다. 판마다 GPT로 그림을 만들어 PNG로 받는다. 투명 배경이고 배경판만 불투명이다.
 
-- 넣을 곳: `art-src/gpt/page-2/`, `art-src/gpt/page-3/`
-- 받은 뒤 여기서 할 일: `scripts/prepare-gpt-art.mjs`로 오림 테두리를 두르고 WebP로 바꾼 다음, 위치·크기를 잡는다(웹과 휴대폰 세워 보기 둘 다).
+- 넣을 곳: `art-src/gpt/page-2/`
+- 3장은 `docs/page-3-kitchen-v2.md`가 대신한다(이 문서의 3장 옛 구성은 지웠다).
+- 받은 뒤 여기서 할 일: `scripts/prepare-gpt-art.mjs page-2`로 오림 테두리를 두르고 WebP로 바꾼 다음, 위치·크기를 잡는다(웹과 휴대폰 세워 보기 둘 다).
 
 세 장의 시간대를 다르게 해서 넘길 때마다 분위기가 바뀌게 했다.
 
@@ -13,129 +14,80 @@
 | 2장 | 늦은 오전 바닷가 마을 | 청록 바다, 밝은 해 |
 | 3장 | 저녁 부엌 | 따뜻한 등불 |
 
-시간대는 바꿔도 된다. 바꾸면 공통 스타일의 빛 문장만 고치면 된다.
-
-**누르는 사물은 모두 한쪽 책장 안에만 둔다.** 표의 위치가 그렇게 잡혀 있다. 좌표는 펼친 책 기준이고(가로 −3.55~3.55, 깊이 −2.3~2.3), 1장처럼 큼직하게 채우는 구도다.
+**누르는 사물은 모두 한쪽 책장 안에만 둔다.** 좌표는 펼친 책 기준이고(가로 −3.55~3.55, 깊이 −2.3~2.3), 1장처럼 큼직하게 채우는 구도다.
 
 ## 공통 스타일
 
-1장과 같은 문장이다. 빛 문장만 장마다 바꾼다.
-
 ```text
 Vintage mid-century European pop-up book illustration, hand-painted gouache on thick matte card stock, rich layered colors,
-visible brush texture and fine paper grain, warm natural palette, {LIGHT}, detailed and grown-up storybook realism —
-not cute, not chibi, not cartoon, no outlines, no text, no lettering, no signage words. Front-facing straight-on view of a single
-standing die-cut piece.
+visible brush texture and fine paper grain, warm natural palette, bright late-morning sunlight from the left with crisp soft shadows,
+turquoise sea and whitewashed walls, carrot orange accents, detailed and grown-up storybook realism — not cute, not chibi,
+not cartoon, no outlines, no text, no lettering, no signage words, no numbers.
 ```
 
-- 2장 `{LIGHT}`: `bright late-morning sunlight from the left with crisp soft shadows, turquoise sea and whitewashed walls, carrot orange accents`
-- 3장 `{LIGHT}`: `warm evening lamplight from above-left, cozy amber glow, deep blue dusk outside the window, carrot orange accents`
+(가게 간판 글자는 실제 가게 것이라 아래 가게 프롬프트에서만 예외로 그대로 둔다.)
 
 ### 판마다 붙일 기술 조건
 
-- **배경판을 뺀 나머지:** `isolated single die-cut piece, fully transparent background (PNG with alpha), no drop shadow, no border, edges follow the silhouette`
-- **배경판:** `one flat, continuous full-bleed opaque backdrop, no paper edge, no border; keep important shapes in the middle horizontal band; the top 25% is quiet sky or wall and the bottom 15% is quiet ground or floor so they can be cropped`
+- **투명 그림:** `isolated single die-cut piece, fully transparent background (PNG with alpha), no drop shadow, no glow, no border, edges follow the silhouette`
+- **사람:** `realistic proportions, a natural unposed stance, full body from head to feet, soft natural expression`을 같이 붙이고, 사람 그림은 한 대화에서 이어서 받아야 같은 붓 질감과 얼굴 말투가 나온다.
 - **해상도:** 1024×1024, 1536×1024, 1024×1536 가운데 비율에 가까운 것.
 
 ---
 
-## 2장 — 02 PEOPLE WHO COOK · 구좌를 맛보는 다채로운 방식
+## 2장 — 02 PEOPLE WHO COOK · 구좌를 맛보는 다채로운 방식 (v4)
 
-**장면.** 늦은 오전, 구좌 바닷가 마을 골목이다(평대·세화 같은 해안 마을).
+**바닥 수정(2026-10-22):** 바닥 길이 일직선이던 것을 건물 사이를 굽이쳐 돌아 앞으로 넓어지는 길로 바꿨다(`scripts/street-floor.mjs`, 가장자리는 울퉁불퉁하게 종이로 스며듦). 인쇄된 글씨(제목·부제·쪽 번호) 자리는 돌이 완전히 사라지고 맨 종이가 되게 해서 라벨 상자 없이 바닥과 이어지게 했다(`scripts/create-pages.mjs`의 `spreadClear`). 마노아를 앞으로 당기고(z .35) 버거캐럿을 더 길게(가로 1.7 × 세로 2.55) 했다.
 
-- 뒤로는 청록 바다와 낮은 집들, 멀리 오름이 보인다.
-- 골목을 따라 구좌 당근으로 요리하는 식당 세 곳이 있다.
-- 양옆의 팽나무와 동백나무가 무대 막처럼 감싸고, 앞에는 밭담과 당근 상자를 실은 손수레가 있다.
+**v4 적용(2026-10-21 저녁):** 가게 그림을 v4(`*-v4.png`)로 바꿨다. 버거캐럿은 세로 그림(가로:세로 약 2:3)이라 가장 키가 크고(가로 1.6 × 세로 2.4), 마노아 2.3, 소농로드 3.1이다. 웹은 버거캐럿 왼쪽 끝 · 마노아 그 안쪽 뒤 · 소농로드 오른쪽, 휴대폰은 양옆 가게가 앞 · 마노아 가운데 뒤.
 
-식당 이름과 간판은 아직 정해지지 않았다(웹진 원고 대기). 그래서 글자 없는 외관으로 구분한다.
+**수정(2026-10-21 오후):** 바닥을 더 단순하게 바꿨다. 옆의 꽃과 돌담을 빼고, 작은 자갈만 가운데로 좁아지는 길(가까운 쪽이 넓고 먼 쪽이 좁음)로 파피루스 위에 깔았다(`scripts/street-floor.mjs`가 `village-floor.png`의 자갈 부분만 줄여 이음매 없이 이어 붙임). 가게는 서로 겹쳐도 되게 키웠다(소농로드 3.35, 버거캐럿 2.1, 마노아 2.3).
 
-| # | 판 | 파일 이름 | 위치 x / 깊이 z | 크기(가로×세로) | 누름 |
+**적용(2026-10-21):** 받은 v3 그림으로 적용했다. 길은 카드로 세우지 않고 **바닥에 직접 그렸다**: `village-floor.png`(위에서 본 돌길)를 웹은 2장의 인쇄 면(`scripts/create-pages.mjs 1`)에, 휴대폰은 납작한 바닥 면(`village-floor-stage*`, `src/story.ts`의 `stage`)에 입혔다. 이유는 길이 책장 바닥이라서 카드로 세우면 벽처럼 서 있게 되고, 바닥에 그리면 가게와 사람이 그 위에 서는 구도가 되기 때문이다. `village-road-front.png`는 쓰지 않는다. 가게는 `buggercarrot-left-v3`(왼쪽 끝), `manoa-turn-v3`(왼쪽 안쪽), `sonongroad-right-v3`(오른쪽)를 쓴다. 휴대폰은 양옆 가게를 앞에, 마노아를 가운데 뒤에 둔다. 아래 표와 가게 프롬프트는 이 그림을 받기 전 기록이다.
+
+**바뀐 점(2026-10-21):** 가게 세 곳을 정면이 아니라 **길 가운데를 향해 기울여** 그린다. 책장 바닥이 길이고, 양옆 건물이 모두 가운데 길 쪽으로 모여드는 한 점 투시 거리 구도다. 그림 평면 카드는 돌릴 수 없으니, 각 가게를 **기울어진 모습으로 다시 그려 받는다.** 길 그림(`village-road`)은 쓰지 않는다. 책장 바닥 가운데의 빈 곳이 길이고, 그 끝에 뒤 배경의 바다 마을이 보인다.
+
+- **그대로 쓰는 것:** 뒤 배경(`village-back`), 여행자(`char-traveler`), 유모차 가족(`family-walk`).
+- **다시 그릴 것:** 가게 3곳(원본 `buggercarrot.png`, `manoa.png`, `sonongroad.png`을 참고 이미지로 붙여서 각도만 바꿔 받는다).
+
+**장면.** 늦은 오전, 거리 한가운데에 서서 길 끝의 바다를 본다. 왼쪽 끝에는 버거캐럿이 키 큰 모습으로 오른쪽(길)을 향해 서 있고, 그 뒤쪽 안쪽에는 마노아가 살짝 길 쪽으로 틀어 서 있다. 오른쪽에는 소농로드가 크게 왼쪽(길)을 향해 서 있다. 두 건물 사이 가운데가 길이고, 그 길을 여행자와 유모차 가족이 걸어 나온다.
+
+| # | 판 | 파일 이름 | 위치 x / 깊이 z (대략) | 크기(가로×세로) | 누름 |
 |---|---|---|---|---|---|
-| 1 | 바닷가 마을 배경 | `village-back.png` | 0 / −1.7 | 6.9 × 2.7 | – |
-| 2 | 팽나무 (왼쪽 앞, 장면 감쌈) | `village-tree-left.png` | −2.5 / 1.75 | 2.0 × 3.0 | – |
-| 3 | 동백나무 (오른쪽 앞) | `village-tree-right.png` | 2.55 / 1.75 | 1.8 × 2.6 | – |
-| 4 | 돌담 골목 띠 | `village-lane.png` | 0 / 0 | 6.8 × 1.5 | – |
-| 5 | **식당 A** — 현무암 돌집을 고친 식당 | `shop-a.png` | −1.75 / −0.6 | 2.2 × 1.8 | 식당 A 이야기 |
-| 6 | **식당 B** — 흰 벽 카페, 큰 창 | `shop-b.png` | 1.6 / −0.7 | 2.2 × 1.8 | 식당 B 이야기 |
-| 7 | **식당 C** — 나무 비스트로, 앞치마 두른 요리사 | `shop-c.png` | 1.2 / 0.9 | 1.7 × 1.6 | 식당 C 이야기 |
-| 8 | 여행자 (배낭, 지도) | `char-traveler.png` | −1.0 / 0.9 | 0.8 × 1.6 | – |
-| 9 | 앞 밭담 + 당근 상자 실은 손수레 | `village-front.png` | −0.3 / 1.5 | 3.0 × 0.9 | – |
+| 1 | 바닷가 마을 배경(기존) | `village-back.png` | 0 / −1.7 | 6.8 × 2.7 | – |
+| 2 | **버거캐럿** — 왼쪽 끝, 길(오른쪽)을 향해 기울임 | `buggercarrot-left.png`(새로) | −2.6 / 0.1 | 1.9 × 2.1 | 식당 C 이야기(`cook-03`) |
+| 3 | **마노아** — 왼쪽 안쪽, 길 쪽으로 살짝 틂 | `manoa-turn.png`(새로) | −1.2 / −0.9 | 2.3 × 1.5 | 식당 B 이야기(`cook-02`) |
+| 4 | **소농로드** — 오른쪽, 길(왼쪽)을 향해 기울임 | `sonongroad-right.png`(새로) | 1.9 / −0.2 | 3.3 × 2.2 | 식당 A 이야기(`cook-01`) |
+| 5 | 여행자(기존) | `char-traveler.png` | −0.9 / 1.6 | 0.7 × 1.5 | – |
+| 6 | 유모차 어머니와 5살 딸(기존) | `family-walk.png` | 0.4 / 2.0 | 1.8 × 1.55 | – |
 
-### 2장 판별 프롬프트
+- **가운데 길:** 마노아 오른쪽 끝(약 −0.1)과 소농로드 왼쪽 끝(약 0.25) 사이를 열어 두어, 그 틈으로 뒤 배경의 바다가 보이게 한다. 눌러지는 사물은 모두 한쪽 책장 안에 있다(버거캐럿·마노아는 왼쪽, 소농로드는 오른쪽).
+- **가게와 식당 연결(추정):** 소농로드 → 식당 A, 마노아 → 식당 B, 버거캐럿 → 식당 C. 다르면 알려 주면 바꾼다.
+- 휴대폰에서는 소농로드와 버거캐럿을 뒷줄 양쪽에, 마노아를 가운데 앞쪽에 놓는 식으로 길을 열고, 그림이 온 뒤 화면에서 잡는다.
+- 쓰지 않는 기존 가게 정면 그림은 `_archive`로 옮긴다(`village-road`는 파일만 남기고 쓰지 않는다).
 
-1. **배경** (1536×1024)
-   `Wide panoramic view of a Gujwa seaside village on Jeju Island in late morning: a turquoise and emerald sea with white surf on black lava rocks, low whitewashed and basalt-stone houses with colorful tin roofs (teal, red, orange), a few wind turbines standing in the shallow sea, a soft green volcanic cone (oreum) far behind, a clear blue sky with small white clouds.`
-2. **팽나무 왼쪽** (1024×1536)
-   `A large old Jeju village hackberry tree (paengnamu) with a broad twisted trunk and spreading branches, light green winter-bare and leafy mix, a small black basalt wall around its roots, painted as a tall standing cut-out; dense trunk on the LEFT, branches reaching to the right with open space along the right edge.`
-3. **동백나무 오른쪽** (1024×1536)
-   `A dense Jeju camellia tree in bloom with glossy dark green leaves and many red camellia flowers, a few fallen petals at its base, painted as a tall standing cut-out; dense on the RIGHT, open toward the left.`
-4. **돌담 골목 띠** (1536×1024, 가로로 길게 잘라 씀)
-   `Long horizontal strip of a narrow Jeju village lane lined with black porous basalt stone walls (batdam), a few small carrot patches and potted herbs along the walls, warm sunlit paving stones.`
-5. **식당 A** (1536×1024)
-   `A small restaurant in a renovated traditional Jeju basalt stone house with a thatched-style low roof replaced by dark tiles, a tangerine-orange wooden door, a small wooden bench and two outdoor tables with bowls of carrot dishes, a basket of fresh carrots by the door. No readable text.`
-6. **식당 B** (1536×1024)
-   `A bright whitewashed seaside café with a large front window showing glass bottles of carrot juice and a counter, an orange-and-white striped awning, potted plants, a bicycle leaning on the wall. No readable text.`
-7. **식당 C** (1024×1024)
-   `A cozy wooden bistro corner with warm light inside, a cook in a linen apron standing at the door holding a plate of a carrot dish, hanging dried herbs and a crate of carrots beside the door, realistic proportions. No readable text.`
-8. **여행자** (1024×1536)
-   `A young Korean woman traveler with a canvas backpack and a paper map, looking toward the village with curiosity, casual spring clothes, sneakers, realistic proportions, full body, three-quarter view.`
-9. **앞 밭담 + 손수레** (1536×1024)
-   `A low black basalt stone wall with small wildflowers at its foot and an old wooden hand cart loaded with crates of fresh carrots in front of it, a straw hat resting on the crates.`
+### 2장 가게 프롬프트 (참고 이미지를 붙여서)
 
----
+가게마다 **해당 원본 PNG를 첨부하고** 아래 문장을 쓴다. 건물의 디자인, 색, 재질, 간판과 포스터의 글자(소농로드, BURGER CARROT·버거캐럿, 마노아의 곰 로고)는 원본 그대로 두고 **보는 각도만** 바꾼다. 세 장을 한 대화에서 이어서 받는다.
 
-## 3장 — 03 MENU & RECIPE · 구좌를 요리하는 가장 쉬운 방식
+공통 문장 (각 가게 문장 뒤에 붙임):
 
-**장면.** 저녁 부엌이다.
+```text
+Keep the building's design, materials, colors, lighting and every piece of signage, lettering, logo and poster exactly as in the attached image; change only the viewing angle. The same hand-painted gouache storybook style with visible brush texture, bright late-morning sunlight from the left, detailed grown-up realism, not cartoon, not 3D-rendered. Show only the building itself with a short strip of its ground at the foot, no road, no sidewalk beyond that strip, no people, no sky, no background. One isolated die-cut piece on a fully transparent background (PNG with alpha), no drop shadow, no glow, no border, edges following the silhouette. Canvas 1536×1024.
+```
 
-- 뒤로는 선반과 창이 있고, 창밖은 짙은 파랑 저녁 바다다.
-- 가운데에 긴 나무 식탁이 놓여 있다.
-- 양옆의 말린 허브·당근 다발 걸이와 옹기·냄비 선반이 장면을 감싼다.
-- **왼쪽 책장은 집에서 만드는 레시피**(라페·수프·피클), **오른쪽 책장은 식당 메뉴**(대표 접시·주스·버거)다. 눌러 열리는 이야기와 짝이 맞는다.
-
-대표 메뉴 세 가지는 웹진 카드뉴스가 확정되면 그림을 바꿀 수 있다. 지금은 식당 A·B·C의 자리 표시 메뉴다.
-
-| # | 판 | 파일 이름 | 위치 x / 깊이 z | 크기(가로×세로) | 누름 |
-|---|---|---|---|---|---|
-| 1 | 부엌 벽·선반·창 (배경) | `kitchen-back.png` | 0 / −1.7 | 6.9 × 2.7 | – |
-| 2 | 말린 허브·당근 다발 걸이 (왼쪽 앞) | `kitchen-left.png` | −2.55 / 1.7 | 1.6 × 2.8 | – |
-| 3 | 옹기·냄비 선반 (오른쪽 앞) | `kitchen-right.png` | 2.6 / 1.7 | 1.6 × 2.6 | – |
-| 4 | 긴 나무 식탁 | `kitchen-table.png` | 0 / −0.4 | 6.8 × 1.3 | – |
-| 5 | **당근 라페** 볼 | `dish-rape.png` | −2.0 / 0.4 | 1.3 × 1.0 | 레시피: 당근 라페 |
-| 6 | **당근 수프** 냄비와 그릇 | `dish-soup.png` | −0.85 / 0.2 | 1.4 × 1.2 | 레시피: 당근 수프 |
-| 7 | **당근 피클** 유리병 | `dish-pickle.png` | −1.5 / 1.2 | 0.8 × 1.2 | 레시피: 당근 피클 |
-| 8 | **대표 당근 접시** (식당 A) | `dish-plate.png` | 0.9 / 0.2 | 1.4 × 1.0 | 메뉴: 당근이 주연인 한 접시 |
-| 9 | **당근 주스** 잔과 병 (식당 B) | `dish-juice.png` | 2.0 / 0.4 | 0.9 × 1.3 | 메뉴: 처음 만나는 당근의 맛 |
-| 10 | **당근 버거** (식당 C) | `dish-burger.png` | 1.45 / 1.2 | 1.2 × 1.1 | 메뉴: 구좌 당근, 새로운 메뉴가 되다 |
-| 11 | 앞 도마: 당근·칼·레시피 카드 | `kitchen-front.png` | 0 / 1.6 | 2.4 × 0.7 | – |
-
-### 3장 판별 프롬프트
-
-1. **배경** (1536×1024)
-   `A warm Jeju home kitchen wall at evening: open wooden shelves with ceramic bowls, glass jars of pickles and spices, copper pots, a wide window in the middle showing a deep blue dusk sea with a tiny lighthouse light, pendant lamps glowing amber, white plaster wall with a few tiles.`
-2. **허브·당근 걸이 왼쪽** (1024×1536)
-   `A tall wooden kitchen rack with bunches of dried herbs and fresh carrots with green tops hanging from hooks, a woven basket on its lower shelf, painted as a tall standing cut-out; dense on the LEFT, open toward the right.`
-3. **옹기·냄비 선반 오른쪽** (1024×1536)
-   `A tall rustic shelf with Korean earthenware jars (onggi), stacked cast-iron and enamel pots, a wooden ladle and a linen towel, painted as a tall standing cut-out; dense on the RIGHT, open toward the left.`
-4. **식탁** (1536×1024, 가로로 길게 잘라 씀)
-   `Long horizontal strip of a solid wooden farmhouse dining table seen straight-on at table height, a linen runner with a red stripe across it, a few scattered carrot tops and herb leaves, warm lamplight.`
-5. **당근 라페** (1024×1024)
-   `A shallow ceramic bowl of French carrot râpé: finely julienned bright orange carrots glossy with dressing, flecks of parsley and whole-grain mustard, a fork resting on the rim.`
-6. **당근 수프** (1536×1024)
-   `A small enamel pot and a white bowl of smooth bright orange carrot soup with a swirl of cream and herbs on top, a little steam rising, a wooden spoon beside it.`
-7. **당근 피클** (1024×1536)
-   `A tall glass jar of carrot pickles: carrot sticks standing in clear brine with peppercorns and a bay leaf, a linen cloth tied over the lid with string.`
-8. **대표 당근 접시** (1536×1024)
-   `A restaurant-style plate where roasted whole Jeju carrots are the star: glazed carrots with their green tops, a smear of sauce, herbs and seeds, on a speckled ceramic plate.`
-9. **당근 주스** (1024×1536)
-   `A tall glass of fresh carrot juice with a few drops on the glass and a small glass bottle of carrot juice beside it, a slice of tangerine on the rim.`
-10. **당근 버거** (1024×1024)
-   `A hearty burger with layers of shredded carrot slaw and roasted carrot in a toasted bun, on a small wooden board with a few carrot fries.`
-11. **앞 도마** (1536×1024, 가로로 길게 잘라 씀)
-   `A wooden cutting board seen straight-on with whole and half-chopped carrots, a kitchen knife, a small bowl of salt and a handwritten recipe card shown blank (no writing).`
+1. **버거캐럿 (왼쪽 끝)** → `buggercarrot-left.png`
+   `Redraw the attached storefront as the building at the LEFT end of a narrow village street, seen from the middle of the street in strong one-point perspective. The building is turned about 35 degrees so its front facade faces to the right, toward the street's center line, and is foreshortened: the near (left) end of the facade is taller and wider, the far (right) end is shorter and narrower, and the roofline, the door top and the sign band all slope down toward a vanishing point far to the right at about 55% of the image height. The entrance door with its orange glass panels is on the facade that faces the street. Only the street-facing facade and a sliver of the roof edge are visible; the outer left side wall is not visible.`
+2. **마노아 (왼쪽 안쪽, 살짝 틂)** → `manoa-turn.png`
+   `Redraw the attached café as a building a little farther down the same street on the LEFT side, mostly facing the viewer but turned about 15 degrees to the right toward the street's center line, with gentle perspective: the left end of the facade is slightly taller than the right end, and the roofline and the window and door tops slope down gently toward a vanishing point to the right at about 55% of the image height. Both the large window and the open entrance remain clearly visible.`
+3. **소농로드 (오른쪽)** → `sonongroad-right.png`
+   `Redraw the attached stone restaurant as the large building on the RIGHT side of a narrow village street, seen from the middle of the street in strong one-point perspective. The building is turned about 35 degrees so its front facade, with its covered porch, the string lights, the door and both windows, faces to the left toward the street's center line, and is foreshortened: the near (right) end is taller and wider, the far (left) end is shorter, and the roof, the porch roof and the window tops slope down toward a vanishing point far to the left at about 55% of the image height. The side wing with the stove chimney at the far end is hidden behind the facade; the porch with the green chairs and table stays visible at the foot.`
 
 ## 받은 뒤
 
-- 같은 폴더 구조로 넣어 주시면 1장처럼 처리한다.
-- 지금 2·3장에 있는 옛 그림(`village-*`, `shop-*`, `kitchen-*`, `dish-*`, `char-traveler`)은 같은 이름의 새 그림으로 바뀐다.
-- 휴대폰 세워 보기 위치도 그림이 온 뒤 장마다 직접 잡는다.
+- **파일:** 새로 받을 그림은 `buggercarrot-left.png`, `manoa-turn.png`, `sonongroad-right.png` 3장이다(원본 `buggercarrot.png`, `manoa.png`, `sonongroad.png`은 그대로 둔다). `art-src/gpt/page-2/`에 넣는다.
+- **여기서 할 일:**
+  - `scripts/prepare-gpt-art.mjs`의 2장 목록에서 `village-road`와 옛 정면 가게 3장을 빼고 새 3장을 넣는다(`clean`, 발밑 접촉 그림자 `shadow`).
+  - `src/story.ts`의 2장 레이어를 위 표대로 다시 짜고, 누르는 사물 셋은 새 가게 3장(`cook-01~03`)에 연결한다.
+  - 웹과 휴대폰 위치를 둘 다 잡고, 가운데 길 틈으로 뒤 배경의 바다가 보이는지, 여행자와 가족이 가게를 가리지 않는지를 화면에서 본다. `tests/`의 2장 관련 테스트도 같이 고친다.
+- **지금은 코드를 바꾸지 않았다.** 지금 화면은 이전 배치(소농로드 왼쪽, 버거캐럿 오른쪽)가 그대로이고, 새 그림이 오면 한 번에 바꾼다.
