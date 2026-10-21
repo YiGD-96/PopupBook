@@ -37,10 +37,12 @@ export function standingTimeline(t:number){
 const STAND_UP=new Quaternion().setFromRotationMatrix(new Matrix4().makeBasis(new Vector3(0,1,0),new Vector3(0,0,1),new Vector3(1,0,0)));
 const STAND_POSE=new Quaternion().setFromEuler(new Euler(-.48,-.15,0,'YXZ')).multiply(STAND_UP);
 const LIE_POSE=new Quaternion();
-/** The closed book is shown larger than the open one, so the cover fills more of the portrait frame. */
-const STAND_SCALE=1.2;
-/** The book turns about its second board's centre: where that lies in the live book, and where it stands while closed. */
-const PIVOT_LYING=new Vector3(0,BOOK_HINGE_Y,BOOK_BOARD.x),PIVOT_STANDING=new Vector3(.1,1.25,1.5);
+/** The closed book's size (it is still shown larger than the open one: it stands nearer the camera). */
+const STAND_SCALE=1;
+/** The book turns about its second board's centre: where that lies in the live book, and where it stands while closed. Standing, its
+ *  tail rests on the desk (lower, its bottom third sank under the desk and the cover read cut off), and it stands nearer the camera, on
+ *  the line through the frame's centre: the whole cover sits mid-frame, well inside the band every phone shows of the 9:20 film. */
+const PIVOT_LYING=new Vector3(0,BOOK_HINGE_Y,BOOK_BOARD.x),PIVOT_STANDING=new Vector3(.1,2.15,3.07);
 
 export function StandingFilmCamera({width,height}:{width:number;height:number}){
  const {camera,scene}=useThree();
@@ -107,7 +109,8 @@ export type StandingAssets={scenery:Record<string,Texture>;title:Texture;backs:T
 /** The first spread's art, the title page and the paintings on the swinging sheets: the last chapter's first, so the last sheet to land
  *  carries the first spread's backdrop, which the live book shows on its upright page. */
 export async function loadStandingAssets():Promise<StandingAssets>{
- const backdrop=(chapter:number)=>loadTexture(scenes[chapter].layers.find(isBackdrop)!.src);
+ // The phone's own picture of a backdrop where it has one (`phoneSrc`), as the live standing book shows it.
+ const backdrop=(chapter:number)=>{const layer=scenes[chapter].layers.find(isBackdrop)!;return loadTexture(layer.phoneSrc??layer.src);};
  const chapters=Array.from({length:STANDING_INTRO_PAGE_COUNT},(_,i)=>(STANDING_INTRO_PAGE_COUNT-1-i)%scenes.length);
  const [scenery,title,paintings]=await Promise.all([loadScene(0),titlePage(),Promise.all(chapters.map(backdrop))]);
  return {scenery,title,backs:paintings.map(cropBackdrop),chapters};
@@ -120,11 +123,13 @@ export function StandingFilm({materials,assets,t,width,height}:{materials:BookMa
  const upright=landed?assets.backs[landed-1]:assets.title;
  // Each sheet lifting uncovers its own spread's paper tone (src/story.ts `paper`), the live book's flat page once the first spread's lifts.
  const paperOf=(i:number)=>i<0?undefined:(scenes[assets.chapters[i]] as {paper?:string}).paper,started=f.sheets.filter(q=>q>0).length;
- const cards=scenes[0].layers.filter(layer=>!isBackdrop(layer));
+ const cards=scenes[0].layers.filter(layer=>!isBackdrop(layer)&&!layer.phoneHidden);
+ // The first spread's own printed floor (src/story.ts `stage`), as the live book's flat page shows it, once its sheet has lifted off.
+ const stageName=(scenes[0] as {stage?:string}).stage,floor=stageName&&started>0&&assets.chapters[started-1]===0?assets.scenery[stageName]:undefined;
  return <><StandingFilmCamera width={width} height={height}/><DeskFog background/><Desk materials={materials}/>
   <group position={pivot} quaternion={turn} scale={scale}><group position={[0,-BOOK_HINGE_Y,-BOOK_BOARD.x]}><group rotation={[0,-Math.PI/2,0]}>
    <Board materials={materials} x={BOOK_BOARD.x}/><PaperBlock materials={materials} x={BLOCK_X}/>
-   {materials.endpaper&&<PrintedPage texture={materials.endpaper} edge={materials['paper-edge']} swell={f.swell} tint={paperOf(started-1)}/>}
+   {materials.endpaper&&<PrintedPage texture={floor??materials.endpaper} edge={materials['paper-edge']} swell={f.swell} tint={floor?undefined:paperOf(started-1)}/>}
    <BindingDetails materials={materials}/><FoldingSpine materials={materials} fold={f.open*OPEN_TO/Math.PI}/>
    <FilmStandingHalf materials={materials} angle={-Math.PI+f.open*OPEN_TO} swell={f.swell} page={upright} height={1+(UPRIGHT_SCALE-1)*f.open} thin={f.open}/>
    {f.sheets.map((q,i)=>q>0&&q<1?<FilmSheet key={i} paper={materials.endpaper} paperTint={paperOf(i-1)} backdrop={assets.backs[i]} q={q} lift={.008+(STANDING_INTRO_PAGE_COUNT-i)*.004}/>:null)}

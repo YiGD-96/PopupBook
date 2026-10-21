@@ -10,9 +10,16 @@
  */
 import gsap from 'gsap';
 import { CanvasTexture, DoubleSide, MeshBasicMaterial, SRGBColorSpace, type Texture } from 'three';
-import type { Layer } from './story';
+import { scenes, type Layer } from './story';
 
-export const HALO={color:'#ffc768',size:192,pad:.1,spread:.018,boost:1.7,peak:1,rest:.4,seen:.18};
+// `reach`: the least width of the rim in world units, so a small card (the fly swatter on the phone) still glows visibly.
+export const HALO={color:'#ffc768',size:192,pad:.1,spread:.018,reach:.05,boost:1.7,peak:1,rest:.4,seen:.18};
+/** A spread's own glow (src/story.ts `halo`): a deeper colour, a stronger rim and rest where the default would vanish into its painting. */
+export type HaloTone={color:string;boost:number;rest:number;seen:number};
+export function haloTone(layer:Layer):HaloTone{
+ const scene=scenes.find(s=>(s.layers as Layer[]).includes(layer)) as {halo?:Partial<HaloTone>}|undefined;
+ return {color:HALO.color,boost:HALO.boost,rest:HALO.rest,seen:HALO.seen,...scene?.halo};
+}
 export type Halo={material:MeshBasicMaterial;texture:CanvasTexture;scale:[number,number]};
 const halos=new WeakMap<Texture,Halo>();
 /** Stories already opened (their cards keep a fainter rim). */
@@ -26,7 +33,8 @@ const making=new WeakMap<Texture,Promise<Halo>>();
  * shrunk to the halo's size by the browser (createImageBitmap resize, off the main thread where supported), so the work here is on a
  * ~200 px image: a couple of milliseconds instead of reading back a 1440 px picture.
  */
-export function loadHalo(texture:Texture):Promise<Halo>{
+/** `extent`: the card's larger side in world units, so the rim is never thinner than `reach` (HALO.reach, or the card's own `glow`). */
+export function loadHalo(texture:Texture,tone:Pick<HaloTone,'color'|'boost'>=HALO,extent=Infinity,reach=HALO.reach):Promise<Halo>{
  const known=halos.get(texture);if(known)return Promise.resolve(known);
  const pending=making.get(texture);if(pending)return pending;
  const promise=(async()=>{
@@ -34,12 +42,18 @@ export function loadHalo(texture:Texture):Promise<Halo>{
   const k=HALO.size/Math.max(image.width,image.height),w=Math.max(1,Math.round(image.width*k)),h=Math.max(1,Math.round(image.height*k));
   let source:CanvasImageSource=image;
   if(typeof createImageBitmap==='function')try{source=await createImageBitmap(image,{resizeWidth:w,resizeHeight:h,resizeQuality:'medium'});}catch{/* drawn full size below */}
-  const pad=Math.round(HALO.size*HALO.pad),W=w+2*pad,H=h+2*pad;
-  // The silhouette in the glow colour, widened a little all round so the glow reaches out past the card's paper edge.
-  const shape=canvas(W,H);shape.g.drawImage(source,pad,pad,w,h);shape.g.globalCompositeOperation='source-in';shape.g.fillStyle=HALO.color;shape.g.fillRect(0,0,W,H);
+  const spread=Math.max(HALO.spread,reach/extent),pad=Math.round(HALO.size*Math.max(HALO.pad,spread*3)),W=w+2*pad,H=h+2*pad;
+  // The silhouette in the glow colour, widened a little all round so the glow reaches out past the card's paper edge. Only the card's
+  // solid paper counts: a soft shadow baked under a card's foot (the farmer's) would otherwise glow as a blob on the ground.
+  const shape=canvas(W,H);shape.g.drawImage(source,pad,pad,w,h);
+  const solid=shape.g.getImageData(0,0,W,H);for(let i=3;i<solid.data.length;i+=4)solid.data[i]=solid.data[i]>=128?255:0;shape.g.putImageData(solid,0,0);
+  shape.g.globalCompositeOperation='source-in';shape.g.fillStyle=tone.color;shape.g.fillRect(0,0,W,H);
   if('close' in source&&source!==image)(source as ImageBitmap).close();
-  const glow=canvas(W,H),reach=HALO.size*HALO.spread;
-  for(let i=0;i<12;i++){const a=i/12*Math.PI*2;glow.g.drawImage(shape.c,Math.cos(a)*reach,Math.sin(a)*reach);}
+  const glow=canvas(W,H),offset=HALO.size*spread;
+  // The silhouette itself and rings of copies at a third, two thirds and the whole of the offset: a ring at the full offset alone left an
+  // empty band right next to thin parts (the swatter's handle, the carrot tops), so the glow seemed to float apart from the card.
+  glow.g.drawImage(shape.c,0,0);
+  for(const k of [1/3,2/3,1])for(let i=0;i<12;i++){const a=(i+k)/12*Math.PI*2;glow.g.drawImage(shape.c,Math.cos(a)*offset*k,Math.sin(a)*offset*k);}
   // Softened by shrinking and growing back (a blur every browser draws fast, older iOS Safari included); drawn three times over so the
   // glow stays full near the edge and fades outward.
   const blurred=canvas(W,H);blurred.g.imageSmoothingQuality='high';
@@ -49,7 +63,7 @@ export function loadHalo(texture:Texture):Promise<Halo>{
    for(let i=0;i<(factor===3?2:1);i++)blurred.g.drawImage(small.c,0,0,W,H);
   }
   // Blurring thins the glow; strengthen it so the rim reads clearly next to the card.
-  const pixels=blurred.g.getImageData(0,0,W,H);for(let i=3;i<pixels.data.length;i+=4)pixels.data[i]=Math.min(255,pixels.data[i]*HALO.boost);blurred.g.putImageData(pixels,0,0);
+  const pixels=blurred.g.getImageData(0,0,W,H);for(let i=3;i<pixels.data.length;i+=4)pixels.data[i]=Math.min(255,pixels.data[i]*tone.boost);blurred.g.putImageData(pixels,0,0);
   const map=new CanvasTexture(blurred.c);map.colorSpace=SRGBColorSpace;map.flipY=texture.flipY;
   const material=new MeshBasicMaterial({map,transparent:true,opacity:0,depthWrite:false,side:DoubleSide,forceSinglePass:true});
   material.visible=false;
@@ -65,8 +79,8 @@ export const idle=()=>new Promise<void>(resolve=>{
  if(request)request(()=>resolve(),{timeout:600});else window.setTimeout(resolve,120);
 });
 /** Makes a halo in idle time, then calls back. */
-export function makeHaloSoon(texture:Texture,ready:(halo:Halo)=>void){void idle().then(()=>loadHalo(texture)).then(ready).catch(()=>{});}
-const restOf=(layer:Layer)=>layer.detail&&seenStories.has(layer.detail)?HALO.seen:HALO.rest;
+export function makeHaloSoon(texture:Texture,ready:(halo:Halo)=>void,tone?:HaloTone,extent?:number,reach?:number){void idle().then(()=>loadHalo(texture,tone,extent,reach)).then(ready).catch(()=>{});}
+const restOf=(layer:Layer)=>{const tone=haloTone(layer);return layer.detail&&seenStories.has(layer.detail)?tone.seen:tone.rest;};
 /** Tweens a halo's brightness; it is skipped while dark (no fill cost). */
 function fade(halo:Halo,opacity:number,vars:gsap.TweenVars={}){
  const {material}=halo;

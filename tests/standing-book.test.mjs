@@ -12,8 +12,9 @@ const camera=(w,h)=>{const c=new PerspectiveCamera(standingFov(w,h),w/h,.1,70);c
 
 test('every standing card stays on the flat page, clear of its edges and in front of the upright page',()=>{
  for(const scene of scenes)for(const layer of scene.layers.filter(l=>!isBackdrop(l))){
-  const {x,z,size}=standingPlacement(layer);
-  assert.ok(Math.abs(x)+size[0]/2<=STAGE.halfWidth-STAGE.margin+1e-9,`${scene.id}/${layer.id} runs off the page`);
+  const {x,z,size,edge}=standingPlacement(layer);
+  // `edge`: a card meant to meet the page's side edge (page 1's carrot field) may reach it, never past it.
+  assert.ok(Math.abs(x)+size[0]/2<=STAGE.halfWidth-(edge?0:STAGE.margin)+1e-9,`${scene.id}/${layer.id} runs off the page`);
   assert.ok(z>=.3&&z<=STAGE.depth-.3,`${scene.id}/${layer.id} depth ${z}`);
  }
  // Each spread has a backdrop for the upright page.
@@ -46,7 +47,7 @@ test('the phone film, scaled by standingMediaSize, lines up with the live standi
  // The three.js-free sizing uses the frame's reach ratio; it must be the one the camera framing actually has.
  const portrait=standingFov(100,1000),square=standingFov(1000,100),t=f=>Math.tan(f*Math.PI/360);
  near(t(portrait)/t(square)/10,STANDING_FRAME_REACH,2e-5);
- const film=[720,1280];
+ const film=[900,Math.round(900/STANDING_FILM_ASPECT)];
  for(const [w,h] of [[390,722],[375,551],[412,658],[736,598],[426,600]]){
   // A world point projects to the same canvas pixel whether drawn live or through the film shown at that size, centred.
   const live=camera(w,h),movie=camera(...film),size=standingMediaSize(w,h);near(size.width/size.height,STANDING_FILM_ASPECT,1e-9);

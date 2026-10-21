@@ -17,11 +17,14 @@ export type Detail={
  /** Shown while the magazine page is still being written. */
  note?:string;
  link:{label:string;href:string};
+ /** Buttons that lead the reader to do something (send a recipe by mail or Instagram), shown above the link. */
+ actions?:{label:string;href:string}[];
  /** Other details worth opening next (ids). */
  related?:string[];
  /** Opens as a book (src/DetailBook.tsx) instead of the side panel: pictures on the left page, the story as running text on the right. */
  spread?:{pictures:{src:string;alt:string;caption:string;fallback?:string}[];byline?:string;paragraphs:string[];folio:[string,string]};
 };
+import { SHARE } from './site.ts';
 const site='https://gujwa-carrot.vercel.app';
 const draft='매거진 원고를 준비하고 있어요. 자세한 이야기는 매거진에서 이어집니다.';
 export const details:Record<string,Detail>={
@@ -79,4 +82,26 @@ export const details:Record<string,Detail>={
   ingredients:[['당근','2개'],['물','200ml'],['식초','100ml'],['설탕','4큰술'],['소금','1작은술'],['통후추','약간']],
   list:{title:'조리 순서',ordered:true,items:['당근은 껍질을 벗기고 막대 모양으로 썹니다.','냄비에 물, 식초, 설탕, 소금, 통후추를 넣고 끓여 설탕을 녹입니다.','소독한 병에 당근을 담고 뜨거운 절임물을 붓습니다.','한 김 식힌 뒤 뚜껑을 닫아 냉장고에서 하루 숙성합니다.']},
   tip:'냉장 보관하고 1~2주 안에 드세요.',link:{label:'카드뉴스 보기',href:`${site}/cardnews/recipe-03`},related:['menu-03']},
+ // The third spread's kitchen wall: one recipe written out (the carrot burger note) and the booklet where readers' own recipes are collected.
+ 'recipe-burger':{id:'recipe-burger',kicker:'03 · RECIPE — 당근 버거',title:'집에서 만드는 당근 버거',lead:'새콤한 당근 라페와 곱게 다진 당근을 넣은 패티로 만드는, 당근이 주인공인 수제 버거입니다.',
+  facts:[['분량','2개'],['조리 시간','40분'],['난이도','보통']],
+  ingredients:[['햄버거 번','2개'],['소고기(간 것)','200g'],['당근','1과 1/2개 (라페용 1개, 패티용 1/2개)'],['슬라이스 치즈','2장'],['양상추·토마토','적당히'],['올리브유','2큰술'],['레몬즙','1/2큰술'],['머스터드','1작은술'],['소금·후추','약간']],
+  list:{title:'조리 순서',ordered:true,items:['당근 1개는 가늘게 채 썰어 소금을 약간 뿌려 10분 절인 뒤 물기를 짭니다. 올리브유 1큰술, 레몬즙, 머스터드를 넣어 버무려 라페를 만듭니다.','남은 당근 1/2개는 곱게 다져 소고기, 소금, 후추와 섞고 둥글납작하게 빚습니다.','달군 팬에 올리브유를 두르고 패티를 앞뒤로 3~4분씩 굽다가, 마지막에 치즈를 올려 녹입니다.','번을 팬에 살짝 구워 아래부터 양상추, 토마토, 패티, 라페 순으로 쌓아 올립니다.']},
+  tip:'라페는 미리 만들어 냉장고에 30분쯤 두면 맛이 더 잘 뱁니다.',link:{label:'식당에서 만나는 당근 버거',href:`${site}/cardnews/menu-03`},related:['menu-03','recipe-share']},
+ 'recipe-share':{id:'recipe-share',kicker:'03 · RECIPE — 함께 채우는 레시피',title:'당신의 당근 레시피도 이 벽에 붙여요',
+  lead:'구좌 당근으로 만든 나만의 한 접시가 있나요? 레시피나 자랑하고 싶은 요리를 보내 주시면, 이 부엌 벽에 새 포스트잇으로 붙여 드릴게요. 여러 사람의 당근 레시피가 하나씩 모여 가는 공간입니다.',
+  facts:[['보낼 것','요리 사진과 레시피'],['보낼 곳','인스타그램 또는 이메일']],
+  list:{title:'이렇게 참여해요',ordered:true,items:['구좌 당근으로 만든 요리를 사진으로 남겨요.','요리 이름, 재료, 만드는 순서를 간단히 적어요.','아래 버튼으로 인스타그램이나 이메일에 보내 주세요.','벽에 새 포스트잇으로 붙이고, 원하시면 닉네임도 함께 적어요.']},
+  tip:'밝은 곳에서 찍은 사진이 더 맛있어 보여요. 가족의 비법이나 나만의 팁도 좋아요.',
+  actions:[...(SHARE.email?[{label:'이메일로 레시피 보내기',href:`mailto:${SHARE.email}?subject=${encodeURIComponent('[당근 레시피] 내 레시피를 보내요')}&body=${encodeURIComponent('요리 이름:\n재료:\n만드는 순서:\n닉네임(선택):\n(요리 사진도 함께 첨부해 주세요)')}`}]:[]),...(SHARE.instagram?[{label:'인스타그램으로 레시피 보내기',href:`https://www.instagram.com/${SHARE.instagram}/`}]:[])],
+  note:SHARE.email||SHARE.instagram?undefined:'레시피를 받는 곳(인스타그램·이메일)을 준비하고 있어요. 곧 열려요.',
+  link:{label:'웹진 둘러보기',href:site},related:['recipe-burger']},
+ // The notes on the kitchen wall open their recipe posters as a book (src/PosterBook.tsx, src/posters.ts); these entries name them for
+ // links, analytics and the related buttons.
+ 'poster-gnocchi':{id:'poster-gnocchi',kicker:'03 · RECIPE — 당근 뇨끼',title:'당근 뇨끼',lead:'익힌 당근을 으깨 전분과 함께 빚는, 쫀득하고 달큰한 당근 뇨끼예요.',
+  link:{label:'웹진 둘러보기',href:site},related:['poster-gimbap','poster-jeon']},
+ 'poster-gimbap':{id:'poster-gimbap',kicker:'03 · RECIPE — 당근 김밥',title:'당근 김밥',lead:'채 썬 당근을 듬뿍 넣어 마는 당근 김밥이에요.',
+  link:{label:'웹진 둘러보기',href:site},related:['poster-gnocchi','poster-jeon']},
+ 'poster-jeon':{id:'poster-jeon',kicker:'03 · RECIPE — 당근전',title:'당근전',lead:'채 썬 당근을 부쳐 내는 고소한 당근전이에요.',
+  link:{label:'웹진 둘러보기',href:site},related:['poster-gnocchi','poster-gimbap']},
 };

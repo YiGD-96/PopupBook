@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { ArrowUpRight, ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { details } from './details';
 import { webzines, type WzBlock, type WzFlow, type WzMenu } from './webzine';
 
@@ -27,12 +27,14 @@ function Block({block,first}:{block:WzBlock;first:boolean}){
   case 'rule':return <hr className="wz-rule"/>;
  }
 }
-export default function WebzineBook({id,onClose,onOpen}:{id:string;onClose:()=>void;onOpen:(id:string)=>void}){
- const detail=details[id],zine=webzines[id];const heading=useRef<HTMLDivElement>(null);const [open,setOpen]=useState(false);const closing=useRef(0);
+export default function WebzineBook({id,onClose}:{id:string;onClose:()=>void;onOpen?:(id:string)=>void}){
+ const detail=details[id],zine=webzines[id];const heading=useRef<HTMLDivElement>(null);const sheet=useRef<HTMLElement>(null);const [open,setOpen]=useState(false);const closing=useRef(0);
  const [index,setIndex]=useState(0);const [direction,setDirection]=useState<1|-1>(1);const last=(zine?.spreads.length??1)-1;
  // Mounted lying back, then raised on the next frame so the transition runs; closing lowers it again before it goes.
  useEffect(()=>{const frame=requestAnimationFrame(()=>setOpen(true));return()=>{cancelAnimationFrame(frame);window.clearTimeout(closing.current);};},[]);
  useEffect(()=>{if(open)heading.current?.focus({preventScroll:true});},[open,id]);
+ // A new spread starts at the top (on phones the sheet scrolls inside the book).
+ useEffect(()=>{sheet.current?.scrollTo({top:0});},[index]);
  const close=()=>{setOpen(false);closing.current=window.setTimeout(onClose,matchMedia('(prefers-reduced-motion: reduce)').matches?0:420);};
  const turn=(step:1|-1)=>{const next=Math.max(0,Math.min(last,index+step));if(next===index)return;setDirection(step);setIndex(next);};
  // Escape closes; the arrow keys turn this book's spreads instead of the pop-up book's pages behind it.
@@ -46,12 +48,17 @@ export default function WebzineBook({id,onClose,onOpen}:{id:string;onClose:()=>v
  return <div className={'detail-book-backdrop'+(open?' is-open':'')} onClick={e=>{if(e.target===e.currentTarget)close();}}>
   <div className="webzine-book" role="dialog" aria-modal="true" aria-labelledby="wz-title">
    <button className="wz-close" onClick={close} aria-label="책 닫기"><X size={20}/></button>
-   <article className="wz-sheet">
+   <article className="wz-sheet" ref={sheet}>
     <div className="wz-inner">
      <header className="wz-bar"><span>{zine.kicker}</span><i aria-hidden="true"/><em aria-hidden="true">People<br/>Who Cook</em></header>
      <div key={index} className={'wz-spread '+(direction===1?'is-next':'is-prev')} ref={heading} tabIndex={-1}>
       <section className={'wz-page is-left'+withMedia(spread.left)} aria-label="왼쪽 쪽">{spread.left.map((block,i)=><Block key={i} block={block} first={index===0&&i===0}/>)}</section>
       <section className={'wz-page is-right'+withMedia(spread.right)} aria-label="오른쪽 쪽">{spread.right.map((block,i)=><Block key={i} block={block} first={false}/>)}</section>
+     </div>
+     <div className="wz-end">
+      <span aria-live="polite">{index+1} / {last+1}</span>
+      {index>0&&<button onClick={()=>turn(-1)}><ChevronLeft size={16}/>이전 쪽</button>}
+      {index<last?<button className="is-next" onClick={()=>turn(1)}>다음 쪽으로<ChevronRight size={16}/></button>:<button className="is-next" onClick={close}>이야기 닫기<X size={16}/></button>}
      </div>
     </div>
    </article>
@@ -59,8 +66,6 @@ export default function WebzineBook({id,onClose,onOpen}:{id:string;onClose:()=>v
     <button onClick={()=>turn(-1)} disabled={index===0} aria-label="이전 쪽"><ChevronLeft size={18}/></button>
     <span aria-live="polite">{index+1} / {last+1}</span>
     <button onClick={()=>turn(1)} disabled={index===last} aria-label="다음 쪽"><ChevronRight size={18}/></button>
-    <a className="wz-link" href={detail.link.href} target="_blank" rel="noopener noreferrer">{detail.link.label}<ArrowUpRight size={15}/></a>
-    {detail.related&&<span className="wz-related">{detail.related.filter(r=>details[r]).map(r=><button key={r} onClick={()=>onOpen(r)}>{details[r].title}</button>)}</span>}
    </nav>
   </div>
  </div>;

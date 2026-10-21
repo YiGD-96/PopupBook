@@ -4,7 +4,7 @@ import { BackSide, Color, DoubleSide, Float32BufferAttribute, Fog, FrontSide, Me
 import { BOOK_BOARD, BOOK_PAGES } from './bookStructure';
 import { createBoardGeometry, createPaperBlockGeometry, createRibbonGeometry, createSpineGeometry, lightShade } from './bookGeometry';
 import { createPageSkirt, createPaperGeometry, updatePaperGeometry } from './paperGeometry';
-import { madeHalo, makeHaloSoon, restHalo } from './cardHalo';
+import { haloTone, madeHalo, makeHaloSoon, restHalo } from './cardHalo';
 import { useStory, type Layer } from './story';
 import type { PaperPiece } from './paperAttachments';
 
@@ -125,7 +125,7 @@ export function DeskBackdrop({materials}:{materials:BookMaterials}){
  const drawn=useRef('');
  useFrame(()=>{
   const cam=camera as PerspectiveCamera,canvas=gl.domElement;
-  const key=`${canvas.width}x${canvas.height} ${cam.fov} ${cam.aspect} ${cam.position.toArray()} ${cam.quaternion.toArray()} ${scene.fog?1:0} ${map?.uuid}`;
+  const key=`${canvas.width}x${canvas.height} ${cam.fov} ${cam.aspect} ${cam.view?.offsetY??0} ${cam.position.toArray()} ${cam.quaternion.toArray()} ${scene.fog?1:0} ${map?.uuid}`;
   if(key===drawn.current)return;drawn.current=key;
   desk.fog=scene.fog;backdrop.width=canvas.width;backdrop.height=canvas.height;
   gl.render(desk,camera);backdrop.getContext('2d')!.drawImage(canvas,0,0);
@@ -173,14 +173,18 @@ const haloPlane=once(()=>new PlaneGeometry(1,1));
  * A clickable card's glow (src/cardHalo.ts), just behind the card's face of the given size. Usually made ahead (startup, warmChapter);
  * if not, it is made in idle time after the card appears, never in a turn's frame, and fades in to its rim on a spread being read.
  */
-/** `grounded`: the card stands on a floor that would hide the part of the glow below its foot (the phone's flat page), so the halo is lifted until its lower edge meets the foot. */
-export function CardHalo({layer,texture,width,height,incoming=false,grounded=false}:{layer:Layer;texture:Texture;width:number;height:number;incoming?:boolean;grounded?:boolean}){
+/** Drawn after the cards (renderOrder 1): the glow writes no depth, so a card behind it drawn later would paint over it (the fly swatter's
+ *  glow vanished under its shed); drawn last it is still hidden, by the depth test, behind any card in front of it.
+ *  The glow stays centred on the card: the part below its foot is simply hidden by the page it stands on. (Lifting the halo to keep all
+ *  of it above the page, as the phone's book once did, slid the glow off the card's silhouette.) */
+/** `reach`: the least rim width for this view (the phone passes the card's own `glow`). */
+export function CardHalo({layer,texture,width,height,incoming=false,reach}:{layer:Layer;texture:Texture;width:number;height:number;incoming?:boolean;reach?:number}){
  const [halo,setHalo]=useState(()=>madeHalo(texture));
  useEffect(()=>{
   if(halo)return;let live=true;
-  makeHaloSoon(texture,made=>{if(!live)return;setHalo(made);if(!incoming&&useStory.getState().phase==='EXPLORING')restHalo(layer,texture);});
+  makeHaloSoon(texture,made=>{if(!live)return;setHalo(made);if(!incoming&&useStory.getState().phase==='EXPLORING')restHalo(layer,texture);},haloTone(layer),Math.max(width,height),reach);
   return()=>{live=false;};
- },[halo,texture,layer,incoming]);
+ },[halo,texture,layer,incoming,width,height,reach]);
  if(!halo)return null;
- return <mesh geometry={haloPlane()} material={halo.material} dispose={null} position={[0,height/2+(grounded?height*(halo.scale[1]-1)/2:0),-.008]} scale={[width*halo.scale[0],height*halo.scale[1],1]}/>;
+ return <mesh geometry={haloPlane()} material={halo.material} dispose={null} renderOrder={1} position={[0,height/2,-.008]} scale={[width*halo.scale[0],height*halo.scale[1],1]}/>;
 }

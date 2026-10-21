@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useState } from 'react';
 import { STANDING_QUERY } from './standingMedia';
 /**
  * The reading guide, in two steps right after the prologue (each time the reader presses "책장 속으로"). Step 1 spotlights a glowing card with an arrow ("press
@@ -13,7 +13,8 @@ export default function Guide({step,locate,onNext}:{step:1|2;locate:()=>GuideRec
  const [view,setView]=useState(()=>({w:window.innerWidth,h:window.innerHeight}));
  const update=useCallback(()=>{setRect(locate());setView({w:window.innerWidth,h:window.innerHeight});},[locate]);
  // It can open while the cards are still standing up; `locate` gives the card's upright place, so the spotlight is where it ends at once.
- useEffect(()=>{update();window.addEventListener('resize',update);return()=>window.removeEventListener('resize',update);},[update,step]);
+ // Measured before the step is painted, so the new words never show for a frame at the old place.
+ useLayoutEffect(()=>{update();window.addEventListener('resize',update);return()=>window.removeEventListener('resize',update);},[update,step]);
  useEffect(()=>{const key=(e:KeyboardEvent)=>{if(['Enter',' ','Escape'].includes(e.key)){e.preventDefault();e.stopPropagation();onNext();}};window.addEventListener('keydown',key,true);return()=>window.removeEventListener('keydown',key,true);},[onNext]);
  const phone=typeof matchMedia==='function'&&matchMedia(STANDING_QUERY).matches;
  const copy=step===1
@@ -34,11 +35,11 @@ export default function Guide({step,locate,onNext}:{step:1|2;locate:()=>GuideRec
  const bend=to?Math.max(-60,Math.min(60,(to.x-from.x)*.5+(to.x>view.w/2?-28:28))):0;
  return <div className="guide" role="dialog" aria-modal="true" aria-live="polite" aria-label={copy.title} onClick={onNext}>
   {spot?<div className="guide-spot" style={{left:spot.x,top:spot.y,width:spot.width,height:spot.height}}/>:<div className="guide-dim"/>}
-  {to&&<svg className="guide-arrow" width={view.w} height={view.h} aria-hidden="true">
+  {to&&<svg key={`arrow-${step}`} className="guide-arrow guide-step" width={view.w} height={view.h} aria-hidden="true">
    <defs><marker id="guide-head" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z"/></marker></defs>
    <g className={below?'is-up':'is-down'}><path d={`M${from.x} ${from.y} Q${(from.x+to.x)/2+bend} ${(from.y+to.y)/2} ${to.x} ${to.y}`} markerEnd="url(#guide-head)"/></g>
   </svg>}
-  <div className="guide-bubble" style={{left:bubble.x,top:bubble.y,width,minHeight:BUBBLE_H}}>
+  <div key={`bubble-${step}`} className="guide-bubble guide-step" style={{left:bubble.x,top:bubble.y,width,minHeight:BUBBLE_H}}>
    <strong>{copy.title}</strong><span>{copy.text}</span>
    <span className="guide-dots" aria-label={`${step} / 2`}><i className={step===1?'is-on':''}/><i className={step===2?'is-on':''}/></span>
   </div>

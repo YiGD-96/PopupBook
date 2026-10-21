@@ -32,11 +32,19 @@ const FILM_WIDTH=STANDING?FRAME_PIXELS:Math.round(FRAME_PIXELS*FILM_SPAN.x/2)*2,
 
 /** Everything the film shows at time t (seconds). The closed book stands for INTRO_COVER_HOLD (the magazine's cover moving on it),
  *  then the cover opens while the book is still settling, without a pause. */
+/** How far the tipped book's near edge would sink below the desk (the board's lower face at the edge nearest the reader), so it can be
+ *  raised by that much: sunk into the desk, the back board under the right-hand pages vanished while the book opened. */
+function sinking(tilt:number,lift:number,scale:number){
+ const foot=BOOK_BOARD.y-BOOK_BOARD.thickness/2,desk=DESK.y;
+ const lowest=-.08+lift+scale*((foot+.08)*Math.cos(tilt)-BOOK_BOARD.depth/2*Math.sin(tilt));
+ return Math.max(0,desk-lowest);
+}
 function timeline(t:number){
  const moving=t-INTRO_COVER_HOLD,lowering=ease(moving/1.4),open=ease((moving-.12)/1.43);
+ const tilt=1.04*(1-lowering),scale=.88+.12*lowering,lift=(BOOK_TARGET_Y+.08)*(1-lowering);
  // Pressed-flat sheets relax into their open swell as the first half lifts away.
  return {lowering,open,rootX:-BOOK_BOARD.x*(1-open),left:smooth((open-.5)/.5),swell:smooth(open/.55),
-  tilt:1.04*(1-lowering),yaw:-.19*(1-lowering),lift:(BOOK_TARGET_Y+.08)*(1-lowering),scale:.88+.12*lowering,
+  tilt,yaw:-.19*(1-lowering),lift:lift+sinking(tilt,lift,scale),scale,
   pages:Array.from({length:INTRO_PAGE_COUNT},(_,i)=>smooth((t-INTRO_PAGES_START-i*INTRO_PAGE_STAGGER)/INTRO_PAGE_TURN)),
   scenery:t>=INTRO_UI_AT?t-INTRO_UI_AT:-1};
 }
@@ -184,6 +192,10 @@ function FilmRoot(){
   setAssets({materials,journal,paper:{'page-0-left':left,'page-0-right':right},scenery,coverFrame:coverFramePlayer(materials.cover!,motion)});
  })().catch(error=>{window.__film={ready:false,meta:FILM_META,render:async()=>'',error:String(error)};});},[]);
  useEffect(()=>{if(!assets)return;
+  // Full anisotropic filtering on everything filmed: the turning cover and the pages are seen nearly edge-on for a moment and otherwise blur
+  // into a smear there (the film is rendered offline, so the cost does not matter).
+  const sharpen=(texture?:Texture)=>{if(texture&&texture.anisotropy<16){texture.anisotropy=16;texture.needsUpdate=true;}};
+  [...Object.values(assets.materials),...assets.journal,...Object.values(assets.paper),...Object.values(assets.scenery),...(assets.standing?[assets.standing.title,...assets.standing.backs]:[])].forEach(sharpen);
   const render=async(time:number)=>{await assets.coverFrame(time);flushSync(()=>setT(time));while(committed.current!==time)await new Promise(resolve=>setTimeout(resolve,0));advance(performance.now());return canvas.current!.toDataURL('image/png');};
   // Two warm-up frames upload every texture and compile every program before the first captured frame.
   void (async()=>{await render(FILM_META.uiRevealAt+.5);await render(1.5);window.__film={ready:true,meta:FILM_META,render};})();

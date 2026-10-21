@@ -1,30 +1,39 @@
 /**
  * Turns the painted layers made with GPT (art-src/gpt/page-N/*.png, transparent cut-outs plus one opaque backdrop) into pop-up card
  * textures: trimmed to the painted silhouette, given the cream die-cut border of the paper cards, sized for how large the card can
- * appear, saved as WebP in public/art-raster. The backdrop is cropped to its landscape band and framed as a rounded card.
+ * appear, saved as WebP in public/art-raster. The backdrop is cropped to its landscape band and framed as a card with a cream border
+ * on its sides and top (none at its foot).
  * Run: node scripts/prepare-gpt-art.mjs [page-N]   (prints each card's aspect, which src/story.ts uses for the layer size)
  */
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {createRequire} from 'node:module';
-import {streetFloor} from './street-floor.mjs';
+import {pathFloor} from './street-floor.mjs';
+import {farmFloor} from './farm-floor.mjs';
 const project=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const runtime=process.env.CODEX_NODE_MODULES||'C:/Users/eh1al/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules';
 const sharp=createRequire(path.join(runtime,'package.json'))('sharp');
 
 // width: texture width in pixels, about 200 px per world unit of the card's largest on-screen size.
 const art=[
- {dir:'page-1',name:'farm-back',width:1440,backdrop:{top:200,bottom:790}},
- {dir:'page-1',name:'farm-trees-left',width:440},
- {dir:'page-1',name:'farm-trees-right',width:400},
- {dir:'page-1',name:'farm-field',width:1440},
- {dir:'page-1',name:'char-pony',width:420},
- {dir:'page-1',name:'char-farmer',width:400},
- {dir:'page-1',name:'farm-crate',width:560},
- {dir:'page-1',name:'farm-wall',width:1280},
- {dir:'page-1',name:'farm-lantern',width:280},
- {dir:'page-2',name:'village-back',width:1440,backdrop:{top:200,bottom:800}},
+ // Chapter 1 (v2, art-src/gpt/page-1/new, laid out after its 전체화면.png sketch): a sunny Gujwa view with oreum and wind turbines behind,
+ // a tool shed on the left page with the fly swatter and torch for the night rounds hanging on its wall, the farmer and the crate of carrots
+ // on the right. The floor (the yard, the basalt wall and the carrot field beyond it) is one painting printed on the page (farm-floor.mjs).
+ {dir:'page-1',name:'farm-back',src:'new/1페이지-배경',width:1440,backdrop:{top:0,bottom:773}},
+ // The phone's upright page (1.9:1) shows the left part of the same painting, where the sun sets over the sea.
+ {dir:'page-1',name:'farm-back-phone',src:'new/1페이지-배경',width:1440,backdrop:{top:0,bottom:773,left:0,right:1477}},
+ {dir:'page-1',name:'farm-shed',src:'new/빈티지 도구가 있는 나무 헛간',width:1100,clean:60},
+ {dir:'page-1',name:'farm-swatter',src:'new/빈티지 파리채와 손전등',width:300,clean:60},
+ {dir:'page-1',name:'char-farmer',src:'new/당근을 든 미소 짓는 농부-아침7시-좌측빛',width:440,clean:60,shadow:{pad:.04,spread:.62,alpha:.45}},
+ {dir:'page-1',name:'farm-crate',src:'new/흙 묻은 당근이 가득한 나무 상자',width:560,clean:60},
+ // The carrot field in morning light behind a basalt wall seen in perspective, standing behind the farmer and the crate from the right
+ // page's outer edge to behind the shed. No die-cut border: the field's own edge meets the floor.
+ {dir:'page-1',name:'farm-carrots',src:'new/당근밭-제주현무암재배치-직각윤곽-1500x450',width:1600,clean:60,plain:true},
+ // The phone's flat page: the muddy yard laid out for the flat page's UVs and for the turning sheet's (see village-floor-stage below).
+ {dir:'page-1',name:'farm-floor-stage',floor:'farm',stage:'page'},
+ {dir:'page-1',name:'farm-floor-stage-sheet',floor:'farm',stage:'sheet'},
+ {dir:'page-2',name:'village-back',src:'village-back-clouds-lowered-v2',width:1440,backdrop:{top:230,bottom:844}},
  // Chapter 2 (v3): the three real shops (sonongroad, manoa, buggercarrot), the traveler and a mother walking with her
  // daughter and a stroller. Things standing on the page get a soft contact shadow (see the `shadow` note below).
  // The cobbled street (scripts/street-floor.mjs) as the phone's flat page: 'stage' is laid out for the flat page's UVs (the road runs along the page's depth, far edge on
@@ -32,21 +41,31 @@ const art=[
  {dir:'page-2',name:'village-floor-stage',src:'village-floor',stage:'page'},
  {dir:'page-2',name:'village-floor-stage-sheet',src:'village-floor',stage:'sheet'},
  // The shops are drawn turned toward the street's centre line (the v4 renderings): buggercarrot at the left end, manoa behind it, sonongroad at the right.
- {dir:'page-2',name:'sonongroad',src:'sonongroad-right-v4',width:1100,clean:48},
- {dir:'page-2',name:'manoa',src:'manoa-turn-v4',width:1000,clean:48},
- {dir:'page-2',name:'buggercarrot',src:'buggercarrot-left-v4',width:900,clean:48},
+ {dir:'page-2',name:'sonongroad',src:'sonongroad-mobile',width:1100,clean:48},
+ {dir:'page-2',name:'manoa',src:'manoa-mobile',width:1000,clean:48},
+ {dir:'page-2',name:'buggercarrot',src:'buggercarrot-mobile',width:900,clean:90},
+ // The phone's standing book shows buggercarrot from the front (the original rendering).
+ // The phone's standing book has its own renderings of the three shops (…-mobile), facing the reader, and a narrower street for its upright page.
  {dir:'page-2',name:'char-traveler',width:300,clean:48,shadow:{pad:.04,spread:.6,alpha:.45}},
  {dir:'page-2',name:'family-walk',width:900,clean:48,shadow:{pad:.05,spread:.8,alpha:.45}},
- // The kitchen (v2): tiled wall with a string for the notes, a round table, the table's things, post-it papers. Cards that stand on the table
- // or the page get a soft contact shadow under their foot (`shadow`: padding as a fraction of the card's height, ellipse width as a fraction of its width).
- {dir:'page-3',name:'kitchen-back',width:1440,backdrop:{top:56,bottom:677}},
- {dir:'page-3',name:'kitchen-table-round',width:1100,clean:48,shadow:{pad:.05,spread:.4,alpha:.5}},
- {dir:'page-3',name:'kitchen-pot',width:520,clean:48,shadow:{pad:.09,spread:.8,alpha:.5}},
- {dir:'page-3',name:'kitchen-kettle',width:480,clean:48,shadow:{pad:.09,spread:.8,alpha:.5}},
- {dir:'page-3',name:'kitchen-basket',width:560,clean:48,shadow:{pad:.07,spread:.85,alpha:.45}},
- {dir:'page-3',name:'note-rape-card',width:520,plain:true},
- {dir:'page-3',name:'note-soup-card',width:520,plain:true},
- {dir:'page-3',name:'note-pickle-card',width:520,plain:true},
+ // The kitchen (v3, art-src/gpt/page-3/new): a tiled wall with a wooden board the recipe notes are clipped to, a prep table in front of it and
+ // a booklet of more recipes. The notes and the table carry their own edges (no die-cut border).
+ // The wall (2026-10-22) is the whole 910×360 painting at its own size, the board in the middle; the phone crops its sides from the same image.
+ {dir:'page-3',name:'kitchen-back',src:'kitchen-wall-910x360',width:910,backdrop:{top:0,bottom:360}},
+ {dir:'page-3',name:'prep-table',src:'new/prep-table',width:1500,clean:110,plain:true,cast:{dy:.1,blur:.011,alpha:.55,rows:.8}},
+ {dir:'page-3',name:'recipe-booklet',src:'new/recipe-booklet',width:760,clean:150,cast:{dy:.045,blur:.008,alpha:.6}},
+ // The four notes on the board: three dishes and one blank note for the reader's own recipe.
+ {dir:'page-3',name:'note-gnocchi',src:'note-carrot-gnocchi',width:520,clean:90,plain:true},
+ {dir:'page-3',name:'note-gimbap',src:'note-carrot-gimbap',width:520,clean:90,plain:true},
+ {dir:'page-3',name:'note-cheese-jeon',src:'note-carrot-cheese-jeon',width:520,clean:90,plain:true},
+ {dir:'page-3',name:'note-blank',src:'new/note-blank',width:520,clean:90,plain:true},
+ // The earlier notes are no longer on the wall; their pictures still illustrate the recipes in the structured data (src/seo.ts).
+ {dir:'page-3',name:'note-rape',src:'new/note-carrot-rape',width:520,clean:90,plain:true},
+ {dir:'page-3',name:'note-soup',src:'new/note-carrot-soup',width:520,clean:90,plain:true},
+ {dir:'page-3',name:'note-pickle',src:'new/note-carrot-pickles',width:520,clean:90,plain:true},
+ {dir:'page-3',name:'note-burger',src:'new/note-carrot-burger',width:620,clean:90,plain:true},
+ {dir:'page-3',name:'note-roast',src:'new/note-carrot-roast',width:520,clean:90,plain:true},
+ {dir:'page-3',name:'note-juice',src:'new/note-carrot-juice',width:520,clean:90,plain:true},
  {dir:'page-3',name:'dish-rape',width:480},
  {dir:'page-3',name:'dish-soup',width:520},
  {dir:'page-3',name:'dish-pickle',width:360},
@@ -95,6 +114,16 @@ async function grounded(card,w,h,{pad,spread,alpha}){
  const image=sharp({create:{width:w,height:total,channels:4,background:{r:0,g:0,b:0,alpha:0}}}).composite([{input:shadow},{input:await card.png().toBuffer(),top:0,left:0}]);
  return {image,w,h:total,pad:extra/total};
 }
+/** A shadow that follows the card's own silhouette: the card's shape, darkened, softened and moved down by `dy` of its height (only the top `rows` of it casts, so a table's legs throw none), drawn beneath it (the canvas grows by that much). Used for things lying or standing close to the page, where an oval would float apart from them. */
+async function cast(card,w,h,{dy,blur,alpha,rows=1}){
+ const shift=Math.round(h*dy),total=h+shift,png=await card.png().toBuffer();
+ const {data}=await sharp(png).ensureAlpha().raw().toBuffer({resolveWithObject:true});
+ const shape=Buffer.alloc(w*total*4);
+ for(let y=0;y<Math.round(h*rows);y++)for(let x=0;x<w;x++){const o=((y+shift)*w+x)*4;shape[o]=0x2a;shape[o+1]=0x16;shape[o+2]=0x08;shape[o+3]=Math.round(data[(y*w+x)*4+3]*alpha);}
+ const soft=await sharp(shape,{raw:{width:w,height:total,channels:4}}).blur(Math.max(.5,w*blur)).png().toBuffer();
+ const image=sharp({create:{width:w,height:total,channels:4,background:{r:0,g:0,b:0,alpha:0}}}).composite([{input:soft},{input:png,top:0,left:0}]);
+ return {image,w,h:total,pad:shift/total};
+}
 async function cutout(file,width){
  // Trim to the solid silhouette (soft alpha fringes below 24 are dropped), then grow a cream die-cut border under it.
  const {data,info}=await sharp(file).ensureAlpha().raw().toBuffer({resolveWithObject:true});
@@ -108,15 +137,17 @@ async function cutout(file,width){
  const cream=await sharp({create:{width:w,height:h,channels:3,background:CREAM}}).joinChannel(mask).png().toBuffer();
  return {image:sharp(cream).composite([{input:framed}]),w,h};
 }
-async function backdrop(file,width,{top,bottom,overlays=[]}){
+async function backdrop(file,width,{top,bottom,left=0,right,overlays=[]}){
  if(overlays.length){
   const pasted=await Promise.all(overlays.map(async o=>({input:await sharp(path.join(project,'art-src/gpt/page-3',o.file)).resize(o.width).png().toBuffer(),left:o.left,top:o.top})));
   file=await sharp(file).composite(pasted).png().toBuffer();
  }
  const meta=await sharp(file).metadata(),border=Math.round(width*.008),radius=Math.round(width*.014);
- const inner=width-border*2,band=await sharp(file).extract({left:0,top,width:meta.width,height:bottom-top}).resize(inner).png().toBuffer();
- const {height:ih}=await sharp(band).metadata(),w=width,h=ih+border*2;
- const round=(rw,rh,r)=>Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="${rw}" height="${rh}"><rect width="${rw}" height="${rh}" rx="${r}" fill="#fff"/></svg>`);
+ const inner=width-border*2,band=await sharp(file).extract({left,top,width:(right??meta.width)-left,height:bottom-top}).resize(inner).png().toBuffer();
+ // The cream border runs along the sides and the top only: at the foot the painting meets the printed floor directly.
+ const {height:ih}=await sharp(band).metadata(),w=width,h=ih+border;
+ // Rounded top corners, square foot (the rectangle runs on below the canvas, so its lower corners are cut off).
+ const round=(rw,rh,r)=>Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="${rw}" height="${rh}"><rect width="${rw}" height="${rh+r*2}" rx="${r}" fill="#fff"/></svg>`);
  const painted=await sharp(band).composite([{input:round(inner,ih,Math.max(2,radius-border)),blend:'dest-in'}]).png().toBuffer();
  const card=await sharp({create:{width:w,height:h,channels:4,background:CREAM}}).composite([{input:round(w,h,radius),blend:'dest-in'},{input:painted,left:border,top:border}]).png().toBuffer();
  return {image:sharp(card),w,h};
@@ -126,13 +157,16 @@ for(const item of art){
  if(only&&item.dir!==only)continue;
  let file=path.join(project,'art-src/gpt',item.dir,`${item.src??item.name}.png`);
  if(item.stage){
-  const flat=item.stage==='page',buf=await sharp(await streetFloor(sharp,project,1446,1080)).rotate(flat?270:180).webp({quality:84,effort:5}).toBuffer();
+  const flat=item.stage==='page',floor=item.floor==='farm'?await farmFloor(sharp,project,1446,1080,{top:0}):await pathFloor(sharp,project,1446,1080,{widenRight:{dx:.12,u0:.62,v0:.42,v1:1}});
+  const buf=await sharp(floor).rotate(flat?270:180).webp({quality:item.floor==='farm'?90:84,effort:5}).toBuffer();
   await fs.writeFile(path.join(project,'public/art-raster',`${item.name}.webp`),buf);console.log(`${item.name}: ${(buf.length/1024).toFixed(0)} KiB (floor texture)`);continue;
  }
  if(item.clean)file=await cleaned(file,item.clean);
+ // `shear`: the rendering leans (its horizontals run downhill); a vertical shear by this slope levels them, so the building stands square.
+ if(item.shear)file=await sharp(file).ensureAlpha().affine([[1,0],[-item.shear,1]],{background:{r:0,g:0,b:0,alpha:0}}).png().toBuffer();
  let {image,w,h}=item.backdrop?await backdrop(file,item.width,item.backdrop):item.plain?await plain(file,item.width):await cutout(file,item.width);
  let padNote='';
- if(item.shadow){const g=await grounded(image,w,h,item.shadow);image=g.image;h=g.h;padNote=`, foot padding ${(g.pad*100).toFixed(1)}%`;}
+ if(item.shadow||item.cast){const g=item.cast?await cast(image,w,h,item.cast):await grounded(image,w,h,item.shadow);image=g.image;h=g.h;padNote=`, foot padding ${(g.pad*100).toFixed(1)}%`;}
  if(!item.backdrop&&GRADES[item.dir])image=await grade(sharp(await image.png().toBuffer()),GRADES[item.dir]);
  const out=await image.webp({quality:88,alphaQuality:100,effort:5}).toBuffer();
  await fs.writeFile(path.join(project,'public/art-raster',`${item.name}.webp`),out);

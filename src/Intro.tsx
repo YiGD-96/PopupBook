@@ -8,7 +8,7 @@ import {STANDING_QUERY} from './standingMedia';
  * The film's file: AV1 (about half the bytes of H.264 at the same sharpness) where this browser decodes it smoothly and power-efficiently
  * (in hardware) at the film's size, otherwise H.264, which plays everywhere. Both are rendered by scripts/render-intro.mjs.
  */
-const FILM_FORMATS={open:{width:2520,height:1404,codec:'av01.0.13M.08'},standing:{width:900,height:1600,codec:'av01.0.09M.08'}};
+const FILM_FORMATS={open:{width:2520,height:1404,codec:'av01.0.13M.08'},standing:{width:900,height:2000,codec:'av01.0.09M.08'}};
 async function filmSource(standing:boolean){
  const media=standing?'-standing':'',format=FILM_FORMATS[standing?'standing':'open'],h264=`/media/book-opening${media}.mp4`;
  try{
@@ -48,7 +48,6 @@ export default function Intro({onFinished,onUnfolding,onBuffered,onNearEnd,leavi
  const [coverReady,setCoverReady]=useState(false);
  const [holdFinished,setHoldFinished]=useState(false);
  const [stage,setStage]=useState<'cover'|'opening'|'ready'>('cover');
- const [manual,setManual]=useState(false);
  const [failed,setFailed]=useState(false);
  const [holdDuration,setHoldDuration]=useState(0);
  const finish=useCallback(()=>{
@@ -77,15 +76,18 @@ export default function Intro({onFinished,onUnfolding,onBuffered,onNearEnd,leavi
   if(unfolded.current)return;unfolded.current=true;
   element.pause();onNearEnd?.();onUnfolding(time);finish();
  },[onNearEnd,onUnfolding,finish]);
+ // The book opens by itself: a refused play (often only a play interrupted by the film's own load) is tried again, and if the browser
+ // still will not play it (iOS Low Power Mode, say), the film is skipped and the book opens without it. No button to press.
+ const attempts=useRef(0),replay=useRef<()=>void>(()=>{});
  const play=useCallback(()=>{
   const element=video.current;if(!element)return;
-  setManual(false);
   void element.play().then(()=>{
    // Frame-accurate where the browser reports presented frames; onTimeUpdate (a few times a second) stands in elsewhere.
    const watch=(_:number,frame:{mediaTime:number})=>{if(unfolded.current)return;if(frame.mediaTime>=uiAt-HOLD_BEFORE)hold(element,frame.mediaTime);else element.requestVideoFrameCallback(watch);};
    if('requestVideoFrameCallback' in element)element.requestVideoFrameCallback(watch);
-  }).catch(()=>{started.current=false;setManual(true);});
+  }).catch(()=>{if(attempts.current<2){attempts.current++;window.setTimeout(()=>replay.current(),350);}else setFailed(true);});
  },[hold,uiAt]);
+ replay.current=play;
  useEffect(()=>{
   if(!holdFinished||(!src&&!failed))return;
   if(failed){finish();return;}
@@ -99,6 +101,5 @@ export default function Intro({onFinished,onUnfolding,onBuffered,onNearEnd,leavi
    onTimeUpdate={e=>{const element=e.currentTarget,time=element.currentTime;if(!nearEnd.current&&bufferedOnce.current&&time>=uiAt-MOUNT_LEAD){nearEnd.current=true;onNearEnd?.();}if(time>=uiAt-HOLD_BEFORE&&!unfolded.current){hold(element,time);return;}if(time<INTRO_COVER_HOLD)return;const page=Math.floor((time-INTRO_COVER_HOLD)*3);if(page!==soundPage.current){soundPage.current=page;playSound('flip');}}}
    onProgress={buffered} onCanPlayThrough={buffered} onEnded={finish} onError={()=>{setFailed(true);onBuffered?.();}}/>
   {failed&&stage==='ready'&&<img className="intro-media" src={`/media/book-open${media}.webp`} alt={'펼쳐진 '+SITE.title+' 그림책'}/>}
-  {manual&&<button className="primary-button intro-play" onClick={play}>책 펼치기</button>}
  </div>;
 }

@@ -5,12 +5,12 @@
  * 2. Films src/film.tsx — the live book's own meshes, materials and camera — in headless Chrome, frame by frame.
  * 3. Encodes the frames with FFmpeg and writes the cover/open stills, a storyboard and intro-meta.json.
  * Options: --raster-only [--all-raster], --materials-only, --stills (skip the MP4),
- * --standing (the phone intro, film.html?mode=standing, portrait 9:16: book-opening-standing.mp4, book-cover-standing.webp,
+ * --standing (the phone intro, film.html?mode=standing, portrait 9:20: book-opening-standing.mp4, book-cover-standing.webp,
  *   book-open-standing.webp, … and intro-meta-standing.json; it films with the textures the open-book render baked, so step 1 is skipped).
  * Each film is encoded twice from the same frames: H.264 (book-opening*.mp4, plays everywhere) and AV1 (book-opening*-av1.mp4, about half
  * the size at the same quality; src/Intro.tsx plays it where the browser decodes it smoothly in hardware).
  * Environment: CODEX_NODE_MODULES (sharp, @napi-rs/canvas), FFMPEG_PATH, CHROME_PATH, INTRO_WIDTH (the book frame's width in pixels:
- * 1440 desktop, 900 phone (exactly 9:16), so the film stays sharp on large and high-density screens), INTRO_FPS, INTRO_CRF (x264 quality, 19),
+ * 1440 desktop, 900 phone (exactly 9:20), so the film stays sharp on large and high-density screens), INTRO_FPS, INTRO_CRF (x264 quality, 19),
  * INTRO_AV1_CRF (libaom quality, 30),
  * INTRO_INSPECT (comma-separated times: only write those frames as PNG to INTRO_INSPECT_DIR).
  */
@@ -76,7 +76,7 @@ try{
  const evaluate=async expression=>{const result=await send('Runtime.evaluate',{expression,awaitPromise:true,returnByValue:true});if(result.exceptionDetails)throw new Error(result.exceptionDetails.exception?.description??result.exceptionDetails.text);return result.result.value;};
  await send('Page.enable');await send('Runtime.enable');
  // The viewport holds the whole canvas, which is portrait for the phone film.
- await send('Emulation.setDeviceMetricsOverride',{width:width+40,height:(standing?Math.ceil(width*16/9):width)+40,deviceScaleFactor:1,mobile:false});
+ await send('Emulation.setDeviceMetricsOverride',{width:width+40,height:(standing?Math.ceil(width*20/9):width)+40,deviceScaleFactor:1,mobile:false});
  await send('Page.navigate',{url:`${base}film.html?width=${width}${standing?'&mode=standing':''}`});
  let state;for(let i=0;i<600;i++){state=await evaluate('window.__film&&{ready:__film.ready,error:__film.error}');if(state?.ready||state?.error)break;await sleep(200);}
  if(!state?.ready)throw new Error('The film page did not get ready: '+(state?.error??'timeout'));

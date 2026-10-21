@@ -61,9 +61,11 @@ const minutes = (text = '') => { const m = /(\d+)\s*분/.exec(text); const day =
 export function jsonLd(siteUrl?: string) {
  const page = abs(siteUrl, '/'), image = abs(siteUrl, '/media/og-image.jpg');
  const publisher = { '@type': 'Organization', '@id': `${MAGAZINE}/#organization`, name: SITE.name, url: SITE.url, logo: abs(siteUrl, '/media/logo.webp') };
- const recipes = ['recipe-01', 'recipe-02', 'recipe-03'].map(id => {
+ // The recipes on the kitchen wall; a recipe whose note does not open it (the three card-news recipes) borrows the note's picture.
+ const NOTE_ART: Record<string, string> = { 'recipe-01': 'note-rape', 'recipe-02': 'note-soup', 'recipe-03': 'note-pickle', 'recipe-burger': 'note-burger' };
+ const recipes = ['recipe-01', 'recipe-02', 'recipe-03', 'recipe-burger'].map(id => {
   const d = details[id], fact = (k: string) => d.facts?.find(f => f[0] === k)?.[1];
-  const art = scenes[2].layers.find(layer => layer.detail === id)?.src;
+  const art = scenes[2].layers.find(layer => layer.detail === id)?.src ?? NOTE_ART[id];
   return {
    '@type': 'Recipe', '@id': `${page}#${id}`, name: d.title, description: d.lead, inLanguage: 'ko-KR', author: publisher,
    image: art ? [abs(siteUrl, `/art-raster/${art}.webp`)] : undefined,
