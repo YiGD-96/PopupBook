@@ -4,7 +4,7 @@ import { Box3, Group, Mesh, Texture, PerspectiveCamera, Vector3, WebGLRenderTarg
 import gsap from 'gsap';
 import { loadTexture, loadScene, readyScene } from './assets';
 import { type Director, type Layer, scenes, useStory, playSound } from './story';
-import { attachedPaperPose, pageReveal, popupFoldAngle, splitPaperArt, type PaperPiece } from './paperAttachments';
+import { PAGE_UPRIGHT, attachedPaperPose, pageReveal, popupFoldAngle, splitPaperArt, type PaperPiece } from './paperAttachments';
 import { prepareBookRenderer } from './bookPreparation';
 import { BOOK_TARGET_Y, BOOK_CAMERA_POSITION, bookZoom, bookFov } from './bookView';
 import { INTRO_PAGE_COUNT } from './introPlayback';
@@ -58,7 +58,9 @@ function PaperLayer({layer,piece,texture,hinges,onClick,turn,progress,incoming=f
   const y=layer.position[1]+flatLift(rank,ref.current.rotation.x);
   if(turn){
    const movingSide=turn.direction===1?'right':'left';const ridesSheet=incoming?piece.side!==movingSide:piece.side===movingSide;
-   if(ridesSheet){const face:1|-1=piece.side==='right'?1:-1;const pose=attachedPaperPose(piece.center,y,layer.position[2],p,turn.direction,face);root.position.set(...pose.position);root.rotation.z=pose.rotation;root.visible=incoming?p>.35:p<.99999;}
+   if(ridesSheet){const face:1|-1=piece.side==='right'?1:-1;const pose=attachedPaperPose(piece.center,y,layer.position[2],p,turn.direction,face);root.position.set(...pose.position);root.rotation.z=pose.rotation;
+    // Cards on the turning sheet show only on the side of it that faces up: the old ones until it stands upright, the new ones after.
+    root.visible=incoming?p>PAGE_UPRIGHT:p<PAGE_UPRIGHT;}
    else {root.position.set(piece.center,y+.018,layer.position[2]);root.rotation.z=0;const reveal=incoming?pageReveal(p,.5,.95):1-pageReveal(p,.45,.92);root.visible=reveal>.0001;}
   }else{root.position.set(piece.center,y+.018,layer.position[2]);root.rotation.z=0;}
  });
