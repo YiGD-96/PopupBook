@@ -133,3 +133,9 @@ A single blank piece of paper hung from a string by a small wooden clothespin cl
 - 폰: 테이블 `{x:.45,z:3.05,size:[3.5,1.626]}`로 책 안에 들어오게, 레시피 북 `{x:-1.6,z:3.2}`로 테이블 앞에 보이게.
 - 엔딩의 "웹진에서 이어 읽기"는 "관련 기사 보기"(`SITE.article`, 한국경제 기사)로 바뀜.
 - 레시피 포스터(2026-10-22): 뇨끼·김밥·당근전 메모를 누르면 `src/PosterBook.tsx`가 열림. 오른쪽 쪽은 언어별 포스터(웹: 2:3 쪽에 여백 없이 꽉 차서 스크롤 없음, 폰: 사진 자리와 포스터가 한 쪽으로 이어져 통째로 스크롤; `public/media/posters/{gnocchi,gimbap,jeon}-{ko,en,zh}.webp`, 원본 `art-src/gpt/page-3/new/poster` → `node scripts/prepare-posters.mjs`)를 안에서 스크롤, 왼쪽 쪽은 실사 사진·영상 자리. 사진이나 영상은 `src/posters.ts`의 `media`에 넣으면 빈 틀 대신 나옴. 언어는 오른쪽 위 언어 선택을 따름(책 안 언어 버튼은 없앰). 웹 메모는 책 가운데 접힘에서 0.12 이상 떨어져야 해서(테스트) 폭 .72로 조금 줄임.
+
+## 적용 (v5 · 2026-10-22 오후) — 냉장고 부엌
+- 그림: `art-src/gpt/page-3/new/new2` → `prepare-gpt-art.mjs page-3`. 뒷벽 `jeju-kitchen-wall-high-resolution`(창 너머 바다), 왼쪽 쪽 냉장고 `kitchen-fridge`(front-fridge-with-plant-wider), 오른쪽 앞 낮은 식탁 `kitchen-table-low`(simple-table-no-book), 식탁 왼쪽 끝 `my-recipe-book`.
+- 냉장고 문에 자석 메모 4장(2×2, `on:'fridge'`): 뇨끼·김밥 위, 치즈전·빈 메모 아래. 뇨끼/김밥/치즈전 → 포스터 책, 빈 메모와 레시피 책 → `recipe-share`.
+- 웹: 냉장고 `[-2,.186,.3]` 1.3×2.909, 식탁 `[1.75,.156,1.6]` 2.7 폭, 책 `on:'table'` `[.95,1.1,1.66]`.
+- 폰: 냉장고 `{x:-1.4,z:1.4}` 1.35×3.02, 자석 lift 2.04/1.56, 식탁 `{x:.6,z:2.75}` 2.9 폭, 책 `{x:-.15,z:2.81,lift:.67}`.

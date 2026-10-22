@@ -15,7 +15,7 @@ export default function LanguageMenu(){
  const current=LANGUAGES.find(l=>l.code===lang)??LANGUAGES[0];
  return <div className="lang-menu" ref={root}>
   <button type="button" className="lang-button" aria-haspopup="listbox" aria-expanded={open} aria-label={'언어: '+current.label} onClick={()=>setOpen(o=>!o)}>
-   <Languages size={14} aria-hidden="true"/><span>{current.short}</span><ChevronDown size={13} aria-hidden="true"/>
+   <Languages size={12} aria-hidden="true"/><span>{current.short}</span><ChevronDown size={11} aria-hidden="true"/>
   </button>
   {open&&<ul className="lang-list" role="listbox" aria-label="언어 선택">
    {LANGUAGES.map(l=><li key={l.code} role="option" aria-selected={l.code===lang}>
