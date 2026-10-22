@@ -170,11 +170,13 @@ export function warmMaterials(renderer:Pick<WebGLRenderer,'compile'>,world:Scene
 
 const haloPlane=once(()=>new PlaneGeometry(1,1));
 /**
- * A clickable card's glow (src/cardHalo.ts), just behind the card's face of the given size. Usually made ahead (startup, warmChapter);
+ * A clickable card's glow (src/cardHalo.ts), just in front of the card's face of the given size, with the card cut out of it. Usually made ahead (startup, warmChapter);
  * if not, it is made in idle time after the card appears, never in a turn's frame, and fades in to its rim on a spread being read.
  */
 /** Drawn after the cards (renderOrder 1): the glow writes no depth, so a card behind it drawn later would paint over it (the fly swatter's
- *  glow vanished under its shed); drawn last it is still hidden, by the depth test, behind any card in front of it.
+ *  glow vanished under its shed); drawn last it is still hidden, by the depth test, behind any card in front of it. It lies just in front
+ *  of its own card (behind, the card's soft fringe hid it by depth and the dark desk showed as a gap between card and glow); the card
+ *  itself is cut out of the glow, so the glow never tints it.
  *  The glow stays centred on the card: the part below its foot is simply hidden by the page it stands on. (Lifting the halo to keep all
  *  of it above the page, as the phone's book once did, slid the glow off the card's silhouette.) */
 /** `reach`: the least rim width for this view (the phone passes the card's own `glow`). */
@@ -186,5 +188,5 @@ export function CardHalo({layer,texture,width,height,incoming=false,reach}:{laye
   return()=>{live=false;};
  },[halo,texture,layer,incoming,width,height,reach]);
  if(!halo)return null;
- return <mesh geometry={haloPlane()} material={halo.material} dispose={null} renderOrder={1} position={[0,height/2,-.008]} scale={[width*halo.scale[0],height*halo.scale[1],1]}/>;
+ return <mesh geometry={haloPlane()} material={halo.material} dispose={null} renderOrder={1} position={[0,height/2,.004]} scale={[width*halo.scale[0],height*halo.scale[1],1]}/>;
 }

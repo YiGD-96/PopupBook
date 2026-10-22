@@ -107,10 +107,11 @@ no outlines, no text, no lettering. Front-facing straight-on view of a single st
 | 판 | 그림 | 누르면 |
 |---|---|---|
 | 배경 `farm-back` | 1페이지-배경 (오름·풍력발전기·바다, 해 질 녘). 휴대폰은 `farm-back-phone`: 같은 그림의 왼쪽(해가 보이는 쪽) 1477px | — |
-| 헛간 `farm-shed` | 빈티지 도구가 있는 나무 헛간 (왼쪽 장) | — |
+| 헛간 `farm-shed` | 빈티지 도구가 있는 나무 헛간 (왼쪽 장, 흰 테두리 없음 `plain`) | — |
 | 파리채·손전등 `farm-swatter` | 헛간 벽에 붙어 함께 접힘 (`on:'shed'`) | night-watch |
 | 당근밭 `farm-carrots` | 당근밭-제주현무암재배치-직각윤곽-1500x450.png (원근 돌담 뒤 당근밭, 오른쪽 장 바깥 끝부터 헛간 뒤까지, 농부·상자 뒤) | — |
 | 농부 `char-farmer` | 당근을 든 미소 짓는 농부-아침7시-좌측빛 (오른쪽 장, 발밑 그림자) | farmer |
+| 강아지 `farm-dog` | 제주강아지-웅크린잠자는자세-그림책 (흰 테두리 없음, 발밑 그림자). 웹: 농부 왼발 왼쪽 / 휴대폰: 농부 발 앞 | — |
 | 당근 상자 `farm-crate` | 흙 묻은 당근이 가득한 나무 상자 (오른쪽 앞) | harvest |
 
 - 바닥: `진흙길-아침햇빛-옅은바퀴자국-생성원본.png` 한 장(아침 햇빛의 맨흙, 옅은 바퀴 자국, 왼쪽 가장자리 화산석·풀)을 배경판 발밑부터 앞 가장자리까지 책장에 인쇄 (`scripts/farm-floor.mjs`). 장 제목과 부제는 2장처럼 바닥 위 파피루스 얼룩(`clear`) 위에 놓인다. 휴대폰은 `stage:'farm-floor-stage'`.
@@ -120,3 +121,4 @@ no outlines, no text, no lettering. Front-facing straight-on view of a single st
 - 1판의 방풍림, 제주마, 랜턴 말뚝, 당근밭·돌담 판은 뺐다 (원본 PNG는 `art-src/gpt/page-1`에 그대로).
 - 책이 처음 펼쳐질 때(판이 누워 있을 때) 바닥 그림이 책장 윗부분까지 이어지도록, 배경판 뒤에 가려지는 윗띠는 바닥 그림의 먼 쪽을 뒤집어 이어 칠했다 (`farm-floor.mjs`).
 - 누르는 판의 빛(halo, `src/cardHalo.ts`): 1장은 `halo:{color:'#ff9418',boost:2.4,rest:.7,seen:.32}`로 더 진하다. 테두리 폭은 최소 0.05, 파리채는 휴대폰에서만 판의 `glow:.1`로 더 두껍게; 빛 모양은 실루엣 + 3겹 링으로 채워 판에 바로 붙는다, 발밑에 구운 그림자는 빛에서 제외, 빛은 카드 뒤에 가운데 정렬(휴대폰에서 위로 밀던 것 제거), 카드보다 나중에 그려 헛간에 가려지지 않게(renderOrder 1).
+- 휴대폰: 당근 상자는 오른쪽 위(x 1.6, z 2.5), 강아지는 농부 발 앞(z 3.05).

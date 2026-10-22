@@ -36,6 +36,8 @@
  .cinematic-reader .hero.is-ending .book-stage .canvas-wrap{bottom:122px}
  .cinematic-reader .reader-arrow{top:calc(46% + var(--standing-drop,0px));width:38px;height:52px}
  .cinematic-reader .reader-arrow svg{width:22px;height:22px}
+ /* The upright page now reaches the screen's sides (src/standingView.ts): the arrows lie on the painting, so they carry a soft shadow. */
+ .cinematic-reader .book-stage .reader-arrow{color:#fff3dc}.cinematic-reader .reader-arrow svg{stroke-width:2;filter:drop-shadow(0 1px 2px rgba(20,10,4,.75)) drop-shadow(0 0 6px rgba(20,10,4,.45))}
  .cinematic-reader .hero-copy .narration{left:0;right:0;bottom:59px;width:100%;max-width:none;padding:8px 0;display:block}
  .cinematic-reader .narration-label{margin-bottom:5px}
  .cinematic-reader .narration p{font-size:11px}
@@ -251,7 +253,8 @@ html,body{background:#1a110b}
 
 /* ───────── The language switch (src/LanguageMenu.tsx) at the top right, over everything but a story or dialog. */
 .lang-menu{position:relative}
-.lang-button{display:inline-flex;align-items:center;gap:6px;min-height:32px;padding:0 10px 0 11px;border:1px solid rgba(255,236,205,.22);border-radius:999px;background:rgba(26,17,11,.55);color:#e2d0b2;font:500 12px/1 Georgia,serif;letter-spacing:.06em;transition:background .2s,color .2s}
+/* Its words as large as the contents button's beside it (.top-pill): the same font, size and spacing. */
+.lang-button{display:inline-flex;align-items:center;gap:5px;min-height:32px;padding:0 11px 0 10px;border:1px solid rgba(255,236,205,.22);border-radius:999px;background:rgba(26,17,11,.55);color:#e2d0b2;font-family:inherit;font-size:12px;font-weight:400;line-height:1;letter-spacing:.04em;transition:background .2s,color .2s}
 .lang-button:hover,.lang-button[aria-expanded=true]{background:rgba(46,30,18,.85);color:#f5a25a}
 .lang-list{position:absolute;right:0;top:calc(100% + 6px);min-width:136px;margin:0;padding:6px;list-style:none;background:#2b1b10;border:1px solid rgba(255,236,205,.18);border-radius:12px;box-shadow:0 14px 34px rgba(0,0,0,.45);animation:fade .15s ease-out}
 .lang-list button{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;padding:8px 10px;border-radius:8px;background:none;font-size:13px;color:#e2d0b2;text-align:left}
@@ -354,13 +357,31 @@ html,body{background:#1a110b}
 .wz-captions h4{margin:0 0 calc(var(--u)*6);font-size:var(--head);font-weight:800;color:#5e3a1c}
 .wz-captions p{margin:0;font-size:var(--body);line-height:1.6;color:#43372b;word-break:break-all;text-align:justify}
 .wz-rule{width:100%;margin:0 0 var(--gap);border:0;border-top:1px solid #cdb995}
+/* The farmer's story (src/webzine.ts 'farmer'): a season line over the title, an accent line in it, captioned photos and rows of terms. */
+.wz-season{margin:0 0 calc(var(--u)*10);font-size:var(--body);font-weight:700;color:#a35c2d;letter-spacing:.005em}
+.wz-h1 .is-accent{color:#a35c2d}
+/* A pull quote right under the lead: room for its large opening mark. */
+.wz-lead+.wz-flow>.wz-quote:first-child{margin-top:var(--gap-quote)}
+.wz-lead+.wz-flow{margin-top:var(--gap)}
+.wz-hero figcaption{margin-top:calc(var(--u)*8);font-size:var(--body);line-height:1.4;font-weight:500;color:#746757}
+.wz-rows{margin-bottom:var(--gap)}
+.wz-rows>div{display:flex;align-items:baseline;gap:calc(var(--u)*18);padding:calc(var(--u)*7) 0;border-top:1px solid #d2c4b0}
+.wz-rows b{flex:none;width:calc(var(--u)*40);font-size:var(--quote);font-weight:750;color:#a35c2d}
+.wz-rows strong{flex:none;min-width:calc(var(--u)*172);font-size:var(--head);font-weight:700;color:#2f241a}
+.wz-rows span{font-size:var(--body);line-height:1.45;color:#43372b;word-break:keep-all}
+.wz-rows.is-pairs>div{display:grid;grid-template-columns:34% 1fr;gap:calc(var(--u)*16);align-items:start}
+.wz-rows.is-pairs strong{min-width:0;font-size:var(--body);color:#a35c2d;line-height:1.5}
+.wz-rows.is-pairs span{line-height:1.5}
+.wz-captions.is-cards{gap:calc(var(--u)*14) calc(var(--u)*18)}
+.wz-captions.is-cards>div,.wz-captions.is-cards>div+div{border-left:0;padding-left:0;border-top:1px solid #d2c4b0;padding-top:calc(var(--u)*8)}
+.wz-captions.is-cards h4{margin-bottom:calc(var(--u)*4);font-size:var(--head);color:#a35c2d}
+.wz-captions.is-cards p{line-height:1.5;word-break:keep-all;text-align:left}
 .wz-end{display:none}
 .wz-close{position:absolute;top:-6px;right:-6px;z-index:3;width:38px;height:38px;border-radius:50%;border:0;background:rgba(255,250,240,.92);color:#7d6b55;display:grid;place-items:center;cursor:pointer;box-shadow:0 2px 8px rgba(60,40,20,.25)}
 .wz-nav{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px 12px;color:#fbf3e3;font-size:13px}
 .wz-nav>span{min-width:46px;text-align:center;font-weight:600;letter-spacing:.06em}
 .wz-nav>button{width:34px;height:34px;border-radius:50%;border:0;background:rgba(255,250,240,.92);color:#6b5a48;display:grid;place-items:center;cursor:pointer}
 .wz-nav>button:disabled{opacity:.35;cursor:default}
-.wz-link{display:inline-flex;align-items:center;gap:5px;margin-left:10px;padding:7px 13px;border-radius:999px;background:rgba(255,250,240,.92);color:#6b4a37;font-weight:600;text-decoration:none}
 .wz-related{display:flex;flex-wrap:wrap;gap:6px}
 .wz-related button{border:1px solid rgba(255,250,240,.5);background:rgba(62,52,40,.55);border-radius:999px;padding:6px 12px;font:inherit;font-size:12px;color:#fbf3e3;cursor:pointer}
 @media(prefers-reduced-motion:reduce){.webzine-book{transition:none}.wz-spread{animation:none}}
@@ -387,12 +408,15 @@ html,body{background:#1a110b}
  .wz-menus{grid-template-columns:1fr;gap:14px}
 .wz-menu.is-tall{grid-template-columns:42% 1fr;gap:14px}
  .wz-captions{grid-template-columns:1fr;gap:12px}.wz-captions>div+div{border-left:0;padding-left:0;border-top:1px solid #cdb995;padding-top:12px}
+ .wz-captions.is-cards{grid-template-columns:1fr 1fr}
+ .wz-rows>div{gap:10px;padding:10px 0;align-items:start}.wz-rows b{width:24px}.wz-rows strong{min-width:110px}
+ .wz-rows.is-pairs>div{gap:12px}
+ .wz-season{font-size:15px}
  .wz-end{display:flex;align-items:center;gap:10px;margin-top:22px;padding-top:16px;border-top:1px solid #cdb995;color:#7a6a55;font-size:var(--body)}
  .wz-end>span{margin-right:auto;font-weight:600;letter-spacing:.06em}
  .wz-end button{display:inline-flex;align-items:center;gap:4px;min-height:42px;padding:0 16px;border:1px solid #c9b48d;border-radius:999px;background:#fffaf0;color:#6b4a37;font:inherit;font-weight:600;cursor:pointer}
  .wz-end button.is-next{background:#6b4a37;border-color:#6b4a37;color:#fff9e9}
  .wz-close{top:6px;right:6px;width:34px;height:34px}
- .wz-link{margin-left:0}
 }
 
 /* ───────── The contents (App.tsx, "목차" in the header): the prologue's look, a way into each chapter. */

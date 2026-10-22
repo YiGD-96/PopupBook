@@ -23,9 +23,12 @@ const art=[
  {dir:'page-1',name:'farm-back',src:'new/1페이지-배경',width:1440,backdrop:{top:0,bottom:773}},
  // The phone's upright page (1.9:1) shows the left part of the same painting, where the sun sets over the sea.
  {dir:'page-1',name:'farm-back-phone',src:'new/1페이지-배경',width:1440,backdrop:{top:0,bottom:773,left:0,right:1477}},
- {dir:'page-1',name:'farm-shed',src:'new/빈티지 도구가 있는 나무 헛간',width:1100,clean:60},
+ // The shed and the dog have no cream die-cut border (the user preferred their own painted edge).
+ {dir:'page-1',name:'farm-shed',src:'new/빈티지 도구가 있는 나무 헛간',width:1100,clean:60,plain:true},
  {dir:'page-1',name:'farm-swatter',src:'new/빈티지 파리채와 손전등',width:300,clean:60},
  {dir:'page-1',name:'char-farmer',src:'new/당근을 든 미소 짓는 농부-아침7시-좌측빛',width:440,clean:60,shadow:{pad:.04,spread:.62,alpha:.45}},
+ // A Jeju dog asleep, curled up at the farmer's feet; a soft shadow under it so it lies on the ground.
+ {dir:'page-1',name:'farm-dog',src:'new/제주강아지-웅크린잠자는자세-그림책',width:900,clean:60,plain:true,shadow:{pad:.08,spread:.9,alpha:.42}},
  {dir:'page-1',name:'farm-crate',src:'new/흙 묻은 당근이 가득한 나무 상자',width:560,clean:60},
  // The carrot field in morning light behind a basalt wall seen in perspective, standing behind the farmer and the crate from the right
  // page's outer edge to behind the shed. No die-cut border: the field's own edge meets the floor.
@@ -48,13 +51,20 @@ const art=[
  // The phone's standing book has its own renderings of the three shops (…-mobile), facing the reader, and a narrower street for its upright page.
  {dir:'page-2',name:'char-traveler',width:300,clean:48,shadow:{pad:.04,spread:.6,alpha:.45}},
  {dir:'page-2',name:'family-walk',width:900,clean:48,shadow:{pad:.05,spread:.8,alpha:.45}},
- // The kitchen (v3, art-src/gpt/page-3/new): a tiled wall with a wooden board the recipe notes are clipped to, a prep table in front of it and
- // a booklet of more recipes. The notes and the table carry their own edges (no die-cut border).
- // The wall (2026-10-22) is the whole 910×360 painting at its own size, the board in the middle; the phone crops its sides from the same image.
- {dir:'page-3',name:'kitchen-back',src:'kitchen-wall-910x360',width:910,backdrop:{top:0,bottom:360}},
+ // The kitchen (v4, art-src/gpt/page-3/new/new2): a Jeju kitchen wall with a window on the sea, an old fridge on the left page with four
+ // magnet notes on its door, and a low table on the right with "나만의 레시피" lying on it. The notes, fridge and table carry their own edges
+ // (no die-cut border); the recipe book is a die-cut card like the other clickable things.
+ {dir:'page-3',name:'kitchen-back',src:'new/new2/jeju-kitchen-wall-high-resolution',width:1440,backdrop:{top:0,bottom:789}},
+ {dir:'page-3',name:'kitchen-fridge',src:'new/new2/front-fridge-with-plant-wider',width:760,clean:90,plain:true,cast:{dy:.03,blur:.01,alpha:.5}},
+ {dir:'page-3',name:'kitchen-table-low',src:'new/new2/simple-table-no-book',width:1400,clean:110,plain:true,cast:{dy:.08,blur:.011,alpha:.55,rows:.8}},
+ {dir:'page-3',name:'my-recipe-book',src:'new/new2/my-recipe-book',width:700,clean:150},
+ {dir:'page-3',name:'magnet-gnocchi',src:'new/new2/magnet-carrot-gnocchi',width:420,clean:90,plain:true},
+ {dir:'page-3',name:'magnet-gimbap',src:'new/new2/magnet-carrot-gimbap',width:420,clean:90,plain:true},
+ {dir:'page-3',name:'magnet-cheese-jeon',src:'new/new2/magnet-carrot-cheese-jeon',width:420,clean:90,plain:true},
+ {dir:'page-3',name:'magnet-blank',src:'new/new2/magnet-blank',width:420,clean:90,plain:true},
+ // Earlier kitchen pieces, no longer in the book (kept so their WebP files can be rebuilt).
  {dir:'page-3',name:'prep-table',src:'new/prep-table',width:1500,clean:110,plain:true,cast:{dy:.1,blur:.011,alpha:.55,rows:.8}},
  {dir:'page-3',name:'recipe-booklet',src:'new/recipe-booklet',width:760,clean:150,cast:{dy:.045,blur:.008,alpha:.6}},
- // The four notes on the board: three dishes and one blank note for the reader's own recipe.
  {dir:'page-3',name:'note-gnocchi',src:'note-carrot-gnocchi',width:520,clean:90,plain:true},
  {dir:'page-3',name:'note-gimbap',src:'note-carrot-gimbap',width:520,clean:90,plain:true},
  {dir:'page-3',name:'note-cheese-jeon',src:'note-carrot-cheese-jeon',width:520,clean:90,plain:true},

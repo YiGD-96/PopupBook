@@ -4,7 +4,7 @@ import { details } from './details';
 import { webzines, type WzBlock, type WzFlow, type WzMenu } from './webzine';
 
 /**
- * A shop's story as the web magazine's pages (src/webzine.ts, laid out like the mockup 웹진 2페이지 시안): it rises from the pop-up book like
+ * A story as the web magazine's pages (the farmer's, or a shop's) (src/webzine.ts, laid out like the mockup 웹진 2페이지 시안): it rises from the pop-up book like
  * the farmer's story (src/DetailBook.tsx), and the reader turns through its spreads inside it. Plain HTML and CSS (Pretendard), so it costs
  * the 3D book nothing while it is open. On wide screens a spread is sized in container units so it scales as one picture, like the mockup;
  * on phones the two pages stack and the words keep a readable size.
@@ -14,16 +14,18 @@ const Photo=({src,alt}:{src:string;alt:string})=><img src={src} alt={alt} decodi
 const Menu=({menu}:{menu:WzMenu})=><div className={'wz-menu is-'+(menu.shape??'wide')+(menu.flip?' is-flip':'')}><Photo src={menu.img} alt={menu.alt}/><div><h4>{menu.title}</h4><p>{menu.text}</p></div></div>;
 function Block({block,first}:{block:WzBlock;first:boolean}){
  switch(block.t){
-  case 'h1':return <h2 className="wz-h1" id={first?'wz-title':undefined}>{block.lines.map(line=><span key={line}>{line}</span>)}</h2>;
+  case 'h1':return <h2 className="wz-h1" id={first?'wz-title':undefined}>{block.lines.map((line,i)=><span key={line} className={i===block.accent?'is-accent':undefined}>{line}</span>)}</h2>;
+  case 'season':return <p className="wz-season">{block.text}</p>;
   case 'sub':return <p className="wz-sub">{block.text}</p>;
-  case 'hero':return <figure className="wz-hero"><Photo src={block.img} alt={block.alt}/></figure>;
+  case 'hero':return <figure className="wz-hero"><Photo src={block.img} alt={block.alt}/>{block.caption&&<figcaption>{block.caption}</figcaption>}</figure>;
+  case 'rows':return <div className={'wz-rows'+(block.pairs?' is-pairs':'')}>{block.items.map(item=><div key={item.term}>{item.n&&<b>{item.n}</b>}<strong>{item.term}</strong><span>{item.text}</span></div>)}</div>;
   case 'lead':return <div className="wz-lead">{block.head&&<strong>{block.head}</strong>}<p>{block.text}</p></div>;
   case 'h2':return <h3 className="wz-h2"><b>{block.n}</b> {block.text}</h3>;
   case 'photoText':return <div className={'wz-photo-text is-'+block.shape}><figure><Photo src={block.img} alt={block.alt}/></figure><div><Flow items={block.column}/></div></div>;
   case 'flow':return <div className={'wz-flow'+(block.tight?' is-tight':'')}><Flow items={block.items}/></div>;
   case 'menu':return <Menu menu={block.menu}/>;
   case 'menus':return <div className="wz-menus">{block.items.map(menu=><Menu key={menu.title} menu={menu}/>)}</div>;
-  case 'caption':return <div className="wz-captions">{block.items.map(item=><div key={item.title}><h4>{item.title}</h4><p>{item.text}</p></div>)}</div>;
+  case 'caption':return <div className={'wz-captions'+(block.cards?' is-cards':'')}>{block.items.map(item=><div key={item.title}><h4>{item.title}</h4><p>{item.text}</p></div>)}</div>;
   case 'rule':return <hr className="wz-rule"/>;
  }
 }
@@ -50,9 +52,9 @@ export default function WebzineBook({id,onClose}:{id:string;onClose:()=>void;onO
    <button className="wz-close" onClick={close} aria-label="책 닫기"><X size={20}/></button>
    <article className="wz-sheet" ref={sheet}>
     <div className="wz-inner">
-     <header className="wz-bar"><span>{zine.kicker}</span><i aria-hidden="true"/><em aria-hidden="true">People<br/>Who Cook</em></header>
+     <header className="wz-bar"><span>{zine.kicker}</span><i aria-hidden="true"/><em aria-hidden="true">{(zine.label??['People','Who Cook'])[0]}<br/>{(zine.label??['People','Who Cook'])[1]}</em></header>
      <div key={index} className={'wz-spread '+(direction===1?'is-next':'is-prev')} ref={heading} tabIndex={-1}>
-      <section className={'wz-page is-left'+withMedia(spread.left)} aria-label="왼쪽 쪽">{spread.left.map((block,i)=><Block key={i} block={block} first={index===0&&i===0}/>)}</section>
+      <section className={'wz-page is-left'+withMedia(spread.left)} aria-label="왼쪽 쪽">{spread.left.map((block,i)=><Block key={i} block={block} first={index===0&&i===spread.left.findIndex(b=>b.t==='h1')}/>)}</section>
       <section className={'wz-page is-right'+withMedia(spread.right)} aria-label="오른쪽 쪽">{spread.right.map((block,i)=><Block key={i} block={block} first={false}/>)}</section>
      </div>
      <div className="wz-end">

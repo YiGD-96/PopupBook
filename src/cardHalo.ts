@@ -12,8 +12,10 @@ import gsap from 'gsap';
 import { CanvasTexture, DoubleSide, MeshBasicMaterial, SRGBColorSpace, type Texture } from 'three';
 import { scenes, type Layer } from './story';
 
-// `reach`: the least width of the rim in world units, so a small card (the fly swatter on the phone) still glows visibly.
-export const HALO={color:'#ffc768',size:192,pad:.1,spread:.018,reach:.05,boost:1.7,peak:1,rest:.4,seen:.18};
+// A soft glow spreading wide around the card, made small (`size` px, so it stays soft) and starting right at the cut-out's edge (`edge`:
+// the band along the outline, as a fraction of `size`). `reach`: the least width of the glow in world units, so a small card (the fly
+// swatter on the phone) still glows visibly.
+export const HALO={color:'#ffc768',size:128,pad:.1,spread:.018,edge:.012,reach:.05,boost:1.7,peak:1,rest:.4,seen:.18};
 /** A spread's own glow (src/story.ts `halo`): a deeper colour, a stronger rim and rest where the default would vanish into its painting. */
 export type HaloTone={color:string;boost:number;rest:number;seen:number};
 export function haloTone(layer:Layer):HaloTone{
@@ -31,7 +33,7 @@ const making=new WeakMap<Texture,Promise<Halo>>();
 /**
  * Makes the halo of a card picture (once; kept for the page's life, like the card material in src/bookParts.tsx). The picture is first
  * shrunk to the halo's size by the browser (createImageBitmap resize, off the main thread where supported), so the work here is on a
- * ~200 px image: a couple of milliseconds instead of reading back a 1440 px picture.
+ * ~130 px image: a millisecond or two instead of reading back a 1440 px picture.
  */
 /** `extent`: the card's larger side in world units, so the rim is never thinner than `reach` (HALO.reach, or the card's own `glow`). */
 export function loadHalo(texture:Texture,tone:Pick<HaloTone,'color'|'boost'>=HALO,extent=Infinity,reach=HALO.reach):Promise<Halo>{
@@ -46,7 +48,9 @@ export function loadHalo(texture:Texture,tone:Pick<HaloTone,'color'|'boost'>=HAL
   // The silhouette in the glow colour, widened a little all round so the glow reaches out past the card's paper edge. Only the card's
   // solid paper counts: a soft shadow baked under a card's foot (the farmer's) would otherwise glow as a blob on the ground.
   const shape=canvas(W,H);shape.g.drawImage(source,pad,pad,w,h);
-  const solid=shape.g.getImageData(0,0,W,H);for(let i=3;i<solid.data.length;i+=4)solid.data[i]=solid.data[i]>=128?255:0;shape.g.putImageData(solid,0,0);
+  // How much of each pixel the card itself covers (its own alpha, soft fringe included), kept to cut the glow out of the card below.
+  const solid=shape.g.getImageData(0,0,W,H),coverage=new Uint8ClampedArray(W*H);
+  for(let i=3;i<solid.data.length;i+=4){coverage[(i-3)/4]=solid.data[i];solid.data[i]=solid.data[i]>=128?255:0;}shape.g.putImageData(solid,0,0);
   shape.g.globalCompositeOperation='source-in';shape.g.fillStyle=tone.color;shape.g.fillRect(0,0,W,H);
   if('close' in source&&source!==image)(source as ImageBitmap).close();
   const glow=canvas(W,H),offset=HALO.size*spread;
@@ -62,8 +66,19 @@ export function loadHalo(texture:Texture,tone:Pick<HaloTone,'color'|'boost'>=HAL
    small.g.imageSmoothingQuality='high';small.g.drawImage(glow.c,0,0,small.c.width,small.c.height);
    for(let i=0;i<(factor===3?2:1);i++)blurred.g.drawImage(small.c,0,0,W,H);
   }
-  // Blurring thins the glow; strengthen it so the rim reads clearly next to the card.
-  const pixels=blurred.g.getImageData(0,0,W,H);for(let i=3;i<pixels.data.length;i+=4)pixels.data[i]=Math.min(255,pixels.data[i]*tone.boost);blurred.g.putImageData(pixels,0,0);
+  // The glow starts right at the cut-out's edge: a band just past the outline at full strength (the silhouette nudged out a little all
+  // round, softened by one small shrink), so no dim gap shows between the card and its glow; the haze spreads out from it.
+  const edge=Math.max(1,HALO.size*HALO.edge),band=canvas(W,H);band.g.drawImage(shape.c,0,0);
+  for(let i=0;i<8;i++){const a=i/8*Math.PI*2;band.g.drawImage(shape.c,Math.cos(a)*edge,Math.sin(a)*edge);}
+  const half=canvas(Math.max(1,Math.round(W/2)),Math.max(1,Math.round(H/2)));half.g.imageSmoothingQuality='high';half.g.drawImage(band.c,0,0,half.c.width,half.c.height);
+  blurred.g.drawImage(half.c,0,0,W,H);
+  // Blurring thins the glow; strengthen it so the rim reads clearly next to the card. Then cut the card out of it (glow × (1 − the card's
+  // coverage)): the halo is drawn just in front of its card (src/bookParts.tsx CardHalo), so it never tints the card and, across the
+  // card's soft paper fringe, fills in exactly as the fringe fades. Drawn behind, the fringe (which writes depth) hid the glow and the
+  // dark desk showed through it as a gap between the card and its glow.
+  const pixels=blurred.g.getImageData(0,0,W,H);
+  for(let i=3;i<pixels.data.length;i+=4)pixels.data[i]=Math.min(255,pixels.data[i]*tone.boost)*(1-coverage[(i-3)/4]/255);
+  blurred.g.putImageData(pixels,0,0);
   const map=new CanvasTexture(blurred.c);map.colorSpace=SRGBColorSpace;map.flipY=texture.flipY;
   const material=new MeshBasicMaterial({map,transparent:true,opacity:0,depthWrite:false,side:DoubleSide,forceSinglePass:true});
   material.visible=false;

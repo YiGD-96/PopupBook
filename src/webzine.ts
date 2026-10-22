@@ -1,27 +1,65 @@
 /**
- * The shops' web-magazine pages ("웹진 2페이지 시안", art-src/gpt/page-2-webzine): each shop's story is two spreads, laid out like the
- * mockup. Opened from the pop-up book as a book (src/WebzineBook.tsx), keyed by the story id of the shop (details.ts: cook-01…03).
- * The words are the mockup's; the pictures are public/media/webzine (scripts/prepare-webzine.mjs).
+ * The web-magazine pages: the shops' ("웹진 2페이지 시안", art-src/gpt/page-2-webzine) and the farmer's (art-src/gpt/page-1/new/
+ * gujwa_carrot_webzine_responsive.html). Each story is two spreads, laid out like the mockup. Opened from the pop-up book as a book
+ * (src/WebzineBook.tsx), keyed by the story id of the card (details.ts: farmer, cook-01…03).
+ * The words are the mockups'; the pictures are public/media/webzine (scripts/prepare-webzine.mjs).
  */
 export type WzFlow={p:string}|{q:string};
 export type WzMenu={img:string;alt:string;title:string;text:string;/** Picture on the right, words on the left. */flip?:boolean;shape?:'wide'|'compact'|'tall'|'natural'|'square'};
 export type WzBlock=
- | {t:'h1';lines:string[]}
+ | {t:'h1';lines:string[];/** The line (index) printed in the accent colour. */accent?:number}
+ | {t:'season';text:string}
  | {t:'sub';text:string}
- | {t:'hero';img:string;alt:string}
+ | {t:'hero';img:string;alt:string;caption?:string}
+ | {t:'rows';items:{n?:string;term:string;text:string}[];/** Term and words side by side in two columns (a glossary) rather than one line. */pairs?:boolean}
  | {t:'lead';head?:string;text:string}
  | {t:'h2';n:string;text:string}
  | {t:'photoText';img:string;alt:string;shape:'portrait'|'wide'|'natural';column:WzFlow[]}
  | {t:'flow';items:WzFlow[];/** Follows the picture right away instead of sitting at the foot of the page. */tight?:boolean}
  | {t:'menu';menu:WzMenu}
  | {t:'menus';items:WzMenu[]}
- | {t:'caption';items:{title:string;text:string}[]}
+ | {t:'caption';items:{title:string;text:string}[];/** Short notes as small cards in two columns, each under a rule (the farmer's story). */cards?:boolean}
  | {t:'rule'};
 export type WzSpread={left:WzBlock[];right:WzBlock[]};
-export type Webzine={kicker:string;spreads:WzSpread[]};
+/** `label`: the two words set at the right end of the top bar (default "People / Who Cook"). */
+export type Webzine={kicker:string;label?:[string,string];spreads:WzSpread[]};
 const img=(name:string)=>`/media/webzine/${name}.webp`;
 
 export const webzines:Record<string,Webzine>={
+ // The farmer's story (gujwa_carrot_webzine_responsive.html): the winter harvest, why Gujwa carrots differ, and what carrots do for us.
+ 'farmer':{kicker:'01 · FARMER — 겨울을 견딘 당근',label:['The Carrot','Story'],spreads:[
+  {left:[
+    {t:'season',text:'수확철 | 12월 ~ 이듬해 3월'},
+    {t:'h1',lines:['겨울을 견딘','제주 구좌 당근 이야기'],accent:1},
+    {t:'lead',head:'검은 땅과 겨울바람이 키운 맛',text:'제주 구좌의 검은 화산토와 매서운 겨울바람 속에서 자란 당근. 겨울을 건넌 당근은 더욱 달고 묵직한 맛으로 식탁에 찾아옵니다.'},
+    {t:'flow',items:[{q:'생으로 먹어보세요.'}]},
+    {t:'hero',img:img('farmer-harvest'),alt:'흙이 묻은 채 수확해 밭에 놓아둔 제주 구좌 당근',caption:'수확한 구좌 당근 · 농부의 밭에서'}],
+   right:[
+    {t:'h2',n:'01.',text:'겨울을 건넌 당근'},
+    {t:'flow',items:[{p:'검은 화산토는 물 빠짐이 좋아 당근 뿌리가 땅속 깊이 곧게 내립니다. 겨울 추위를 겪으며 단맛이 깊어지고, 제철의 구좌 당근은 아삭하고 묵직해집니다.'}]},
+    {t:'hero',img:img('farmer-field'),alt:'검은 화산토 사이로 푸른 당근 잎이 가지런히 자란 구좌 당근밭',caption:'검은 흙 위로 펼쳐진 제주 구좌 당근밭'},
+    {t:'h2',n:'02.',text:'구좌 당근이 다른 이유'},
+    {t:'rows',items:[{n:'01',term:'검은 화산토',text:'뿌리가 곧고 깊게'},{n:'02',term:'겨울 눈보라',text:'추위를 견디며 깊어지는 단맛'},{n:'03',term:'농부의 손',text:'농약 대신 랜턴과 파리채로'}]}]},
+  {left:[
+    {t:'h2',n:'03.',text:'나를 위한 당근의 효능'},
+    {t:'flow',items:[{p:'작지만 든든한 주황색 영양소. 당근은 일상의 식탁에서 여러 영양소를 더해 줍니다.'}]},
+    {t:'caption',cards:true,items:[
+      {title:'01. 피부',text:'비타민 A는 피부와 점막을 정상적으로 유지하는 데 필요합니다.'},
+      {title:'02. 가벼운 간식',text:'생당근 100g은 약 41kcal. 아삭한 식감을 즐기기 좋습니다.'},
+      {title:'03. 장 건강',text:'식이섬유가 장 운동과 규칙적인 배변에 도움이 됩니다.'},
+      {title:'04. 나트륨 균형',text:'당근의 칼륨은 정상적인 체내 기능을 유지하는 데 필요합니다.'},
+      {title:'05. 항산화',text:'베타카로틴·알파카로틴 등 카로티노이드를 함유합니다.'}]},
+    {t:'h2',n:'04.',text:'아이에게도 좋은 이유'},
+    {t:'flow',items:[{p:'다양한 음식과 함께 당근을 조금씩 식탁에 올려 보세요.'}]},
+    {t:'rows',items:[{n:'01',term:'눈 건강',text:'비타민 A는 정상 시력 유지에 필요합니다.'},{n:'02',term:'점막과 면역',text:'점막의 정상적인 기능을 돕습니다.'},{n:'03',term:'성장기 영양',text:'세포 성장과 분화에 관여합니다.'}]}],
+   right:[
+    {t:'h2',n:'05.',text:'당근과 궁합이 좋은 재료'},
+    {t:'rows',pairs:true,items:[{term:'기름',text:'베타카로틴 흡수를 돕습니다.'},{term:'달걀·고기',text:'단백질과 철분을 더합니다.'},{term:'치즈·우유',text:'칼슘을 더하고 풍미를 부드럽게 합니다.'},{term:'사과',text:'산뜻한 단맛과 식이섬유가 더해집니다.'}]},
+    {t:'h2',n:'06.',text:'당근 오해와 진실'},
+    {t:'rows',pairs:true,items:[{term:'시력이 좋아진다?',text:'비타민 A 결핍 예방에 도움을 주지만 시력 자체를 높이지는 않습니다.'},{term:'꼭 생으로?',text:'익히고 약간의 기름과 함께 먹으면 카로티노이드 흡수에 유리합니다.'},{term:'손바닥이 노랗다?',text:'과다 섭취에 따른 카로틴혈증일 수 있습니다.'}]},
+    {t:'h2',n:'07.',text:'알아 두면 좋은 것'},
+    {t:'flow',items:[{p:'임신 준비 중 고용량 레티놀 보충제는 주의하세요. 고용량 베타카로틴 보충제도 의료진과 상담이 필요합니다. 어린아이에게는 단단한 생당근 조각 대신 익힌 당근을 주세요.'},{q:'당근은 약이 아니라 밥상이다.'}]}]}]},
+
  'cook-01':{kicker:'02 · PEOPLE WHO COOK — 소농로드',spreads:[
   {left:[
     {t:'h1',lines:['당근주스 한 잔에서 시작된','작은 농부들의 길']},

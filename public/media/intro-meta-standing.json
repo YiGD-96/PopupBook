@@ -18,7 +18,7 @@
     0.94,
     1.5
   ],
-  "fov": 51.369506560735715,
+  "fov": 39.21290235105976,
   "projection": "perspective",
   "renderer": "three.js (src/standingFilm.tsx)",
   "background": "#1a110b",
