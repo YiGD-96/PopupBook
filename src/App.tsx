@@ -20,6 +20,7 @@ import LanguageMenu from './LanguageMenu';
 import { detectLanguage } from './locale';
 import { details } from './details';
 import { noteStory, noteTurn, parseHash, track } from './analytics';
+import { url } from './base.ts';
 const Storybook = lazy(() => import('./Storybook'));
 // Once the intro film has buffered, the book's code and first spread download alongside it (src/Storybook.tsx preloadBook).
 const preloadBook = () => { void import('./Storybook').then(module => module.preloadBook()).catch(() => {}); };
@@ -271,7 +272,7 @@ export default function App() {
       <LanguageMenu/>
     </div>
     {chromeVisible&&<header className="site-header">
-      <a href="/" className="brand" aria-label={SITE.name+' 홈으로'}><img className="brand-logo" src="/media/logo.webp" alt="carrot" width={87} height={26}/><span className="brand-name">{SITE.name}</span></a>
+      <a href={url("/")} className="brand" aria-label={SITE.name+' 홈으로'}><img className="brand-logo" src={url("/media/logo.webp")} alt="carrot" width={87} height={26}/><span className="brand-name">{SITE.name}</span></a>
     </header>}
     {/* The spread's title, on its own above the book, with a dot per chapter (the one being read lit). Read by screen readers from the h1 below. */}
     {chromeVisible&&!ending&&<div className="chapter-title" key={chapter} aria-hidden="true"><span>{scene.english}</span><strong>{scene.title}</strong><div className="chapter-dots">{scenes.map((item,index)=><i key={item.id} className={index===chapter?'is-on':''}/>)}</div></div>}

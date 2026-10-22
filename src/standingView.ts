@@ -30,4 +30,12 @@ export function standingFov(width:number,height:number,margin=.9){
  for(const point of STANDING_PAGE_POINTS){const v=new Vector3(...point).applyMatrix4(view);need=Math.max(need,Math.abs(v.x)/-v.z/aspect/STANDING_PAGE_FILL);}
  return 2*Math.atan(need)*180/Math.PI;
 }
+/** The whole book in view (every frame point within `margin` of all four edges), as the phone book used to be framed: the phone intro
+ *  film starts here, the closed book at its full size, and closes in to standingFov while the book opens. */
+export function standingWholeFov(width:number,height:number,margin=.9){
+ const camera=new PerspectiveCamera(30,width/height,.1,70);camera.position.set(...STANDING_CAMERA_POSITION);camera.lookAt(...STANDING_TARGET);camera.updateMatrixWorld();
+ const view=new Matrix4().copy(camera.matrixWorld).invert(),aspect=width/height;let need=0;
+ for(const point of STANDING_FRAME_POINTS){const v=new Vector3(...point).applyMatrix4(view);need=Math.max(need,Math.abs(v.y)/-v.z,Math.abs(v.x)/-v.z/aspect);}
+ return 2*Math.atan(need/margin)*180/Math.PI;
+}
 export { STANDING_QUERY } from './standingMedia.ts';

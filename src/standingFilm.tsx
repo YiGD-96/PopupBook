@@ -19,7 +19,7 @@ import { cropBackdrop, createStandingPage, createStandingSheetGeometry, createSt
 import { UPRIGHT_LEAN, UPRIGHT_SCALE, isBackdrop, standingPlacement, surfaceY } from './standingLayout';
 /** The upright half's final turn from closed: 90° and the live book's lean (it faces the camera squarely). */
 const OPEN_TO=Math.PI/2+UPRIGHT_LEAN;
-import { STANDING_CAMERA_POSITION, STANDING_TARGET, standingFov } from './standingView';
+import { STANDING_CAMERA_POSITION, STANDING_TARGET, standingFov, standingWholeFov } from './standingView';
 import { STANDING_FILM_ASPECT } from './standingMedia';
 import { FILM_FONT, TurnedMesh, ease, smooth } from './filmParts';
 
@@ -28,7 +28,10 @@ export function standingTimeline(t:number){
  const moving=t-INTRO_COVER_HOLD,lowering=ease(moving/1.4),open=ease((moving-.12)/1.43);
  // Pressed-flat sheets relax into their open swell once the halves are far enough apart.
  // The closed book is shown larger; it shrinks back early and dips a little more while it swings diagonally across the portrait frame.
- return {lowering,open,shrink:smooth(moving/.75),swell:smooth(open/.6),
+ // The camera starts on the whole book (standingWholeFov) and closes in to the live book's view (standingFov) while the book opens,
+ // done just before the cards rise, where the live book takes over (src/Intro.tsx pauses the film just before STANDING_INTRO_UI_AT).
+ const zoom=smooth(moving/(STANDING_INTRO_UI_AT-.12-INTRO_COVER_HOLD));
+ return {lowering,open,zoom,shrink:smooth(moving/.75),swell:smooth(open/.6),
   sheets:Array.from({length:STANDING_INTRO_PAGE_COUNT},(_,i)=>smooth((t-INTRO_PAGES_START-i*STANDING_INTRO_PAGE_STAGGER)/INTRO_PAGE_TURN)),
   cards:t>=STANDING_INTRO_UI_AT?t-STANDING_INTRO_UI_AT:-1};
 }
@@ -44,9 +47,11 @@ const STAND_SCALE=1;
  *  the line through the frame's centre: the whole cover sits mid-frame, well inside the band every phone shows of the 9:20 film. */
 const PIVOT_LYING=new Vector3(0,BOOK_HINGE_Y,BOOK_BOARD.x),PIVOT_STANDING=new Vector3(.1,2.15,3.07);
 
-export function StandingFilmCamera({width,height}:{width:number;height:number}){
+/** `zoom` 0 frames the whole book (as the phone book used to be), 1 the live book's view; the film eases from one to the other. */
+export function StandingFilmCamera({width,height,zoom=1}:{width:number;height:number;zoom?:number}){
  const {camera,scene}=useThree();
- useEffect(()=>{const cam=camera as PerspectiveCamera;cam.aspect=width/height;cam.fov=standingFov(width,height);cam.position.set(...STANDING_CAMERA_POSITION);cam.lookAt(...STANDING_TARGET);cam.updateProjectionMatrix();},[camera,scene,width,height]);
+ const [whole,close]=useMemo(()=>[standingWholeFov(width,height),standingFov(width,height)],[width,height]);
+ useEffect(()=>{const cam=camera as PerspectiveCamera;cam.aspect=width/height;cam.fov=whole+(close-whole)*zoom;cam.position.set(...STANDING_CAMERA_POSITION);cam.lookAt(...STANDING_TARGET);cam.updateProjectionMatrix();},[camera,scene,width,height,whole,close,zoom]);
  return null;
 }
 /** The first half turning about the binding from closed (−π) to standing (−π/2), shortening from the closed book's full size to the
@@ -126,7 +131,7 @@ export function StandingFilm({materials,assets,t,width,height}:{materials:BookMa
  const cards=scenes[0].layers.filter(layer=>!isBackdrop(layer)&&!layer.phoneHidden);
  // The first spread's own printed floor (src/story.ts `stage`), as the live book's flat page shows it, once its sheet has lifted off.
  const stageName=(scenes[0] as {stage?:string}).stage,floor=stageName&&started>0&&assets.chapters[started-1]===0?assets.scenery[stageName]:undefined;
- return <><StandingFilmCamera width={width} height={height}/><DeskFog background/><Desk materials={materials}/>
+ return <><StandingFilmCamera width={width} height={height} zoom={f.zoom}/><DeskFog background/><Desk materials={materials}/>
   <group position={pivot} quaternion={turn} scale={scale}><group position={[0,-BOOK_HINGE_Y,-BOOK_BOARD.x]}><group rotation={[0,-Math.PI/2,0]}>
    <Board materials={materials} x={BOOK_BOARD.x}/><PaperBlock materials={materials} x={BLOCK_X}/>
    {materials.endpaper&&<PrintedPage texture={floor??materials.endpaper} edge={materials['paper-edge']} swell={f.swell} tint={floor?undefined:paperOf(started-1)}/>}
