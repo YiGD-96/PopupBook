@@ -1,21 +1,27 @@
 import { useEffect, useRef, useState } from 'react';
-import { Camera, Play, X } from 'lucide-react';
+import { ArrowUpRight, Camera, Play, X } from 'lucide-react';
+import { track } from './analytics';
 import { details } from './details';
 import { useLocale, type Lang } from './locale';
-import { posterSrc, posters } from './posters';
+import { photoSrc, posterSrc, posters, shortsEmbed, shortsThumb, shortsUrl } from './posters';
 import './poster.css';
 
 /**
  * A recipe poster from the kitchen wall as a book (src/posters.ts): it rises from the pop-up book like the shops' web-magazine pages
  * (src/WebzineBook.tsx). The right page is the poster in the reader's language (the language menu at the top right), printed to the page's
- * edges; the left page keeps a frame for a real photo or a video of the dish, empty until one is given. On phones the two pages run on as
- * one page that scrolls.
+ * edges. The left page is the dish as it really turned out, laid out like a scrapbook: the YouTube Short of it being made in an upright,
+ * phone-shaped frame, and beside it the photo of the plate as a taped polaroid with a line under it. The Short is only YouTube's still and
+ * a play button until the reader presses it; then the player loads in the frame (youtube-nocookie), so opening the book costs nothing
+ * extra. On phones the two pages run on as one page that scrolls.
  */
 const EMPTY:Record<Lang,string>={ko:'사진과 영상을 준비하고 있어요',en:'Photos and video are coming soon',zh:'照片和视频即将上线'};
 const SCROLL:Record<Lang,string>={ko:'아래로 내려 보세요',en:'Scroll down',zh:'向下滑动'};
+const MADE:Record<Lang,string>={ko:'직접 만들어 본 한 접시와 만드는 과정',en:'The dish as we made it, and how',zh:'我们亲手做的一盘，以及制作过程'};
+const WATCH:Record<Lang,string>={ko:'쇼츠로 만드는 과정 보기',en:'Watch the Short',zh:'观看制作短视频'};
+const ON_YOUTUBE:Record<Lang,string>={ko:'YouTube에서 보기',en:'Open on YouTube',zh:'在 YouTube 上观看'};
 export default function PosterBook({id,onClose,onOpen}:{id:string;onClose:()=>void;onOpen:(id:string)=>void}){
  const detail=details[id],poster=posters[id];const lang=useLocale(s=>s.lang);
- const heading=useRef<HTMLHeadingElement>(null),sheet=useRef<HTMLElement>(null);const [open,setOpen]=useState(false);const closing=useRef(0);
+ const heading=useRef<HTMLHeadingElement>(null),sheet=useRef<HTMLElement>(null);const [open,setOpen]=useState(false);const [playing,setPlaying]=useState(false);const closing=useRef(0);
  // Mounted lying back, then raised on the next frame so the transition runs; closing lowers it again before it goes.
  useEffect(()=>{const frame=requestAnimationFrame(()=>setOpen(true));return()=>{cancelAnimationFrame(frame);window.clearTimeout(closing.current);};},[]);
  useEffect(()=>{if(open)heading.current?.focus({preventScroll:true});},[open,id]);
@@ -28,18 +34,28 @@ export default function PosterBook({id,onClose,onOpen}:{id:string;onClose:()=>vo
   else if(e.key==='ArrowRight'||e.key==='ArrowLeft')e.stopPropagation();
  };window.addEventListener('keydown',key,true);return()=>window.removeEventListener('keydown',key,true);});
  if(!detail||!poster)return null;
- const title=poster.title[lang],media=poster.media;
+ const title=poster.title[lang],caption=poster.caption[lang],shorts=poster.shorts;
  return <div className={'detail-book-backdrop'+(open?' is-open':'')} onClick={e=>{if(e.target===e.currentTarget)close();}}>
   <div className="poster-book" role="dialog" aria-modal="true" aria-labelledby="pb-title">
    <button className="wz-close" onClick={close} aria-label="책 닫기"><X size={20}/></button>
    <article className="pb-sheet" ref={sheet} tabIndex={-1}>
     <section className="pb-page is-left" aria-label="왼쪽 쪽">
      <header><span>03 · MENU &amp; RECIPE</span><h2 id="pb-title" ref={heading} tabIndex={-1} lang={lang}>{title}</h2></header>
-     <figure className={'pb-media'+(media?'':' is-empty')}>
-      {media?.kind==='image'&&<img src={media.src} alt={media.alt} decoding="async" draggable={false}/>}
-      {media?.kind==='video'&&<video src={media.src} poster={media.poster} title={media.title} controls playsInline preload="none"/>}
-      {!media&&<figcaption lang={lang}><span aria-hidden="true"><Camera size={22}/><Play size={20}/></span>{EMPTY[lang]}</figcaption>}
-     </figure>
+     {shorts||poster.photo?<>
+      <p className="pb-made" lang={lang}>{MADE[lang]}</p>
+      <div className="pb-real">
+       {shorts&&<figure className="pb-shorts">
+        <div className="pb-shorts-frame">
+         {playing?<iframe src={shortsEmbed(shorts)} title={`${title} — YouTube Shorts`} allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowFullScreen/>
+          :<button type="button" className="pb-shorts-cover" onClick={()=>{setPlaying(true);track('shorts_play',{story:id});}} aria-label={WATCH[lang]}>
+           <img src={shortsThumb(shorts)} alt="" decoding="async" draggable={false}/><span className="pb-shorts-tag">Shorts</span><span className="pb-play" aria-hidden="true"><Play size={26} fill="currentColor"/></span>
+          </button>}
+        </div>
+        <figcaption><a href={shortsUrl(shorts)} target="_blank" rel="noopener noreferrer" lang={lang}>{ON_YOUTUBE[lang]}<ArrowUpRight size={13}/></a></figcaption>
+       </figure>}
+       {poster.photo&&<figure className="pb-polaroid"><img src={photoSrc(poster)} alt={caption} width={900} height={1200} decoding="async" draggable={false}/><figcaption lang={lang}>{caption}</figcaption></figure>}
+      </div>
+     </>:<figure className="pb-media is-empty"><figcaption lang={lang}><span aria-hidden="true"><Camera size={22}/><Play size={20}/></span>{EMPTY[lang]}</figcaption></figure>}
     </section>
     <section className="pb-page is-right" aria-label="오른쪽 쪽">
      <img src={posterSrc(poster,lang)} alt={`${title} 레시피 포스터`} width={1024} height={1536} decoding="async" draggable={false}/>

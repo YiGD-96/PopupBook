@@ -13,6 +13,7 @@ import {fileURLToPath} from 'node:url';
 import {createRequire} from 'node:module';
 import {pathFloor} from './street-floor.mjs';
 import {farmFloor} from './farm-floor.mjs';
+import {rugLayer} from './kitchen-rug.mjs';
 const project=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const runtime=process.env.CODEX_NODE_MODULES||'C:/Users/eh1al/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules';
 const sharp=createRequire(path.join(runtime,'package.json'))('sharp');
@@ -23,7 +24,7 @@ const PAGE_W=620,PAGE_H=830,PRINT_W=1080,PRINT_H=1446;
 const overlay=body=>Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="${PRINT_W}" height="${PRINT_H}" viewBox="0 0 ${PAGE_W} ${PAGE_H}">${body}</svg>`);
 
 // ---------- Printed pages: section number, English kicker and title in the band in front of the cards ----------
-const chapters=[['01','FARMER','구좌를 길러내는 묵묵한 방식','구좌 당근을 키우는 농부의 이야기'],['02','PEOPLE WHO COOK','구좌를 맛보는 다채로운 방식','구좌 당근을 요리하는 사람들의 이야기'],['03','MENU &amp; RECIPE','구좌를 요리하는 가장 쉬운 방식','구좌 당근 레시피 이야기']];
+const chapters=[['01','FARMER','구좌 당근, 맛의 시작','구좌 당근을 키우는 농부의 이야기'],['02','PEOPLE WHO COOK','구좌 당근, 색다른 변신','구좌 당근을 요리하는 사람들의 이야기'],['03','MENU &amp; RECIPE','구좌 당근, 식탁 위의 발견','구좌 당근 레시피 이야기']];
 // A faint wash from the back edge tones each spread's papyrus to its scene (dusk field, sunny seaside, lamplit kitchen), so the floor
 // the cards stand on still belongs to the painting behind them; the gutter falls into shade toward the binding.
 const PAPER=[
@@ -39,6 +40,10 @@ const FLOORS={
  0:(w,h,clear)=>farmFloor(sharp,project,w,h,{clear}),
  1:(w,h,clear)=>pathFloor(sharp,project,w,h,{clear,widenRight:{dx:.075,u0:.55,v0:.46,v1:1}}),
 };
+// Chapter 3's kitchen: a long, thick beige rug with a terracotta border under the table on the right page (page units, x y w h and the pile's depth;
+// the table stands at x 1.75, z 1.0 in the book, its legs well inside the rug), printed below the page's own wash and words, its front edge clear of the subtitle.
+const RUGS={2:{right:{x:26,y:458,w:577,h:227,thick:10}}};
+const printedRug=({x,y,w,h,thick})=>{const k=PRINT_W/PAGE_W;return rugLayer(sharp,project,PRINT_W,PRINT_H,{x:x*k,y:y*k,w:Math.round(w*k),h:Math.round(h*k),thick:thick*k});};
 const only=process.argv[2]; // e.g. "1": write just that chapter's pages
 for(const [chapter,[n,kicker,title,subtitle]] of chapters.entries())for(const side of ['left','right']){
  if(only!==undefined&&Number(only)!==chapter)continue;
@@ -57,7 +62,7 @@ for(const [chapter,[n,kicker,title,subtitle]] of chapters.entries())for(const si
   await fs.writeFile(path.join(raster,`page-${chapter}-${side}.webp`),await base.composite([{input:overlay(labelled)}]).webp({quality:90,effort:5}).toBuffer());
   continue;
  }
- await fs.writeFile(path.join(raster,`page-${chapter}-${side}.webp`),await sheet.clone().composite([{input:overlay(body)}]).webp({quality:82,effort:5}).toBuffer());
+ await fs.writeFile(path.join(raster,`page-${chapter}-${side}.webp`),await sheet.clone().composite([...(RUGS[chapter]?.[side]?[{input:await printedRug(RUGS[chapter][side])}]:[]),{input:overlay(body)}]).webp({quality:82,effort:5}).toBuffer());
 }
 // The plain sheet: the story book's pages (src/DetailBook.tsx) and the intro film's journal (src/film.tsx).
 if(only===undefined)await fs.writeFile(path.join(raster,'intro-pages.webp'),await sharp(papyrus).resize(1440,1928,{fit:'cover'}).webp({quality:84,effort:5}).toBuffer());

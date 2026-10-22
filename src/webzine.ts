@@ -1,33 +1,103 @@
+import { url } from './base.ts';
 /**
- * The web-magazine pages: the shops' ("웹진 2페이지 시안", art-src/gpt/page-2-webzine) and the farmer's (art-src/gpt/page-1/new/
- * gujwa_carrot_webzine_responsive.html). Each story is two spreads, laid out like the mockup. Opened from the pop-up book as a book
- * (src/WebzineBook.tsx), keyed by the story id of the card (details.ts: farmer, cook-01…03).
+ * The web-magazine pages: the shops' ("웹진 2페이지 시안", art-src/gpt/page-2-webzine) and chapter 1's three (art-src/gpt/page-1/new: the
+ * farmer's interview, gujwa_farmer_interview_webzine_final_vertical_epilogue.html; the carrot story behind the crate,
+ * gujwa_carrot_webzine_responsive.html; the lantern night behind the fly swatter, gujwa_lantern_night_two_page_final.html). Each story is
+ * one or two spreads, laid out like its mockup. Opened from the pop-up book as a book (src/WebzineBook.tsx), keyed by the story id of the
+ * card (details.ts: farmer, harvest, night-watch, cook-01…03).
  * The words are the mockups'; the pictures are public/media/webzine (scripts/prepare-webzine.mjs).
  */
-export type WzFlow={p:string}|{q:string};
+/** `strong`: a phrase of the paragraph set in the accent colour. */
+export type WzFlow={p:string;strong?:string}|{q:string};
 export type WzMenu={img:string;alt:string;title:string;text:string;/** Picture on the right, words on the left. */flip?:boolean;shape?:'wide'|'compact'|'tall'|'natural'|'square'};
 export type WzBlock=
- | {t:'h1';lines:string[];/** The line (index) printed in the accent colour. */accent?:number}
+ | {t:'h1';lines:string[];/** The line (index) printed in the accent colour. */accent?:number;/** A word printed in the accent colour. */mark?:string}
+ | {t:'eyebrow';text:string}
  | {t:'season';text:string}
  | {t:'sub';text:string}
- | {t:'hero';img:string;alt:string;caption?:string}
+ | {t:'hero';img:string;alt:string;caption?:string;/** Share of the page width (centred); default the full width. */width?:number;/** CSS object-position of the crop. */focus?:string}
+ | {t:'side';img:string;alt:string;caption?:string;/** Width of the picture's column, as a CSS length (e.g. '49%'). */column:string;aspect:number;focus?:string;body:WzBlock[]}
+ | {t:'cutout';img:string;alt:string}
  | {t:'rows';items:{n?:string;term:string;text:string}[];/** Term and words side by side in two columns (a glossary) rather than one line. */pairs?:boolean}
  | {t:'lead';head?:string;text:string}
- | {t:'h2';n:string;text:string}
+ | {t:'h2';n?:string;text:string}
  | {t:'photoText';img:string;alt:string;shape:'portrait'|'wide'|'natural';column:WzFlow[]}
  | {t:'flow';items:WzFlow[];/** Follows the picture right away instead of sitting at the foot of the page. */tight?:boolean}
  | {t:'menu';menu:WzMenu}
  | {t:'menus';items:WzMenu[]}
  | {t:'caption';items:{title:string;text:string}[];/** Short notes as small cards in two columns, each under a rule (the farmer's story). */cards?:boolean}
  | {t:'rule'};
-export type WzSpread={left:WzBlock[];right:WzBlock[]};
+/** `dense`: a page set a little smaller and tighter, so a long page still fits (as its mockup does). */
+export type WzSpread={left:WzBlock[];right:WzBlock[];dense?:'left'|'right'};
 /** `label`: the two words set at the right end of the top bar (default "People / Who Cook"). */
 export type Webzine={kicker:string;label?:[string,string];spreads:WzSpread[]};
-const img=(name:string)=>`/media/webzine/${name}.webp`;
+const img=(name:string)=>url(`/media/webzine/${name}.webp`);
 
 export const webzines:Record<string,Webzine>={
- // The farmer's story (gujwa_carrot_webzine_responsive.html): the winter harvest, why Gujwa carrots differ, and what carrots do for us.
- 'farmer':{kicker:'01 · FARMER — 겨울을 견딘 당근',label:['The Carrot','Story'],spreads:[
+ // The farmer's interview (gujwa_farmer_interview_webzine_final_vertical_epilogue.html): the farmer Yu Do-gyun on growing carrots in
+ // Gujwa, ending with an epilogue.
+ 'farmer':{kicker:'01 · FARMER — 영상 인터뷰',label:['Farmer','Interview'],spreads:[
+  {left:[
+    {t:'h1',lines:['구좌에서 당근 농부로','살아간다는 것']},
+    {t:'sub',text:'구좌 당근과 농부 이야기 | 유기농 당근 농부 유도균 대표'},
+    {t:'hero',img:img('farmer-portrait'),alt:'제주 구좌 당근밭에서 직접 당근을 들고 미소 짓는 유도균 농부',caption:'제주 구좌 당근 농부 유도균 대표',width:.92,focus:'center 45%'},
+    {t:'flow',items:[{p:'제주 구좌읍에서 유기농 당근을 키우는 유도균 대표. 광고회사에서 일하다 제주로 내려온 그가 구좌 당근의 단맛과 한 뿌리가 식탁에 오르기까지의 시간을 들려준다.'}]},
+    {t:'rule'},
+    {t:'h2',n:'01.',text:'할머니가 건넨 한마디'},
+    {t:'flow',items:[{p:'제주에 내려온 그는 할머니의 “구좌는 당근과 콩이다”라는 한마디를 듣고 농사를 시작했다. 여러 작물을 거쳐 결국 당근 하나가 남았다.'}]}],
+   right:[
+    {t:'h2',n:'02.',text:'화산재 흙과 겨울이 만든 단맛'},
+    {t:'flow',items:[{p:'구좌의 검은 화산재 흙은 물 빠짐이 좋아 당근이 깊이 뿌리내린다. 추위를 견디면 단맛이 더 진해진다. 유 대표는 생으로 먹거나 주스로 마실 때 그 차이가 분명하다고 말한다.'},{q:'육지 당근이랑 비교하면 압도적이죠.'}]},
+    {t:'rule'},
+    {t:'h2',n:'03.',text:'비가 오지 않는 밭'},
+    {t:'flow',items:[{p:'예전에는 파종 뒤 비가 알맞게 내렸지만, 최근에는 씨를 뿌린 뒤에도 비가 오지 않는 날이 늘었다. 스프링클러를 밤마다 돌리고, 농업용수가 부족해 새벽에 물을 받아야 하는 일도 생겼다. 달라진 기후 속에서 농부의 손길은 더 바빠졌다.'}]},
+    {t:'hero',img:img('farmer-boots'),alt:'제주 당근밭에서 작업하는 농부의 장화와 검은 화산토, 초록색 당근 잎',caption:'구좌 당근밭에서 일하는 농부의 발',width:.92}]},
+  {left:[
+    {t:'h1',lines:['당근 한 뿌리가','식탁에 오르기까지']},
+    {t:'sub',text:'구좌 당근과 농부 이야기 | 유기농 당근 농부 유도균 대표'},
+    {t:'rule'},
+    {t:'side',img:img('farmer-pile'),alt:'구좌 당근 수확 현장에 모여 있는 당근과 포장 상자',caption:'수확한 당근이 밭에 모여 있는 모습',column:'49%',aspect:1.25,focus:'center 56%',body:[
+      {t:'h2',n:'04.',text:'밭에 남겨지는 당근들'},
+      {t:'flow',items:[{p:'당근은 길이와 굵기 등 규격에 맞아야 시장으로 나간다. 규격을 벗어난 당근은 ‘파치’라고 불리며 밭에 남거나 거름이 되기도 한다. 조금 다른 모양이어도 같은 구좌의 흙에서 자란 당근이다.'}]}]},
+    {t:'rule'},
+    {t:'h2',n:'05.',text:'좋은 당근 줘서 고맙다는 말'},
+    {t:'flow',items:[{p:'택배로 당근을 팔기 시작한 뒤 가장 기억에 남은 말은 “좋은 당근 줘서 고맙다”는 인사였다. 그는 당근을 쪄서 갈아 먹고 겨울에는 주스로 마신다. 주스 사업 제안은 “원물이 중요하니까요”라며 거절했다.'},{q:'좋은 당근 줘서 고맙다는 말이 제일 기억에 남아요. 원물이 중요하니까요.'}]}],
+   right:[
+    {t:'side',img:img('farmer-talk'),alt:'실내에서 인터뷰에 응하는 유도균 농부',caption:'인터뷰 중인 유도균 대표',column:'50%',aspect:1.4,focus:'66% 38%',body:[
+      {t:'h2',n:'06.',text:'혼자 짓지 않는 농사'},
+      {t:'flow',items:[{p:'유 대표가 귀농을 꿈꾸는 청년들에게 강조한 것은 관계였다. 농사는 혼자 할 수 없고, 아프면 대신해 줄 사람도 필요하다. 몸은 고되고 수입은 불안정하지만, 지금의 삶에는 만족한다고 말한다.'},{q:'엄청 만족해요. 농부는 은퇴가 없는 좋은 직업이에요.'}]}]},
+    {t:'rule'},
+    {t:'eyebrow',text:'EPILOGUE'},
+    {t:'h2',text:'올겨울에도 구좌의 밭에서는'},
+    {t:'flow',items:[
+      {p:'올겨울에도 구좌의 밭에서는 한파를 견딘 당근이 조금씩 단맛을 채워 가고 있다. 우리가 식탁에서 만나는 당근 한 뿌리에는 제주의 검은 화산토와 차가운 겨울바람, 그리고 오랜 시간 밭을 지켜 온 농부의 손길이 함께 담겨 있다.'},
+      {p:'비가 오지 않아 밤새 물을 대야 하는 날도 있고, 정성껏 키운 당근이 모양과 크기 때문에 시장에 나가지 못하는 날도 있다. 그럼에도 농부는 다시 씨를 뿌리고, 계절을 기다리며 다음 수확을 준비한다.'},
+      {p:'유도균 대표에게 농사는 혼자만의 일이 아니다. 서로의 어려움을 살피고 도움을 주고받으며 함께 이어가는 삶이다. 그렇게 키운 당근이 누군가의 식탁에 오르고, “좋은 당근 줘서 고맙다”는 말로 돌아올 때 그간의 수고는 특별한 의미를 갖는다.'},
+      {p:'1월쯤 제주를 찾는다면, 눈 맞은 구좌 당근을 생으로 한입 베어 물어 보길 권한다. 아삭한 식감과 달콤한 맛 너머로, 그 한 뿌리를 키워 낸 구좌의 겨울과 농부의 시간을 조금은 느낄 수 있을 것이다.',strong:'그 한 뿌리를 키워 낸 구좌의 겨울과 농부의 시간을 조금은 느낄 수 있을 것이다.'}]}],dense:'right'}]},
+
+ // The lantern night behind the fly swatter (gujwa_lantern_night_two_page_final.html): one spread, the swatter and lantern on the left.
+ 'night-watch':{kicker:'01 · FARMER — 랜턴과 파리채를 든 밤',label:['The Carrot','Story'],spreads:[
+  {left:[
+    {t:'h1',lines:['랜턴과','파리채를 든 밤'],mark:'파리채'},
+    {t:'sub',text:'구좌 당근 농부 이야기 | 유기농 당근 농부 유도균 대표'},
+    {t:'cutout',img:img('lantern-cutout'),alt:'낡은 붉은 파리채와 끈에 걸린 검은 랜턴'},
+    {t:'rule'},
+    {t:'eyebrow',text:'PROLOGUE'},
+    {t:'flow',items:[{p:'해가 진 구좌의 당근밭에는 작은 불빛이 움직인다. 어린 당근을 지키려 랜턴과 파리채를 들고 나선 유도균 대표다. 남들이 잠든 시간에도 이어지는 농부의 일. 당근 한 뿌리에는 우리가 보지 못한 밤의 수고가 담겨 있다.'}]}],
+   right:[
+    {t:'h2',n:'01.',text:'유기농이 원칙이 되기까지'},
+    {t:'flow',items:[{p:'유도균 대표가 처음 얻은 밭은 우연히도 유기농 밭이었다. 유기농이라는 말조차 낯설던 시절이었다. 농약은 몸에도 좋지 않았고, 농사를 지어 보니 생각보다 많은 것이 들어간다는 사실도 알게 됐다. 그렇게 유기농은 유 대표의 원칙이 되었다.'}]},
+    {t:'rule'},
+    {t:'h2',n:'02.',text:'귀뚜라미와의 밤'},
+    {t:'flow',items:[
+      {p:'유기농 당근밭의 가장 큰 적은 귀뚜라미다. 귀뚜라미가 어린 당근을 꺾어 먹기 시작하면 천 평 밭이 2~3일 만에 망가진다. 유기농 살충제는 벌레에 직접 닿아야 효과가 있는데, 귀뚜라미는 밤에만 바위 틈에서 나온다.'},
+      {p:'그래서 유 대표는 밤마다 랜턴과 파리채를 들고 밭을 돈다. 하루에 잡는 귀뚜라미만 수천 마리다.'},
+      {q:'밖에서 보면 귀신인 줄 알 거예요.'},
+      {p:'웃으며 한 말이지만 가볍게 넘길 일은 아니다. 이 문제 때문에 친환경을 포기한 큰 영농조합도 있을 정도다.'}]}]}]},
+
+ // The carrot story behind the crate (gujwa_carrot_webzine_responsive.html): the winter harvest, why Gujwa carrots differ, and what carrots
+ // do for us.
+ 'harvest':{kicker:'01 · FARMER — 겨울을 견딘 당근',label:['The Carrot','Story'],spreads:[
   {left:[
     {t:'season',text:'수확철 | 12월 ~ 이듬해 3월'},
     {t:'h1',lines:['겨울을 견딘','제주 구좌 당근 이야기'],accent:1},

@@ -21,3 +21,17 @@
 배포 성공 후 Vercel이 표시하는 사이트 주소를 열어 표지 펼침, 책장 넘김, 세 장의 풍경을 확인합니다. 이후 연결된 배포 브랜치에 수정본을 올리면 Vercel이 새 버전을 빌드합니다.
 
 공식 안내: [Vite on Vercel](https://vercel.com/docs/frameworks/frontend/vite), [Vercel 프로젝트 설정](https://vercel.com/docs/project-configuration/project-settings).
+
+# GitHub Pages로 배포하기
+
+주소: https://yigd-96.github.io/PopupBook/
+
+빌드 결과의 경로는 모두 상대 경로입니다(`vite.config.ts`의 `base: './'`, 앱 안의 경로는 `src/base.ts`의 `url()`). 그래서 같은 빌드를 도메인 최상위(Vercel), 하위 경로(GitHub Pages의 `/PopupBook/`), 다른 사이트 어디에 올려도 그대로 동작합니다. 꼭 절대 경로가 필요한 곳이면 빌드할 때 `VITE_BASE=/경로/`를 주면 됩니다.
+
+1. 저장소 **Settings → Pages → Build and deployment → Source**를 **GitHub Actions**로 바꿉니다(처음 한 번). "Deploy from a branch"로 두면 빌드 전 소스가 그대로 올라가 빈 화면이 나옵니다.
+2. `main`에 올리면 `.github/workflows/deploy-pages.yml`이 `npm ci` → `npm run build` → `dist`를 Pages에 배포합니다. Actions 탭에서 수동 실행(Run workflow)도 됩니다.
+3. 선택: GA4를 쓰려면 Settings → Secrets and variables → Actions → **Variables**에 `VITE_GA_ID`를 추가합니다.
+
+다른 사이트에 올릴 때는 `npm run build`로 만든 `dist` 폴더 전체를 그 사이트의 원하는 경로에 그대로 올리면 됩니다. 검색용 절대 주소(canonical, og:image, sitemap)는 빌드할 때 `VITE_SITE_URL=그 사이트 주소`로 맞춥니다.
+
+Pages에는 서버 함수가 없어 `api/geo`(접속 국가로 언어 고르기)가 동작하지 않습니다. 이때는 브라우저가 ipapi.co로 국가를 조회해 같은 결과를 냅니다.

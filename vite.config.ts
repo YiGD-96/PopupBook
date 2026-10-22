@@ -21,6 +21,10 @@ function seo(siteUrl?: string): Plugin {
  };
 }
 export default defineConfig(({ mode }) => {
- const siteUrl = loadEnv(mode, '.', 'VITE_').VITE_SITE_URL?.replace(/\/$/, '') || undefined;
- return { plugins: [react(), seo(siteUrl)], resolve: { preserveSymlinks: true }, build: { chunkSizeWarningLimit: 1200 } };
+ const env = loadEnv(mode, '.', 'VITE_'); // .env files and VITE_* variables of the build's environment (the deploy workflow's)
+ const siteUrl = env.VITE_SITE_URL?.replace(/\/$/, '') || undefined;
+ // Relative by default, so one build works at a domain's root (Vercel), under a sub-path (GitHub Pages: /PopupBook/) or anywhere else;
+ // VITE_BASE pins it to an absolute path when a host needs that. The app's own paths go through src/base.ts.
+ const base = env.VITE_BASE || './';
+ return { base, plugins: [react(), seo(siteUrl)], resolve: { preserveSymlinks: true }, build: { chunkSizeWarningLimit: 1200 } };
 });

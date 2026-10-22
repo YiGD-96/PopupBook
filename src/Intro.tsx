@@ -3,6 +3,7 @@ import {INTRO_COVER_HOLD,INTRO_UI_AT,STANDING_INTRO_UI_AT} from './introPlayback
 import {playSound} from './story';
 import {SITE} from './site';
 import {STANDING_QUERY} from './standingMedia';
+import { url } from './base.ts';
 
 /**
  * The film's file: AV1 (about half the bytes of H.264 at the same sharpness) where this browser decodes it smoothly and power-efficiently
@@ -10,10 +11,10 @@ import {STANDING_QUERY} from './standingMedia';
  */
 const FILM_FORMATS={open:{width:2520,height:1404,codec:'av01.0.13M.08'},standing:{width:900,height:2000,codec:'av01.0.09M.08'}};
 async function filmSource(standing:boolean){
- const media=standing?'-standing':'',format=FILM_FORMATS[standing?'standing':'open'],h264=`/media/book-opening${media}.mp4`;
+ const media=standing?'-standing':'',format=FILM_FORMATS[standing?'standing':'open'],h264=url(`/media/book-opening${media}.mp4`);
  try{
   const info=await navigator.mediaCapabilities?.decodingInfo({type:'file',video:{contentType:`video/mp4; codecs="${format.codec}"`,width:format.width,height:format.height,bitrate:4e6,framerate:60}});
-  return info?.supported&&info.smooth&&info.powerEfficient?`/media/book-opening${media}-av1.mp4`:h264;
+  return info?.supported&&info.smooth&&info.powerEfficient?url(`/media/book-opening${media}-av1.mp4`):h264;
  }catch{return h264;}
 }
 /** `standing`: the phone film played (or its open still showed), which ends on the standing book. */
@@ -95,11 +96,11 @@ export default function Intro({onFinished,onUnfolding,onBuffered,onNearEnd,leavi
   started.current=true;play();
  },[holdFinished,src,failed,finish,play]);
  return <div className={'intro-screen'+(standing?' is-standing':'')+(leaving?' is-leaving':'')} data-stage={stage} data-cover-hold-ms={holdDuration} aria-label={SITE.title+' 책을 펼치는 중'}>
-  <img className="intro-cover intro-media" src={`/media/book-cover${media}.webp`} alt={SITE.title+' 그림책 표지 — '+SITE.coverAlt} onLoad={()=>setCoverReady(true)} onError={e=>{if(!e.currentTarget.src.endsWith('/art-raster/cover.webp'))e.currentTarget.src='/art-raster/cover.webp';else setCoverReady(true);}} hidden={stage!=='cover'}/>
+  <img className="intro-cover intro-media" src={url(`/media/book-cover${media}.webp`)} alt={SITE.title+' 그림책 표지 — '+SITE.coverAlt} onLoad={()=>setCoverReady(true)} onError={e=>{if(!e.currentTarget.src.endsWith('/art-raster/cover.webp'))e.currentTarget.src=url('/art-raster/cover.webp');else setCoverReady(true);}} hidden={stage!=='cover'}/>
   <video className={'intro-media intro-video'+(stage==='cover'?' is-waiting':'')} ref={video} src={src??undefined} muted playsInline preload="auto" tabIndex={-1} aria-hidden="true"
    onPlaying={()=>{actualHold.current||=Math.round(performance.now()-(shownAt.current??performance.now()));setHoldDuration(actualHold.current);setStage('opening');}}
    onTimeUpdate={e=>{const element=e.currentTarget,time=element.currentTime;if(!nearEnd.current&&bufferedOnce.current&&time>=uiAt-MOUNT_LEAD){nearEnd.current=true;onNearEnd?.();}if(time>=uiAt-HOLD_BEFORE&&!unfolded.current){hold(element,time);return;}if(time<INTRO_COVER_HOLD)return;const page=Math.floor((time-INTRO_COVER_HOLD)*3);if(page!==soundPage.current){soundPage.current=page;playSound('flip');}}}
    onProgress={buffered} onCanPlayThrough={buffered} onEnded={finish} onError={()=>{setFailed(true);onBuffered?.();}}/>
-  {failed&&stage==='ready'&&<img className="intro-media" src={`/media/book-open${media}.webp`} alt={'펼쳐진 '+SITE.title+' 그림책'}/>}
+  {failed&&stage==='ready'&&<img className="intro-media" src={url(`/media/book-open${media}.webp`)} alt={'펼쳐진 '+SITE.title+' 그림책'}/>}
  </div>;
 }
