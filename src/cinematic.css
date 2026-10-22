@@ -85,25 +85,24 @@
 .cinematic-reader .site-header .brand{gap:16px;font-size:15px;font-weight:600;letter-spacing:-.02em;color:#186049}
 .brand-logo{display:block;height:26px;width:auto}
 .brand-name{padding-left:16px;border-left:1px solid #d8d2bd;white-space:nowrap}
-/* Ending card (the team's paper-note design): real text and buttons on a paper picture, with the carrot and the tape as decorations
-   that never take a click. Everything inside scales with the card width (cqw: 1% of the width inside the padding, 2.272px on the 250px card), so a narrower card
-   (on small phones) keeps the same layout instead of overflowing; the carrot is a little smaller than in the design so it stays clear of
-   the last line. Pictures: public/media/ending-paper.jpg, ending-carrot.jpg (multiplied onto the paper), ending-tape.png. */
-.reader-mode .is-ending .hero-copy{width:250px;container-type:inline-size;padding:16.25px 11.4px 12.25px;border:0;border-radius:3px;text-align:left;backdrop-filter:none;background:#f6ead0 url(/media/ending-paper.jpg) center/100% 100% no-repeat;box-shadow:0 8px 24px #00000038}
-.reader-mode .is-ending .hero-copy::before{content:'';position:absolute;z-index:-1;top:1.03%;right:1.03%;width:40%;aspect-ratio:255/418;background:url(/media/ending-carrot.jpg) 0 0/100% 100% no-repeat;mix-blend-mode:multiply;pointer-events:none}
-.reader-mode .is-ending .hero-copy::after{content:'';position:absolute;z-index:1;top:-8.6%;left:35.77%;width:29.23%;aspect-ratio:175/84;background:url(/media/ending-tape.png) 0 0/100% 100% no-repeat;pointer-events:none}
-.reader-mode .is-ending .hero-copy>.eyebrow{display:flex;justify-content:flex-start;margin:0 0 0 2.78cqw;font:700 max(7px,2.88cqw)/3.66cqw Georgia,serif;letter-spacing:.16em;color:#2e3209}
-.reader-mode .is-ending h1{margin:3.33cqw 0 0 2.78cqw;font-family:'Nanum Pen Script',cursive;font-size:14.31cqw;font-weight:400;line-height:15.04cqw;letter-spacing:0;color:#34370f}
+/* Ending card (the team's torn paper note with a pin): real text and buttons over one decoration, the paper and its pin
+   (public/media/ending-paper.jpg cut to its torn outline by ending-paper-mask.png), which never takes a click. Everything inside scales
+   with the card width (cqw: 1% of the width inside the padding, 2.163px on the 250px card), so a narrower card on small phones keeps
+   the same layout instead of overflowing. */
+.reader-mode .is-ending .hero-copy{width:250px;container-type:inline-size;padding:32.2px 18.8px 17.2px 14.9px;border:0;border-radius:0;text-align:left;backdrop-filter:none;background:none;box-shadow:none}
+.reader-mode .is-ending .hero-copy::before{content:'';position:absolute;inset:0;z-index:-1;background:url(/media/ending-paper.jpg) 0 0/100% 100% no-repeat;-webkit-mask:url(/media/ending-paper-mask.png) 0 0/100% 100% no-repeat;mask:url(/media/ending-paper-mask.png) 0 0/100% 100% no-repeat;pointer-events:none}
+.reader-mode .is-ending .hero-copy>.eyebrow{display:flex;justify-content:flex-start;margin:0 0 0 2.08cqw;font:700 max(7px,2.87cqw)/4.16cqw Georgia,serif;letter-spacing:.07em;color:#1f260c}
+.reader-mode .is-ending h1{margin:3.73cqw 0 0 2.08cqw;font-family:'Nanum Pen Script',cursive;font-size:13.87cqw;font-weight:400;line-height:13.78cqw;letter-spacing:.1em;color:#151a08}
 .reader-mode .is-ending h1 br{display:inline}
-.reader-mode .is-ending .hero-description{margin:2.45cqw 0 0 2.78cqw;font:6.6cqw/7.41cqw 'Nanum Pen Script',cursive;letter-spacing:0;color:#2d300a}
-.reader-mode .is-ending .hero-description+.hero-description{margin-top:6.79cqw}
+.reader-mode .is-ending .hero-description{margin:3.19cqw 0 0 2.08cqw;font:7.67cqw/8.32cqw 'Nanum Pen Script',cursive;letter-spacing:0;color:#0d0a05}
+.reader-mode .is-ending .hero-description+.hero-description{margin-top:4.79cqw}
 .cinematic-reader .is-ending .hand-underline{color:#d98327}
-.reader-mode .is-ending .hero-copy>.ending-link{display:flex;width:100%;min-height:11.81cqw;margin-top:2.72cqw;padding:0 3.3cqw;gap:2.83cqw;border-radius:1.9cqw;background:#8c3b1e;box-shadow:none;font:7.26cqw 'Nanum Pen Script',cursive;color:#fdf0d5;text-decoration:none}
-.reader-mode .is-ending .hero-copy>.ending-link:hover{background:#7a3218}
-.reader-mode .is-ending .hero-copy>.ending-link svg{width:8.07cqw;height:8.07cqw;margin-left:0;transform:scaleY(.65);stroke-width:1.9}
-.reader-mode .is-ending .hero-copy>.ending-restart{display:flex;width:100%;min-height:12.47cqw;margin-top:1.54cqw;padding:0 3.3cqw;gap:3.11cqw;border:max(1px,.55cqw) solid #34380f;border-radius:1.98cqw;background:transparent;font:7.01cqw 'Nanum Pen Script',cursive;color:#30340a}
-.reader-mode .is-ending .hero-copy>.ending-restart:hover{background:#3a2a1012}
-.reader-mode .is-ending .hero-copy>.ending-restart svg{width:7.7cqw;height:7.7cqw;transform:scaleX(-1);stroke-width:2.6}
+.reader-mode .is-ending .hero-copy>.ending-link{display:flex;width:100%;min-height:11.05cqw;margin-top:5.46cqw;padding:0 3cqw;gap:1.76cqw;border-radius:2.45cqw;background:#a9613f;box-shadow:none;font:5.92cqw 'Nanum Pen Script',cursive;color:#fdf0e4;text-decoration:none}
+.reader-mode .is-ending .hero-copy>.ending-link:hover{background:#96533a}
+.reader-mode .is-ending .hero-copy>.ending-link svg{width:6.75cqw;height:6.75cqw;margin-left:0;transform:scaleY(.6);stroke-width:1.9}
+.reader-mode .is-ending .hero-copy>.ending-restart{display:flex;width:100%;min-height:11.23cqw;margin-top:1.48cqw;padding:0 3cqw;gap:2.45cqw;border:max(1px,.46cqw) solid #a5603d;border-radius:2.45cqw;background:transparent;font:5.73cqw 'Nanum Pen Script',cursive;color:#5a2a14}
+.reader-mode .is-ending .hero-copy>.ending-restart:hover{background:#a5603d1a}
+.reader-mode .is-ending .hero-copy>.ending-restart svg{width:5.92cqw;height:5.92cqw;transform:scaleX(-1);stroke-width:2.4}
 @media(max-width:760px){
  .reader-mode .is-ending .hero-copy{left:auto;right:0;width:250px;max-width:100%}
 }
