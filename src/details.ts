@@ -23,6 +23,9 @@ export type Detail={
  related?:string[];
  /** Opens as a book (src/DetailBook.tsx) instead of the side panel: pictures on the left page, the story as running text on the right. */
  spread?:{pictures:{src:string;alt:string;caption:string;fallback?:string}[];byline?:string;paragraphs:string[];folio:[string,string]};
+ /** Shown in the panel as one picture instead of the text (the recipe call poster). Its buttons are boxes on the picture
+  *  ([left, top, width, height] in % of it), each opening the action with the same label. */
+ sheet?:{src:string;alt:string;width:number;height:number;links:{label:string;box:[number,number,number,number]}[]};
 };
 import { SHARE } from './site.ts';
 import { url } from './base.ts';
@@ -96,6 +99,8 @@ export const details:Record<string,Detail>={
   tip:'밝은 곳에서 찍은 사진이 더 맛있어 보여요. 가족의 비법이나 나만의 팁도 좋아요.',
   actions:[...(SHARE.email?[{label:'이메일로 레시피 보내기',href:`mailto:${SHARE.email}?subject=${encodeURIComponent('[당근 레시피] 내 레시피를 보내요')}&body=${encodeURIComponent('요리 이름:\n재료:\n만드는 순서:\n닉네임(선택):\n(요리 사진도 함께 첨부해 주세요)')}`}]:[]),...(SHARE.instagram?[{label:'인스타그램으로 레시피 보내기',href:`https://www.instagram.com/${SHARE.instagram}/`}]:[])],
   note:SHARE.email||SHARE.instagram?undefined:'레시피를 받는 곳(인스타그램·이메일)을 준비하고 있어요. 곧 열려요.',
+  sheet:{src:url('/media/recipe-share.webp'),alt:'구좌 당근 레시피 모집. 나만의 당근 요리, 함께 공유해요! 보내 주신 레시피는 냉장고에 붙여져요. 요리 사진과 레시피를 이메일(jejucarrotlab@gmail.com)이나 인스타그램으로 보내 주세요.',width:1086,height:1448,
+   links:[{label:'이메일로 레시피 보내기',box:[7.64,81.7,84.71,8.63]},{label:'인스타그램으로 레시피 보내기',box:[7.73,91.09,84.53,5.25]}]},
   link:{label:'웹진 둘러보기',href:site},related:['recipe-burger']},
  // The notes on the kitchen wall open their recipe posters as a book (src/PosterBook.tsx, src/posters.ts); these entries name them for
  // links, analytics and the related buttons.

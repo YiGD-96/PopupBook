@@ -279,7 +279,7 @@ export default function App() {
     <main id="main"><section className={'hero '+(intro?'is-cover':'is-open')+(ending?' is-ending':'')} aria-label={SITE.title+' 팝업북'}>
       {chromeVisible&&<div className="hero-copy">
         {coverMode?<div className="cover-intro"><span>{SITE.label}</span><h1>{SITE.title}</h1><p role="status"><LoaderCircle size={14} className="spin"/>{introText}</p></div>:
-        ending?<><span className="eyebrow">{SITE.label}</span><h1>{SITE.title}</h1><p className="hero-description">{SITE.tagline[0]}<br/>{SITE.tagline[1]}<span className="hand-underline">{SITE.tagline[2]}</span>{SITE.tagline[3]}</p><div className="ending-stamp"><Check size={15}/> 01 · 02 · 03 이야기를 모두 만났어요</div><a className="secondary-button ending-link" href={SITE.article} target="_blank" rel="noreferrer">관련 기사 보기<span className="sr-only"> (새 창에서 열림)</span></a><button className="primary-button" onClick={beginIntro}><RotateCcw size={18}/> 처음부터 다시 보기<ArrowRight size={18}/></button></>:
+        ending?<><span className="eyebrow">JEJU LOCAL MAGAZINE</span><h1>당근 하나로,<br/>제주를 다시 보다</h1><p className="hero-description">구좌의 밭에서 시작된 이야기부터<br/>우리의 식탁에 닿기까지.</p><p className="hero-description">구좌 당근의 이야기를 기사로도 만나보세요.</p><a className="primary-button ending-link" href={SITE.article} target="_blank" rel="noreferrer">지금 바로 기사 읽으러 가기<span className="sr-only"> (새 창에서 열림)</span><ArrowRight size={17}/></a><button className="secondary-button ending-restart" onClick={beginIntro}><RotateCcw size={17}/>처음부터 다시 보기</button></>:
         <><h1 className="sr-only" aria-label={scene.title} ref={storyRef} tabIndex={-1}>{scene.title}</h1>
 
         </>}

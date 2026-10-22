@@ -16,4 +16,4 @@ export const SITE={
  * Where readers send their own carrot recipes (the "더 많은 레시피" booklet on the third spread opens a panel that explains it). Fill in either
  * or both: an email address and/or the account name of the Instagram page (without the @). Left empty, the panel says the channel is coming.
  */
-export const SHARE:{instagram:string;email:string}={instagram:'',email:''};
+export const SHARE:{instagram:string;email:string}={instagram:'jeju_carrot_hub',email:'jejucarrotlab@gmail.com'};
