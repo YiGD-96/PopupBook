@@ -6,6 +6,7 @@ import {paperPoint} from '../src/paperGeometry.ts';
 import {scenes} from '../src/story.ts';
 import {splitPaperArt,attachedPaperPose,popupFoldAngle} from '../src/paperAttachments.ts';
 import {BOOK_BOARD,BOOK_PAGES} from '../src/bookStructure.ts';
+import {gluedParent} from '../src/popupStack.ts';
 
 function frameCamera(width,height){
  const camera=new PerspectiveCamera(bookFov(width,height),width/height,.1,70);
@@ -19,11 +20,15 @@ test('the same fixed front camera contains raised pages and attached popup cards
   const p=i/20;
   for(const u of [0,.5,1])for(const v of [0,.5,1]){const point=paperPoint(u,v,p,1);point[1]+=.09;inside(point);}
   for(const direction of [1,-1])for(const incoming of [false,true])for(const scene of scenes)for(const layer of scene.layers)for(const side of ['left','right']){
-   const piece=splitPaperArt(layer.position[0],layer.size[0],side);if(!piece||incoming&&p<.35)continue;
+   // A card glued onto another (`on`) does not fold on its own: it rides inside its parent's hinge, offset from the parent's foot
+   // (src/Storybook.tsx GluedCard), so it is posed and folded with the parent.
+   const parent=gluedParent(layer,scene.layers),base=parent??layer;
+   const piece=splitPaperArt(layer.position[0],layer.size[0],side),basePiece=splitPaperArt(base.position[0],base.size[0],side);if(!piece||!basePiece||incoming&&p<.35)continue;
    const moving=direction===1?'right':'left';const rides=incoming?side!==moving:side===moving;
-   const pose=rides?attachedPaperPose(piece.center,layer.position[1],layer.position[2],p,direction,side==='right'?1:-1):{position:[piece.center,layer.position[1]+.018,layer.position[2]],rotation:0};
+   const pose=rides?attachedPaperPose(basePiece.center,base.position[1],base.position[2],p,direction,side==='right'?1:-1):{position:[basePiece.center,base.position[1]+.018,base.position[2]],rotation:0};
+   const offset=new Vector3(piece.center-basePiece.center,layer.position[1]-base.position[1],layer.position[2]-base.position[2]);
    for(const x of [-piece.width/2,piece.width/2])for(const y of [0,layer.size[1]]){
-    const vertex=new Vector3(x,y,0).applyAxisAngle(new Vector3(1,0,0),popupFoldAngle(p,incoming)).applyAxisAngle(new Vector3(0,0,1),pose.rotation).add(new Vector3(...pose.position));inside(vertex.toArray());
+    const vertex=new Vector3(x,y,0).add(offset).applyAxisAngle(new Vector3(1,0,0),popupFoldAngle(p,incoming)).applyAxisAngle(new Vector3(0,0,1),pose.rotation).add(new Vector3(...pose.position));inside(vertex.toArray());
    }
   }
  }

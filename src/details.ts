@@ -25,6 +25,7 @@ export type Detail={
  spread?:{pictures:{src:string;alt:string;caption:string;fallback?:string}[];byline?:string;paragraphs:string[];folio:[string,string]};
 };
 import { SHARE } from './site.ts';
+import { url } from './base.ts';
 const site='https://gujwa-carrot.vercel.app';
 const draft='매거진 원고를 준비하고 있어요. 자세한 이야기는 매거진에서 이어집니다.';
 export const details:Record<string,Detail>={
@@ -36,8 +37,8 @@ export const details:Record<string,Detail>={
   // The magazine's farmer page (its two photos, resized to WebP, and their alt text) and the facts gathered in this file; the prose adds
   // nothing beyond them.
   spread:{pictures:[
-    {src:'/media/farmer-portrait.webp',alt:'농부님 인물 사진',caption:'제주 구좌 당근 농부 유도균',fallback:'/art-raster/char-farmer.webp'},
-    {src:'/media/farmer-field.webp',alt:'밭에서 일하는 농부님',caption:'밭에서 일하는 농부님',fallback:'/art-raster/farm-back.webp'}],
+    {src:url('/media/farmer-portrait.webp'),alt:'농부님 인물 사진',caption:'제주 구좌 당근 농부 유도균',fallback:url('/art-raster/char-farmer.webp')},
+    {src:url('/media/farmer-field.webp'),alt:'밭에서 일하는 농부님',caption:'밭에서 일하는 농부님',fallback:url('/art-raster/farm-back.webp')}],
    byline:'제주 구좌 당근 농부 유도균 · 영상 인터뷰에서',
    paragraphs:[
     '제주 구좌에서 당근을 키우는 유도균 농부님은 23년 동안 광고 회사에서 일했습니다. 2014년 제주로 내려온 뒤 “이 동네는 당근과 콩이다”라는 이웃 할머니의 말 한마디로 당근 농사를 시작했습니다.',

@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { url } from './base.ts';
 /**
  * The reader's language: Korean, English or Chinese. Only the choice exists for now (the menu at the top right, src/LanguageMenu.tsx);
  * the book's wording is not translated yet. Chosen once by the reader it is kept (localStorage); otherwise it follows the country the
@@ -35,7 +36,7 @@ async function ipCountry():Promise<string|null>{
   try{const response=await fetch(url,{signal:control.signal});if(!response.ok)return null;const value=pick(await response.json() as Record<string,unknown>);return typeof value==='string'&&value.length===2?value:null;}
   catch{return null;}finally{window.clearTimeout(timer);}
  };
- return await get('/api/geo',json=>json.country)??await get('https://ipapi.co/json/',json=>json.country_code);
+ return await get(url('/api/geo'),json=>json.country)??await get('https://ipapi.co/json/',json=>json.country_code);
 }
 /** Sets the language from the reader's country, once, unless they have chosen one. Call it once the first picture is up: it is not urgent. */
 export async function detectLanguage(lookup=ipCountry){

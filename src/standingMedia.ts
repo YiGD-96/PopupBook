@@ -17,4 +17,4 @@ export function standingMediaSize(width:number,height:number){
 /** How far below the canvas's centre the phone's standing book (and its film, by the same amount) is drawn, in CSS pixels: room under the
  *  chapter title. Where the moved film no longer reaches the canvas's top, the strip left is the page's own dark, the colour the film's
  *  top already is (the room's fog), so no edge shows. */
-export const STANDING_DROP=36;
+export const STANDING_DROP=60;

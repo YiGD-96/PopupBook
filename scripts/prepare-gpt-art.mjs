@@ -11,6 +11,7 @@ import {fileURLToPath} from 'node:url';
 import {createRequire} from 'node:module';
 import {pathFloor} from './street-floor.mjs';
 import {farmFloor} from './farm-floor.mjs';
+import {kitchenFloor} from './kitchen-rug.mjs';
 const project=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const runtime=process.env.CODEX_NODE_MODULES||'C:/Users/eh1al/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules';
 const sharp=createRequire(path.join(runtime,'package.json'))('sharp');
@@ -54,7 +55,17 @@ const art=[
  // The kitchen (v4, art-src/gpt/page-3/new/new2): a Jeju kitchen wall with a window on the sea, an old fridge on the left page with four
  // magnet notes on its door, and a low table on the right with "나만의 레시피" lying on it. The notes, fridge and table carry their own edges
  // (no die-cut border); the recipe book is a die-cut card like the other clickable things.
- {dir:'page-3',name:'kitchen-back',src:'new/new2/jeju-kitchen-wall-high-resolution',width:1440,backdrop:{top:0,bottom:789}},
+ // The wall (jeju-kitchen-dish-shelf, 1445×1088): the open book shows 40–700 px — the painting slid up a little (the user's choice), so the
+ // tip of the pot's lid (669 px down) reaches the wall's foot, where the table in front hides it; taller than about 3 units at this width,
+ // the wall would leave the frame while a page turns and reach the chapter heading. The phone's upright page (1.91:1) shows all of it, top to bottom, so it looks as little zoomed as possible: the painting is
+ // widened to that shape with its own plain plaster (550 px of the left side mirrored, behind the fridge; the 46 px right of the window
+ // mirrored back and forth).
+ {dir:'page-3',name:'kitchen-back',src:'new/new2/jeju-kitchen-dish-shelf-high-resolution',width:1440,backdrop:{top:40,bottom:700}},
+ {dir:'page-3',name:'kitchen-back-phone',src:'new/new2/jeju-kitchen-dish-shelf-high-resolution',width:1440,backdrop:{top:0,bottom:1088,widen:{left:550,right:83,edge:46}}},
+ // The phone's flat page: papyrus with the rug under the table, long along the page's depth (scripts/kitchen-rug.mjs; px across × depth,
+ // 304 px a unit: x .2–2.3, z .9–3.4 around the table at x 1.25, z 2.55; the pile 18 px deep).
+ {dir:'page-3',name:'kitchen-floor-stage',floor:'kitchen',stage:'page',rug:{x:784,y:274,w:639,h:760,thick:18}},
+ {dir:'page-3',name:'kitchen-floor-stage-sheet',floor:'kitchen',stage:'sheet',rug:{x:784,y:274,w:639,h:760,thick:18}},
  {dir:'page-3',name:'kitchen-fridge',src:'new/new2/front-fridge-with-plant-wider',width:760,clean:90,plain:true,cast:{dy:.03,blur:.01,alpha:.5}},
  {dir:'page-3',name:'kitchen-table-low',src:'new/new2/simple-table-no-book',width:1400,clean:110,plain:true,cast:{dy:.08,blur:.011,alpha:.55,rows:.8}},
  {dir:'page-3',name:'my-recipe-book',src:'new/new2/my-recipe-book',width:700,clean:150},
@@ -147,11 +158,24 @@ async function cutout(file,width){
  const cream=await sharp({create:{width:w,height:h,channels:3,background:CREAM}}).joinChannel(mask).png().toBuffer();
  return {image:sharp(cream).composite([{input:framed}]),w,h};
 }
-async function backdrop(file,width,{top,bottom,left=0,right,overlays=[]}){
+/**
+ * Widens a painting by mirroring its own plain edges: `left` px of its left side, flipped, before it; after it, its last `edge` px
+ * (plain wall right of the window), flipped back and forth until `right` px are filled. Coordinates (top, bottom, left, right) of the
+ * backdrop crop then refer to the widened picture.
+ */
+async function widened(file,{left=0,right=0,edge=right}){
+ const {width:w,height:h}=await sharp(file).metadata(),parts=[];
+ if(left)parts.push({input:await sharp(file).extract({left:0,top:0,width:left,height:h}).flop().png().toBuffer(),left:0,top:0});
+ parts.push({input:await sharp(file).png().toBuffer(),left,top:0});
+ for(let x=0,flip=true;x<right;x+=edge,flip=!flip){const n=Math.min(edge,right-x);const strip=sharp(file).extract({left:flip?w-n:w-edge,top:0,width:n,height:h});parts.push({input:await (flip?strip.flop():strip).png().toBuffer(),left:left+w+x,top:0});}
+ return sharp({create:{width:w+left+right,height:h,channels:4,background:{r:0,g:0,b:0,alpha:0}}}).composite(parts).png().toBuffer();
+}
+async function backdrop(file,width,{top,bottom,left=0,right,overlays=[],widen}){
  if(overlays.length){
   const pasted=await Promise.all(overlays.map(async o=>({input:await sharp(path.join(project,'art-src/gpt/page-3',o.file)).resize(o.width).png().toBuffer(),left:o.left,top:o.top})));
   file=await sharp(file).composite(pasted).png().toBuffer();
  }
+ if(widen)file=await widened(file,widen);
  const meta=await sharp(file).metadata(),border=Math.round(width*.008),radius=Math.round(width*.014);
  const inner=width-border*2,band=await sharp(file).extract({left,top,width:(right??meta.width)-left,height:bottom-top}).resize(inner).png().toBuffer();
  // The cream border runs along the sides and the top only: at the foot the painting meets the printed floor directly.
@@ -167,7 +191,7 @@ for(const item of art){
  if(only&&item.dir!==only)continue;
  let file=path.join(project,'art-src/gpt',item.dir,`${item.src??item.name}.png`);
  if(item.stage){
-  const flat=item.stage==='page',floor=item.floor==='farm'?await farmFloor(sharp,project,1446,1080,{top:0}):await pathFloor(sharp,project,1446,1080,{widenRight:{dx:.12,u0:.62,v0:.42,v1:1}});
+  const flat=item.stage==='page',floor=item.floor==='farm'?await farmFloor(sharp,project,1446,1080,{top:0}):item.floor==='kitchen'?await kitchenFloor(sharp,project,1446,1080,{rug:item.rug}):await pathFloor(sharp,project,1446,1080,{widenRight:{dx:.12,u0:.62,v0:.42,v1:1}});
   const buf=await sharp(floor).rotate(flat?270:180).webp({quality:item.floor==='farm'?90:84,effort:5}).toBuffer();
   await fs.writeFile(path.join(project,'public/art-raster',`${item.name}.webp`),buf);console.log(`${item.name}: ${(buf.length/1024).toFixed(0)} KiB (floor texture)`);continue;
  }

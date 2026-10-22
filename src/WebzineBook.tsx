@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { details } from './details';
 import { webzines, type WzBlock, type WzFlow, type WzMenu } from './webzine';
@@ -9,18 +9,23 @@ import { webzines, type WzBlock, type WzFlow, type WzMenu } from './webzine';
  * the 3D book nothing while it is open. On wide screens a spread is sized in container units so it scales as one picture, like the mockup;
  * on phones the two pages stack and the words keep a readable size.
  */
-const Flow=({items}:{items:WzFlow[]})=><>{items.map((item,i)=>'q' in item?<blockquote key={i} className="wz-quote"><p>{item.q}</p></blockquote>:<p key={i} className="wz-p">{item.p}</p>)}</>;
+/** `text` with `mark` (a phrase of it) set in the accent colour. */
+const marked=(text:string,mark?:string)=>{const at=mark?text.indexOf(mark):-1;return at<0?text:<>{text.slice(0,at)}<em className="wz-mark">{mark}</em>{text.slice(at+mark!.length)}</>;};
+const Flow=({items}:{items:WzFlow[]})=><>{items.map((item,i)=>'q' in item?<blockquote key={i} className="wz-quote"><p>{item.q}</p></blockquote>:<p key={i} className="wz-p">{marked(item.p,item.strong)}</p>)}</>;
 const Photo=({src,alt}:{src:string;alt:string})=><img src={src} alt={alt} decoding="async" draggable={false}/>;
 const Menu=({menu}:{menu:WzMenu})=><div className={'wz-menu is-'+(menu.shape??'wide')+(menu.flip?' is-flip':'')}><Photo src={menu.img} alt={menu.alt}/><div><h4>{menu.title}</h4><p>{menu.text}</p></div></div>;
 function Block({block,first}:{block:WzBlock;first:boolean}){
  switch(block.t){
-  case 'h1':return <h2 className="wz-h1" id={first?'wz-title':undefined}>{block.lines.map((line,i)=><span key={line} className={i===block.accent?'is-accent':undefined}>{line}</span>)}</h2>;
+  case 'h1':return <h2 className="wz-h1" id={first?'wz-title':undefined}>{block.lines.map((line,i)=><span key={line} className={i===block.accent?'is-accent':undefined}>{marked(line,block.mark)}</span>)}</h2>;
   case 'season':return <p className="wz-season">{block.text}</p>;
   case 'sub':return <p className="wz-sub">{block.text}</p>;
-  case 'hero':return <figure className="wz-hero"><Photo src={block.img} alt={block.alt}/>{block.caption&&<figcaption>{block.caption}</figcaption>}</figure>;
+  case 'eyebrow':return <p className="wz-eyebrow">{block.text}</p>;
+  case 'hero':return <figure className="wz-hero" style={{width:block.width?`${block.width*100}%`:undefined,'--focus':block.focus} as CSSProperties}><Photo src={block.img} alt={block.alt}/>{block.caption&&<figcaption>{block.caption}</figcaption>}</figure>;
+  case 'side':return <div className="wz-side" style={{gridTemplateColumns:`minmax(0,1fr) ${block.column}`,'--aspect':block.aspect,'--focus':block.focus} as CSSProperties}><div>{block.body.map((inner,i)=><Block key={i} block={inner} first={false}/>)}</div><figure><Photo src={block.img} alt={block.alt}/>{block.caption&&<figcaption>{block.caption}</figcaption>}</figure></div>;
+  case 'cutout':return <figure className="wz-cutout"><Photo src={block.img} alt={block.alt}/></figure>;
   case 'rows':return <div className={'wz-rows'+(block.pairs?' is-pairs':'')}>{block.items.map(item=><div key={item.term}>{item.n&&<b>{item.n}</b>}<strong>{item.term}</strong><span>{item.text}</span></div>)}</div>;
   case 'lead':return <div className="wz-lead">{block.head&&<strong>{block.head}</strong>}<p>{block.text}</p></div>;
-  case 'h2':return <h3 className="wz-h2"><b>{block.n}</b> {block.text}</h3>;
+  case 'h2':return <h3 className="wz-h2">{block.n&&<><b>{block.n}</b> </>}{block.text}</h3>;
   case 'photoText':return <div className={'wz-photo-text is-'+block.shape}><figure><Photo src={block.img} alt={block.alt}/></figure><div><Flow items={block.column}/></div></div>;
   case 'flow':return <div className={'wz-flow'+(block.tight?' is-tight':'')}><Flow items={block.items}/></div>;
   case 'menu':return <Menu menu={block.menu}/>;
@@ -46,7 +51,7 @@ export default function WebzineBook({id,onClose}:{id:string;onClose:()=>void;onO
  };window.addEventListener('keydown',key,true);return()=>window.removeEventListener('keydown',key,true);});
  if(!detail||!zine)return null;
  const spread=zine.spreads[index];
- const withMedia=(blocks:WzBlock[])=>blocks.some(block=>['photoText','hero','menu','menus'].includes(block.t))?' has-media':'';
+ const withMedia=(blocks:WzBlock[])=>blocks.some(block=>['photoText','hero','menu','menus','side','cutout'].includes(block.t))?' has-media':'';
  return <div className={'detail-book-backdrop'+(open?' is-open':'')} onClick={e=>{if(e.target===e.currentTarget)close();}}>
   <div className="webzine-book" role="dialog" aria-modal="true" aria-labelledby="wz-title">
    <button className="wz-close" onClick={close} aria-label="책 닫기"><X size={20}/></button>
@@ -54,8 +59,8 @@ export default function WebzineBook({id,onClose}:{id:string;onClose:()=>void;onO
     <div className="wz-inner">
      <header className="wz-bar"><span>{zine.kicker}</span><i aria-hidden="true"/><em aria-hidden="true">{(zine.label??['People','Who Cook'])[0]}<br/>{(zine.label??['People','Who Cook'])[1]}</em></header>
      <div key={index} className={'wz-spread '+(direction===1?'is-next':'is-prev')} ref={heading} tabIndex={-1}>
-      <section className={'wz-page is-left'+withMedia(spread.left)} aria-label="왼쪽 쪽">{spread.left.map((block,i)=><Block key={i} block={block} first={index===0&&i===spread.left.findIndex(b=>b.t==='h1')}/>)}</section>
-      <section className={'wz-page is-right'+withMedia(spread.right)} aria-label="오른쪽 쪽">{spread.right.map((block,i)=><Block key={i} block={block} first={false}/>)}</section>
+      <section className={'wz-page is-left'+withMedia(spread.left)+(spread.dense==='left'?' is-dense':'')} aria-label="왼쪽 쪽">{spread.left.map((block,i)=><Block key={i} block={block} first={index===0&&i===spread.left.findIndex(b=>b.t==='h1')}/>)}</section>
+      <section className={'wz-page is-right'+withMedia(spread.right)+(spread.dense==='right'?' is-dense':'')} aria-label="오른쪽 쪽">{spread.right.map((block,i)=><Block key={i} block={block} first={false}/>)}</section>
      </div>
      <div className="wz-end">
       <span aria-live="polite">{index+1} / {last+1}</span>

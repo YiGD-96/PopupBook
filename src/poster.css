@@ -15,6 +15,25 @@
 .pb-media.is-empty{display:grid;place-items:center;border:2px dashed #cdb48e;background:rgba(239,226,200,.55)}
 .pb-media figcaption{display:grid;justify-items:center;gap:10px;padding:16px;font-size:14px;font-weight:500;color:#9a7f5e;text-align:center}
 .pb-media figcaption>span{display:flex;gap:10px;color:#c39a6b}
+/* The real dish, as a scrapbook: the Short in an upright phone-shaped frame and the photo as a taped polaroid beside it. */
+.pb-made{margin:-6px 0 0;font-size:13px;font-weight:500;color:#8a6c4c}
+.pb-real{flex:1;min-height:0;display:grid;grid-template-columns:1.4fr 1fr;gap:22px;align-items:center}
+.pb-shorts{margin:0;display:flex;flex-direction:column;gap:8px;min-width:0}
+.pb-shorts-frame{position:relative;aspect-ratio:9/16;border:6px solid #2a201a;border-radius:20px;overflow:hidden;background:#1d1511;box-shadow:0 12px 26px rgba(60,40,20,.3)}
+.pb-shorts-frame iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+.pb-shorts-cover{position:absolute;inset:0;padding:0;border:0;background:none;cursor:pointer;display:block}
+.pb-shorts-cover img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .3s ease}
+.pb-shorts-cover:hover img{transform:scale(1.03)}
+.pb-shorts-cover::after{content:'';position:absolute;inset:0;background:linear-gradient(transparent 55%,rgba(20,12,8,.45))}
+.pb-play{position:absolute;left:50%;top:50%;z-index:1;width:58px;height:58px;margin:-29px 0 0 -29px;border-radius:50%;display:grid;place-items:center;padding-left:4px;box-sizing:border-box;background:rgba(255,0,0,.88);color:#fff;box-shadow:0 6px 18px rgba(0,0,0,.35)}
+.pb-shorts-tag{position:absolute;left:10px;top:10px;z-index:1;padding:3px 9px;border-radius:999px;background:rgba(0,0,0,.55);color:#fff;font-size:11px;font-weight:700;letter-spacing:.02em}
+.pb-shorts-cover:focus-visible{outline:3px solid #d08a4c;outline-offset:-3px}
+.pb-shorts figcaption a{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:600;color:#8a5a36;text-decoration:none}
+.pb-shorts figcaption a:hover{text-decoration:underline}
+.pb-polaroid{position:relative;margin:0;padding:8px 8px 0;background:#fffdf8;box-shadow:0 8px 20px rgba(60,40,20,.26);transform:translateY(18px) rotate(3deg)}
+.pb-polaroid::before{content:'';position:absolute;left:50%;top:-11px;width:64px;height:22px;margin-left:-32px;background:rgba(236,220,186,.85);box-shadow:0 1px 2px rgba(60,40,20,.15);transform:rotate(-4deg)}
+.pb-polaroid img{display:block;width:100%;height:auto;aspect-ratio:3/4;object-fit:cover}
+.pb-polaroid figcaption{padding:9px 2px 11px;font-family:'Gowun Batang',var(--serif),serif;font-size:13px;line-height:1.35;color:#5e3a1c;text-align:center}
 .pb-page.is-right{overflow:hidden}
 .pb-page.is-right img{display:block;width:100%;height:100%;object-fit:cover}
 /* Only phones scroll (below). */
@@ -30,6 +49,12 @@
  .pb-page.is-left header{padding-right:40px}
  .pb-page.is-left h2{font-size:22px;margin-top:4px}
  .pb-media{flex:none;aspect-ratio:4/3}
+ .pb-made{margin:0;font-size:12px}
+ .pb-real{grid-template-columns:1.3fr 1fr;gap:16px;padding-bottom:22px}
+ .pb-shorts-frame{border-width:5px;border-radius:16px}
+ .pb-play{width:48px;height:48px;margin:-24px 0 0 -24px}
+ .pb-polaroid{transform:translateY(10px) rotate(3deg)}
+ .pb-polaroid figcaption{font-size:12px}
  .pb-media figcaption{gap:6px;padding:10px;font-size:13px}
  .pb-page.is-right{overflow:visible;border-top:1px solid #cdb995}
  .pb-page.is-right img{height:auto}
