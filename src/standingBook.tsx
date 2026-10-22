@@ -165,7 +165,7 @@ export function StandingLayer({layer,texture,hinges,onClick,turn,progress,incomi
  const key=`${incoming?'incoming:':''}${layer.id}:right`;
  useEffect(()=>{const group=ref.current;hinges.current.set(key,group);return()=>{hinges.current.delete(key);};},[key,hinges]);
  useFrame(()=>{
-  if(turn){const p=progress.current.value;ref.current.rotation.x=incoming?standingFoldIn(p):standingFoldOut(p);anchor.current.visible=incoming?p>.78:p<.3;}else anchor.current.visible=true;
+  if(turn){const p=progress.current.value;ref.current.rotation.x=incoming?standingFoldIn(p):standingFoldOut(p);anchor.current.visible=incoming?p>.78:p<.3;anchor.current.userData.staged=false;}else{anchor.current.userData.staged=incoming;anchor.current.visible=!incoming;}
   // Folded cards stack, front ones on top (src/popupStack.ts); upright the lift is zero.
   anchor.current.position.set(place.x,surfaceY(place.z)+(place.lift??0)+flatLift(rank,ref.current.rotation.x),place.z);
  });

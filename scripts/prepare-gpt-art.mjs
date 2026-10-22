@@ -11,7 +11,7 @@ import {fileURLToPath} from 'node:url';
 import {createRequire} from 'node:module';
 import {pathFloor} from './street-floor.mjs';
 import {farmFloor} from './farm-floor.mjs';
-import {kitchenFloor} from './kitchen-rug.mjs';
+import {oakFloor} from './kitchen-floor.mjs';
 const project=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const runtime=process.env.CODEX_NODE_MODULES||'C:/Users/eh1al/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules';
 const sharp=createRequire(path.join(runtime,'package.json'))('sharp');
@@ -62,12 +62,12 @@ const art=[
  // mirrored back and forth).
  {dir:'page-3',name:'kitchen-back',src:'new/new2/jeju-kitchen-dish-shelf-high-resolution',width:1440,backdrop:{top:40,bottom:700}},
  {dir:'page-3',name:'kitchen-back-phone',src:'new/new2/jeju-kitchen-dish-shelf-high-resolution',width:1440,backdrop:{top:0,bottom:1088,widen:{left:550,right:83,edge:46}}},
- // The phone's flat page: papyrus with the rug under the table, long along the page's depth (scripts/kitchen-rug.mjs; px across × depth,
- // 304 px a unit: x .2–2.3, z .9–3.4 around the table at x 1.25, z 2.55; the pile 18 px deep).
- {dir:'page-3',name:'kitchen-floor-stage',floor:'kitchen',stage:'page',rug:{x:784,y:274,w:639,h:760,thick:18}},
- {dir:'page-3',name:'kitchen-floor-stage-sheet',floor:'kitchen',stage:'sheet',rug:{x:784,y:274,w:639,h:760,thick:18}},
- {dir:'page-3',name:'kitchen-fridge',src:'new/new2/front-fridge-with-plant-wider',width:760,clean:90,plain:true,cast:{dy:.03,blur:.01,alpha:.5}},
- {dir:'page-3',name:'kitchen-table-low',src:'new/new2/simple-table-no-book',width:1400,clean:110,plain:true,cast:{dy:.08,blur:.011,alpha:.55,rows:.8}},
+ // The phone's flat page: the honey-oak floorboards (scripts/kitchen-floor.mjs), for the flat page's UVs and the turning sheet's.
+ {dir:'page-3',name:'kitchen-floor-stage',floor:'kitchen',stage:'page'},
+ {dir:'page-3',name:'kitchen-floor-stage-sheet',floor:'kitchen',stage:'sheet'},
+ // Simple contact shadows, no shadows of the legs: a soft box under the fridge, a soft oval under the table.
+ {dir:'page-3',name:'kitchen-fridge',src:'new/new2/fridge-with-plant-wider-base',width:760,clean:90,plain:true,shadow:{shape:'rect',pad:.035,spread:.95,alpha:.5,cx:.537}},
+ {dir:'page-3',name:'kitchen-table-low',src:'new/new2/simple-table-no-book',width:1400,clean:110,plain:true,shadow:{pad:.09,spread:.86,alpha:.5}},
  {dir:'page-3',name:'my-recipe-book',src:'new/new2/my-recipe-book',width:700,clean:150},
  {dir:'page-3',name:'magnet-gnocchi',src:'new/new2/magnet-carrot-gnocchi',width:420,clean:90,plain:true},
  {dir:'page-3',name:'magnet-gimbap',src:'new/new2/magnet-carrot-gimbap',width:420,clean:90,plain:true},
@@ -128,9 +128,14 @@ async function plain(file,width){
  return {image,w,h};
 }
 /** A soft elliptical contact shadow under a card's foot: extends the card downward by `pad` of its height and draws the shadow beneath it. */
-async function grounded(card,w,h,{pad,spread,alpha}){
- const extra=Math.round(h*pad),total=h+extra,rx=Math.round(w*spread/2),ry=Math.max(3,Math.round(extra*.62));
- const ellipse=Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${total}"><ellipse cx="${w/2}" cy="${h-Math.round(extra*.12)}" rx="${rx}" ry="${ry}" fill="#2a1608" fill-opacity="${alpha}"/></svg>`);
+// `shape` 'rect' gives a soft box instead (a fridge's footprint); `cx` centres it under the body when the picture is not centred (a plant
+// hanging off one side).
+async function grounded(card,w,h,{pad,spread,alpha,shape='ellipse',cx=.5}){
+ const extra=Math.round(h*pad),total=h+extra,rx=Math.round(w*spread/2),ry=Math.max(3,Math.round(extra*.62)),x=Math.round(w*cx);
+ const form=shape==='rect'
+  ?`<rect x="${x-rx}" y="${h-Math.round(extra*.55)}" width="${rx*2}" height="${Math.round(extra*1.1)}" rx="${Math.round(extra*.3)}" fill="#2a1608" fill-opacity="${alpha}"/>`
+  :`<ellipse cx="${x}" cy="${h-Math.round(extra*.12)}" rx="${rx}" ry="${ry}" fill="#2a1608" fill-opacity="${alpha}"/>`;
+ const ellipse=Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${total}">${form}</svg>`);
  const shadow=await sharp(ellipse).blur(Math.max(2,extra*.32)).png().toBuffer();
  const image=sharp({create:{width:w,height:total,channels:4,background:{r:0,g:0,b:0,alpha:0}}}).composite([{input:shadow},{input:await card.png().toBuffer(),top:0,left:0}]);
  return {image,w,h:total,pad:extra/total};
@@ -191,7 +196,7 @@ for(const item of art){
  if(only&&item.dir!==only)continue;
  let file=path.join(project,'art-src/gpt',item.dir,`${item.src??item.name}.png`);
  if(item.stage){
-  const flat=item.stage==='page',floor=item.floor==='farm'?await farmFloor(sharp,project,1446,1080,{top:0}):item.floor==='kitchen'?await kitchenFloor(sharp,project,1446,1080,{rug:item.rug}):await pathFloor(sharp,project,1446,1080,{widenRight:{dx:.12,u0:.62,v0:.42,v1:1}});
+  const flat=item.stage==='page',floor=item.floor==='farm'?await farmFloor(sharp,project,1446,1080,{top:0}):item.floor==='kitchen'?await oakFloor(sharp,project,1446,1080):await pathFloor(sharp,project,1446,1080,{widenRight:{dx:.12,u0:.62,v0:.42,v1:1}});
   const buf=await sharp(floor).rotate(flat?270:180).webp({quality:item.floor==='farm'?90:84,effort:5}).toBuffer();
   await fs.writeFile(path.join(project,'public/art-raster',`${item.name}.webp`),buf);console.log(`${item.name}: ${(buf.length/1024).toFixed(0)} KiB (floor texture)`);continue;
  }
