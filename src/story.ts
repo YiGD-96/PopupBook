@@ -51,22 +51,22 @@ export const scenes = [
   // Painted layers (GPT, art-src/gpt/page-3/new/new2 → scripts/prepare-gpt-art.mjs): a Jeju kitchen wall with a window on the evening sea, an
   // old fridge on the left page with four magnet notes on its door (glued to it, so they fold with it), and a low table at the right front with
   // the "나만의 레시피" book lying on its left end (glued to the table). The gnocchi, gimbap and cheese-jeon notes open their recipe posters
-  // (src/PosterBook.tsx); the blank note and the book ask readers to send their own recipe. The fridge and the table have contact shadows
+  // (src/PosterBook.tsx); the blank note and the book ask readers to send their own recipe. The fridge (a soft box) and the table (a soft oval) have contact shadows
   // baked under their feet, so their cards stand a little lower than the page.
   // The wall is cropped twice from one painting (scripts/prepare-gpt-art.mjs): from below the lamp's cord in the open book; on the phone all of
-  // it, widened with its own plaster so it is barely zoomed. A thick beige rug (natural-beige-thick-rug) lies under the table, printed on the page (scripts/kitchen-rug.mjs:
-  // the right page in the open book, the `stage` floor on the phone). The fridge stands at the front of the left page, its feet just behind the
+  // it, widened with its own plaster so it is barely zoomed. The floor is honey-oak boards printed on the page (scripts/kitchen-floor.mjs: both
+  // pages in the open book, lighter under the printed words as on chapters 1–2; the `stage` floor on the phone). The fridge stands at the front of the left page, its feet just behind the
   // printed title, as tall as the open book allows (its top just below the chapter heading, and inside the frame while a page turns).
   {id:'back',src:'kitchen-back',phoneSrc:'kitchen-back-phone',position:[0,.24,-1.7],size:[6.45,2.952]},
-  {id:'fridge',src:'kitchen-fridge',position:[-1.65,.164,1.55],size:[1.64,3.669],phone:{x:-1.05,z:2.2,size:[1.75,3.915]}},
+  {id:'fridge',src:'kitchen-fridge',position:[-1.65,.144,1.55],size:[1.706,3.693],phone:{x:-1.05,z:2.2,size:[1.809,3.915]}},
   // The notes run down the door in a loose zigzag (left, right, left, further right), large, the first two overlapping at a corner; each
   // later one stands a hair in front so overlaps stack in reading order.
   clickable({id:'magnet-gnocchi',on:'fridge',src:'magnet-gnocchi',position:[-1.69,2.623,1.59],size:[.72,.627],detail:'poster-gnocchi',phone:{x:-1.175,z:2.24,size:[.66,.575],lift:2.725}}),
   clickable({id:'magnet-gimbap',on:'fridge',src:'magnet-gimbap',position:[-1.25,2.174,1.6],size:[.72,.626],detail:'poster-gimbap',phone:{x:-.655,z:2.25,size:[.66,.573],lift:2.275}}),
   clickable({id:'magnet-cheese-jeon',on:'fridge',src:'magnet-cheese-jeon',position:[-1.67,1.613,1.61],size:[.72,.627],detail:'poster-jeon',phone:{x:-1.145,z:2.26,size:[.66,.575],lift:1.755}}),
   clickable({id:'magnet-blank',on:'fridge',src:'magnet-blank',position:[-1.22,.998,1.62],size:[.72,.662],detail:'recipe-share',phone:{x:-.595,z:2.27,size:[.66,.607],lift:1.143}}),
-  {id:'table',src:'kitchen-table-low',position:[1.75,.156,1.0],size:[2.7,1.546],phone:{x:1.25,z:2.55,size:[1.8,1.03]}},
-  clickable({id:'recipe-book',on:'table',src:'my-recipe-book',position:[1.45,.7,1.1],size:[1.1,.801],detail:'recipe-share',phone:{x:.85,z:2.61,size:[.95,.692],lift:.4}})
+  {id:'table',src:'kitchen-table-low',position:[1.75,.14,1.0],size:[2.7,1.563],phone:{x:1.0,z:2.55,size:[2.1,1.215]}},
+  clickable({id:'recipe-book',on:'table',src:'my-recipe-book',position:[1.45,.7,1.1],size:[1.1,.801],detail:'recipe-share',phone:{x:.55,z:2.61,size:[.95,.692],lift:.47}})
  ] as Layer[]}
 ];
 type StoryState = {phase:Phase;chapter:number;dialog:boolean;detail:string|null;visited:number[];audioReady:boolean;introPagesTurned:number;error:string|null;set:(patch:Partial<StoryState>)=>void};

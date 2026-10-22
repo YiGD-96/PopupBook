@@ -13,7 +13,7 @@ import {fileURLToPath} from 'node:url';
 import {createRequire} from 'node:module';
 import {pathFloor} from './street-floor.mjs';
 import {farmFloor} from './farm-floor.mjs';
-import {rugLayer} from './kitchen-rug.mjs';
+import {oakFloor} from './kitchen-floor.mjs';
 const project=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const runtime=process.env.CODEX_NODE_MODULES||'C:/Users/eh1al/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules';
 const sharp=createRequire(path.join(runtime,'package.json'))('sharp');
@@ -33,17 +33,16 @@ const PAPER=[
  {wash:'#dc9a5c',washOpacity:.18,frame:'#b08b64',corner:'#9d7a54',kicker:'#8b6646',sub:'#7a5c44'},
 ];
 const sheet=sharp(papyrus).resize(PRINT_W,PRINT_H,{fit:'cover'});
-// A spread with a printed floor (chapter 1: a muddy farmyard, scripts/farm-floor.mjs; chapter 2: a cobbled street, scripts/street-floor.mjs)
+// A spread with a printed floor (chapter 1: a muddy farmyard, scripts/farm-floor.mjs; chapter 2: a cobbled street, scripts/street-floor.mjs;
+// chapter 3: honey-oak floorboards, scripts/kitchen-floor.mjs)
 // draws it across both pages (left page = left half, right page = right half) instead of the frame and wash; the printed lines lie on
 // plain paper (`clear`) so they stay readable.
 const FLOORS={
  0:(w,h,clear)=>farmFloor(sharp,project,w,h,{clear}),
  1:(w,h,clear)=>pathFloor(sharp,project,w,h,{clear,widenRight:{dx:.075,u0:.55,v0:.46,v1:1}}),
+ // The open book's boards come narrower than the painted patch's (about 26 across the spread), so the floor reads at the book's scale.
+ 2:(w,h,clear)=>oakFloor(sharp,project,w,h,{clear,boards:26}),
 };
-// Chapter 3's kitchen: a long, thick beige rug with a terracotta border under the table on the right page (page units, x y w h and the pile's depth;
-// the table stands at x 1.75, z 1.0 in the book, its legs well inside the rug), printed below the page's own wash and words, its front edge clear of the subtitle.
-const RUGS={2:{right:{x:26,y:458,w:577,h:227,thick:10}}};
-const printedRug=({x,y,w,h,thick})=>{const k=PRINT_W/PAGE_W;return rugLayer(sharp,project,PRINT_W,PRINT_H,{x:x*k,y:y*k,w:Math.round(w*k),h:Math.round(h*k),thick:thick*k});};
 const only=process.argv[2]; // e.g. "1": write just that chapter's pages
 for(const [chapter,[n,kicker,title,subtitle]] of chapters.entries())for(const side of ['left','right']){
  if(only!==undefined&&Number(only)!==chapter)continue;
@@ -62,7 +61,7 @@ for(const [chapter,[n,kicker,title,subtitle]] of chapters.entries())for(const si
   await fs.writeFile(path.join(raster,`page-${chapter}-${side}.webp`),await base.composite([{input:overlay(labelled)}]).webp({quality:90,effort:5}).toBuffer());
   continue;
  }
- await fs.writeFile(path.join(raster,`page-${chapter}-${side}.webp`),await sheet.clone().composite([...(RUGS[chapter]?.[side]?[{input:await printedRug(RUGS[chapter][side])}]:[]),{input:overlay(body)}]).webp({quality:82,effort:5}).toBuffer());
+ await fs.writeFile(path.join(raster,`page-${chapter}-${side}.webp`),await sheet.clone().composite([{input:overlay(body)}]).webp({quality:82,effort:5}).toBuffer());
 }
 // The plain sheet: the story book's pages (src/DetailBook.tsx) and the intro film's journal (src/film.tsx).
 if(only===undefined)await fs.writeFile(path.join(raster,'intro-pages.webp'),await sharp(papyrus).resize(1440,1928,{fit:'cover'}).webp({quality:84,effort:5}).toBuffer());

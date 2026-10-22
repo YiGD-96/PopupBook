@@ -52,7 +52,7 @@ function PaperLayer({layer,piece,texture,hinges,onClick,turn,progress,incoming=f
  const key=`${incoming?'incoming:':''}${layer.id}:${piece.side}`;
  useEffect(()=>{const group=ref.current;hinges.current.set(key,group);return()=>{hinges.current.delete(key);};},[key,hinges]);
  useFrame(()=>{
-  const root=anchor.current;root.visible=true;
+  const root=anchor.current;root.userData.staged=incoming&&!turn;root.visible=!root.userData.staged;if(root.userData.staged)return;
   // The fold comes from the turn, or from the pop-up tween (openPopup) that drives the hinge directly; folded cards stack (popupStack).
   const p=turn?progress.current.value:0;if(turn)ref.current.rotation.x=popupFoldAngle(p,incoming);
   const y=layer.position[1]+flatLift(rank,ref.current.rotation.x);
@@ -87,7 +87,7 @@ function standingCards(target:number,art:Record<string,Texture>,shared:SpreadSha
 }
 function Book({onReady,onFailure}:{onReady:(director:Director)=>void;onFailure:()=>void}){
  const {gl,scene:world,camera}=useThree();const prepared=useRef(false);
- const hinges=useRef(new Map<string,Group>());const timeline=useRef<gsap.core.Timeline|null>(null);const pending=useRef<(()=>void)|null>(null);const generation=useRef(0);const mounted=useRef(true);const progress=useRef({value:0});const turnRef=useRef<Turn|null>(null);const incomingLoad=useRef<Promise<Record<string,Texture>>|null>(null);const [turn,setTurn]=useState<Turn|null>(null);
+ const hinges=useRef(new Map<string,Group>());const timeline=useRef<gsap.core.Timeline|null>(null);const pending=useRef<(()=>void)|null>(null);const generation=useRef(0);const mounted=useRef(true);const progress=useRef({value:0});const turnRef=useRef<Turn|null>(null);const incomingLoad=useRef<Promise<Record<string,Texture>>|null>(null);const [turn,setTurn]=useState<Turn|null>(null);const [staged,setStaged]=useState<{to:number;art:Record<string,Texture>}|null>(null);
  const [materials,setMaterials]=useState<BookMaterials>({});const [textures,setTextures]=useState<Record<string,Texture>>({});const [,setPaperShown]=useState(0);const paperRef=useRef<Record<string,Texture>>({});const chapter=useStory(s=>s.chapter);const frameCount=useRef({count:0,start:0});
  const standing=useStanding();const standingRef=useRef(standing);standingRef.current=standing;const stand=useRef({value:1});const lastSheet=useRef<{front:Texture;back:Texture;direction:1|-1}|null>(null);
  // Frames drawn per second, as data-fps on the canvas wrapper (for checks); written to the element, so React re-renders nothing.
@@ -108,6 +108,15 @@ function Book({onReady,onFailure}:{onReady:(director:Director)=>void;onFailure:(
   const target=new WebGLRenderTarget(128,128);target.texture.colorSpace=gl.outputColorSpace;const previousTarget=gl.getRenderTarget();
   try{gl.setRenderTarget(target);gl.render(world,camera);}finally{gl.setRenderTarget(previousTarget);target.dispose();}
  }
+ /** Draws the staged cards once off-screen (they are hidden otherwise): their geometry is uploaded now, not during the turn. */
+ function warmStaged(){
+  const staged:Group[]=[];world.traverse(o=>{if(o.userData.staged&&!o.visible){o.visible=true;staged.push(o as Group);}});
+  if(!staged.length)return;try{warmFirstFrame();}finally{staged.forEach(o=>{o.visible=false;});}
+ }
+ /** Whatever of a spread's pictures is not on the GPU yet goes up now (cheap for those already there), before its turn starts. */
+ function ensureUploaded(target:number){
+  const art=readyScene(target)??{};for(const texture of [...Object.values(art),...['left','right'].map(side=>paperRef.current[`page-${target}-${side}`]).filter(Boolean)])gl.initTexture(texture);
+ }
  async function prepareStartup(token:number){
   useStory.getState().set({phase:'INIT',error:null});
   const [firstArt,,materialArt]=await Promise.all([loadScene(0),preparePaper(),Promise.all(OPEN_BOOK_MATERIALS.map(async name=>[name,await loadTexture('book-'+name)] as const)).then(entries=>Object.fromEntries(entries) as Record<string,Texture>)]);
@@ -121,7 +130,7 @@ function Book({onReady,onFailure}:{onReady:(director:Director)=>void;onFailure:(
  }
  async function openPopup(target:number,token:number,alreadyOpen=false){
   useStory.getState().set({phase:'LOADING_PAGE',dialog:false,detail:null});const [art]=await Promise.all([loadScene(target),preparePaper(target)]);if(!mounted.current||token!==generation.current)return;
-  setTextures(art);useStory.getState().set({chapter:target});clearTurn();await renderWait();if(!mounted.current||token!==generation.current)return;
+  setTextures(art);useStory.getState().set({chapter:target});setStaged(null);clearTurn();await renderWait();if(!mounted.current||token!==generation.current)return;
   if(!alreadyOpen){useStory.getState().set({phase:'OPENING_POPUP'});hinges.current.forEach(h=>{if(!h.userData.glued)h.rotation.x=-Math.PI/2;});const layers=scenes[target].layers,ranks=stackRanks(layers);await animate(tl=>layers.forEach(l=>{for(const side of ['left','right']){const hinge=hinges.current.get(`${l.id}:${side}`);if(hinge&&!hinge.userData.glued)tl.to(hinge.rotation,{x:0,duration:.72,ease:'back.out(1.05)'},riseOrder(ranks.get(l.id)??0,layers.length)*.13);}}));}
   if(!mounted.current||token!==generation.current)return;useStory.getState().set({phase:'EXPLORING'});pulseHalos(clickableCards(target));warmChapter(target+1,token);
  }
@@ -144,8 +153,10 @@ function Book({onReady,onFailure}:{onReady:(director:Director)=>void;onFailure:(
    const halosReady=prepareHalos(art,target);
    const step=()=>{if(!mounted.current||token!==generation.current||useStory.getState().phase!=='EXPLORING')return;const texture=queue.shift();
     // Last, the next spread's card materials are bound to their (shared) shader program, so its first frame in a turn is cheap.
-    if(!texture){const cards=scenes[target].layers.map(l=>art[l.src]).filter(Boolean).map(cardMaterial);void halosReady.then(halos=>{if(mounted.current&&token===generation.current&&useStory.getState().phase==='EXPLORING')warmMaterials(gl,world,camera,[...cards,...halos]);});return;}
-    gl.initTexture(texture);window.setTimeout(()=>requestAnimationFrame(step),150);};
+    if(!texture){const cards=scenes[target].layers.map(l=>art[l.src]).filter(Boolean).map(cardMaterial);void halosReady.then(async halos=>{if(!mounted.current||token!==generation.current||useStory.getState().phase!=='EXPLORING')return;warmMaterials(gl,world,camera,[...cards,...halos]);
+     // Then the spread's cards are built and drawn once hidden, so the turn does not pay for building them in its first frames.
+     setStaged({to:target,art});await renderWait();if(mounted.current&&token===generation.current&&useStory.getState().phase==='EXPLORING')warmStaged();});return;}
+    gl.initTexture(texture);window.setTimeout(()=>requestAnimationFrame(step),100);};
    requestAnimationFrame(step);
   }).catch(()=>{});},700);
  }
@@ -194,7 +205,7 @@ function Book({onReady,onFailure}:{onReady:(director:Director)=>void;onFailure:(
  async function go(target:number){
   if(target<0||target>=scenes.length||target===useStory.getState().chapter)return;if(!readable())return;
   const token=++generation.current;configureTurn(target);useStory.getState().set({phase:'LOADING_PAGE',dialog:false,detail:null});
-  try{await incomingLoad.current;if(!mounted.current||token!==generation.current)return;useStory.getState().set({phase:'TURNING_PAGE'});await renderWait();playSound('page');await animate(tl=>tl.to(progress.current,{value:1,duration:1.35,ease:'power2.inOut'}));if(!mounted.current||token!==generation.current)return;await openPopup(target,token,true);}catch(e){if(token===generation.current)fail(e);}
+  try{await incomingLoad.current;if(!mounted.current||token!==generation.current)return;ensureUploaded(target);useStory.getState().set({phase:'TURNING_PAGE'});await renderWait();playSound('page');await animate(tl=>tl.to(progress.current,{value:1,duration:1.35,ease:'power2.inOut'}));if(!mounted.current||token!==generation.current)return;await openPopup(target,token,true);}catch(e){if(token===generation.current)fail(e);}
  }
  function previewTurn(direction:1|-1,value:number){const s=useStory.getState();if(s.phase==='EXPLORING'||s.phase==='ENDING'){const target=s.chapter+direction;if(target<0||target>=scenes.length||!Object.keys(paperRef.current).length||!readable())return false;generation.current++;configureTurn(target);s.set({phase:'DRAGGING_PAGE',dialog:false,detail:null});}if(useStory.getState().phase!=='DRAGGING_PAGE'||turnRef.current?.direction!==direction)return false;progress.current.value=Math.max(0,Math.min(1,value));return true;}
  async function settle(commit:boolean){
@@ -202,7 +213,7 @@ function Book({onReady,onFailure}:{onReady:(director:Director)=>void;onFailure:(
   const info=turnRef.current,token=generation.current;useStory.getState().set({phase:'TURNING_PAGE'});
   try{
    if(commit){
-    await incomingLoad.current;if(!mounted.current||token!==generation.current)return;playSound('page');
+    await incomingLoad.current;if(!mounted.current||token!==generation.current)return;ensureUploaded(info.to);playSound('page');
     await animate(tl=>tl.to(progress.current,{value:1,duration:Math.max(.35,(1-progress.current.value)*.9),ease:'power2.out'}));
     if(!mounted.current||token!==generation.current)return;await openPopup(info.to,token,true);
    }else{
@@ -263,7 +274,7 @@ function Book({onReady,onFailure}:{onReady:(director:Director)=>void;onFailure:(
     floor={paperOf(moving&&turn.direction===1?turn.to:chapter)} sheetFloor={moving?paperOf(turn.direction===1?turn.from:turn.to):undefined} stages={stagesOf(moving&&turn.direction===1?turn.to:chapter,moving?(turn.direction===1?turn.from:turn.to):undefined)}/>
    {/* One group, keyed by chapter: when a turn ends the incoming cards stay mounted and become the spread's own (no rebuild). */}
    <group>{standingCards(chapter,textures,{hinges,onClick:interact,turn,progress})}
-   {turn&&turn.to!==chapter&&standingCards(turn.to,turn.incoming,{hinges,onClick:interact,turn,progress},true)}</group>
+   {turn&&turn.to!==chapter?standingCards(turn.to,turn.incoming,{hinges,onClick:interact,turn,progress},true):staged&&staged.to!==chapter?standingCards(staged.to,staged.art,{hinges,onClick:interact,turn:null,progress},true):null}</group>
    <ContextMonitor onFailure={onFailure}/></>;
  }
  return <><Camera/><DeskFog/><DeskBackdrop materials={materials}/><group>
@@ -272,7 +283,7 @@ function Book({onReady,onFailure}:{onReady:(director:Director)=>void;onFailure:(
  {sheet&&<TurningPage front={sheet.front} back={sheet.back} progress={progress} direction={sheet.direction} visible={moving}/>}
  {/* One group, keyed by chapter: when a turn ends the incoming cards stay mounted and become the spread's own (no rebuild). */}
  <group>{spreadCards(chapter,textures,{hinges,onClick:interact,turn,progress})}
- {turn&&turn.to!==chapter&&spreadCards(turn.to,turn.incoming,{hinges,onClick:interact,turn,progress},true)}</group>
+ {turn&&turn.to!==chapter?spreadCards(turn.to,turn.incoming,{hinges,onClick:interact,turn,progress},true):staged&&staged.to!==chapter?spreadCards(staged.to,staged.art,{hinges,onClick:interact,turn:null,progress},true):null}</group>
  </group><ContextMonitor onFailure={onFailure}/></>;
 }
 /**
