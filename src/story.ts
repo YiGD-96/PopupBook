@@ -18,7 +18,7 @@ export const scenes = [
   // fly swatter and torch for the night rounds on a free hook of its wall (glued to it, so it folds with the shed), the farmer and the
   // crate of carrots on the right.
   {id:'back',src:'farm-back',phoneSrc:'farm-back-phone',position:[0,.24,-1.7],size:[6.9,2.636]},
-  {id:'shed',src:'farm-shed',position:[-1.8,.27,.45],size:[3.1,2.189],phone:{x:-1.1,z:1.3,size:[2.4,1.695]}},
+  {id:'shed',src:'farm-shed',position:[-1.8,.27,.45],size:[3.1,2.125],phone:{x:-1.1,z:1.3,size:[2.4,1.645]}},
   clickable({id:'swatter',on:'shed',src:'farm-swatter',glow:.1,position:[-2,.73,.49],size:[.42,.866],detail:'night-watch',phone:{x:-1.24,z:1.34,size:[.31,.639],lift:.39}}),
   // The carrot field in morning light behind a Jeju basalt wall (art-src/gpt/page-1/new/당근밭-제주현무암재배치-직각윤곽-1500x450.png)
   // runs behind the farmer and the crate from behind the shed to the right page's outer edge: the wall's lower right corner meets the
@@ -27,7 +27,10 @@ export const scenes = [
   {id:'carrots',src:'farm-carrots',position:[1.27,.27,.3],size:[4.3,1.319],phone:{x:1.075,z:1.15,size:[2.6,.798],edge:true}},
   // The farmer has a contact shadow baked under his boots, so his card is a little taller: foot y = 0.255 minus that padding.
   clickable({id:'farmer',src:'char-farmer',position:[.75,.16,1.1],size:[1.227,2.45],detail:'farmer',phone:{x:.4,z:2.15,size:[1.102,2.2]}}),
-  clickable({id:'crate',src:'farm-crate',position:[1.9,.285,1.68],size:[1.3,1.061],detail:'harvest',phone:{x:1.1,z:3.2,size:[1.1,.898]}})
+  // A Jeju dog asleep at the farmer's feet (decor): beside his boots on the open book, in front of them on the phone. A soft shadow is baked
+  // under it, so its foot is a little lower.
+  {id:'dog',src:'farm-dog',position:[-.1,.21,1.3],size:[1.24,.822],phone:{x:.2,z:3.05,size:[1.44,.956]}},
+  clickable({id:'crate',src:'farm-crate',position:[1.9,.285,1.68],size:[1.3,1.061],detail:'harvest',phone:{x:1.6,z:2.5,size:[1.1,.898]}})
  ] as Layer[]},
  {id:'cooks',title:'구좌를 맛보는 다채로운 방식',stage:'village-floor-stage',paper:'#fff6e3',english:'02 · PEOPLE WHO COOK',intro:'구좌 당근으로 새로운 맛을 만드는\n식당 사장님들을 만났어요.',dialog:'세 곳의 식당이 구좌 당근으로 저마다의 한 접시를 만들어요. 가게를 눌러 이야기를 펼쳐 보세요.',label:'식당 이야기 보기',color:'#b89970',detail:'cook-01',layers:[
   // Painted layers (GPT, art-src/gpt/page-2 → scripts/prepare-gpt-art.mjs): a Gujwa seaside village in late morning, back to front. The page

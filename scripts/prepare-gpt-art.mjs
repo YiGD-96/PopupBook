@@ -23,9 +23,12 @@ const art=[
  {dir:'page-1',name:'farm-back',src:'new/1페이지-배경',width:1440,backdrop:{top:0,bottom:773}},
  // The phone's upright page (1.9:1) shows the left part of the same painting, where the sun sets over the sea.
  {dir:'page-1',name:'farm-back-phone',src:'new/1페이지-배경',width:1440,backdrop:{top:0,bottom:773,left:0,right:1477}},
- {dir:'page-1',name:'farm-shed',src:'new/빈티지 도구가 있는 나무 헛간',width:1100,clean:60},
+ // The shed and the dog have no cream die-cut border (the user preferred their own painted edge).
+ {dir:'page-1',name:'farm-shed',src:'new/빈티지 도구가 있는 나무 헛간',width:1100,clean:60,plain:true},
  {dir:'page-1',name:'farm-swatter',src:'new/빈티지 파리채와 손전등',width:300,clean:60},
  {dir:'page-1',name:'char-farmer',src:'new/당근을 든 미소 짓는 농부-아침7시-좌측빛',width:440,clean:60,shadow:{pad:.04,spread:.62,alpha:.45}},
+ // A Jeju dog asleep, curled up at the farmer's feet; a soft shadow under it so it lies on the ground.
+ {dir:'page-1',name:'farm-dog',src:'new/제주강아지-웅크린잠자는자세-그림책',width:900,clean:60,plain:true,shadow:{pad:.08,spread:.9,alpha:.42}},
  {dir:'page-1',name:'farm-crate',src:'new/흙 묻은 당근이 가득한 나무 상자',width:560,clean:60},
  // The carrot field in morning light behind a basalt wall seen in perspective, standing behind the farmer and the crate from the right
  // page's outer edge to behind the shed. No die-cut border: the field's own edge meets the floor.
