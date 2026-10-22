@@ -4,9 +4,10 @@ export const STANDING_QUERY='(max-width: 760px) and (orientation: portrait)';
 /** The phone intro film is portrait 9:20, taller than phone canvases (about 9:19.5 with the browser's bars gone), so it covers them top to
  *  bottom (at 9:16 it left an empty band above and below). */
 export const STANDING_FILM_ASPECT=9/20;
-/** How far the standing camera must reach sideways for every frame point, relative to how far up and down (src/standingView.ts). On any
- *  canvas narrower than this ratio (every portrait one) the width sets the field of view. tests/standing-book.test.mjs keeps this in step. */
-export const STANDING_FRAME_REACH=1.09896;
+/** How far the standing camera must reach sideways (the upright page, STANDING_PAGE_FILL of the width) relative to how far up and down (the whole book)
+ *  (src/standingView.ts). On any canvas narrower than this ratio (a phone held upright) the width sets the field of view.
+ *  tests/standing-book.test.mjs keeps this in step. */
+export const STANDING_FRAME_REACH=.81395;
 /** On-screen size of the phone film on a width×height canvas. The film and the live book share the camera's position and direction and
  *  differ only in field of view (standingFov), so the film lines up when scaled about the centre by the ratio of the focal lengths. */
 export function standingMediaSize(width:number,height:number){

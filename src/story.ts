@@ -29,7 +29,7 @@ export const scenes = [
   clickable({id:'farmer',src:'char-farmer',position:[.75,.16,1.1],size:[1.227,2.45],detail:'farmer',phone:{x:.4,z:2.15,size:[1.102,2.2]}}),
   // A Jeju dog asleep at the farmer's feet (decor): beside his boots on the open book, in front of them on the phone. A soft shadow is baked
   // under it, so its foot is a little lower.
-  {id:'dog',src:'farm-dog',position:[-.1,.21,1.3],size:[1.24,.822],phone:{x:.2,z:3.05,size:[1.44,.956]}},
+  {id:'dog',src:'farm-dog',position:[-.16,.21,1.38],size:[1.178,.781],phone:{x:.2,z:3.2,size:[1.368,.908]}},
   clickable({id:'crate',src:'farm-crate',position:[1.9,.285,1.68],size:[1.3,1.061],detail:'harvest',phone:{x:1.6,z:2.5,size:[1.1,.898]}})
  ] as Layer[]},
  {id:'cooks',title:'구좌를 맛보는 다채로운 방식',stage:'village-floor-stage',paper:'#fff6e3',english:'02 · PEOPLE WHO COOK',intro:'구좌 당근으로 새로운 맛을 만드는\n식당 사장님들을 만났어요.',dialog:'세 곳의 식당이 구좌 당근으로 저마다의 한 접시를 만들어요. 가게를 눌러 이야기를 펼쳐 보세요.',label:'식당 이야기 보기',color:'#b89970',detail:'cook-01',layers:[
@@ -46,19 +46,20 @@ export const scenes = [
   {id:'traveler',src:'char-traveler',position:[-1,.215,2],size:[.68,1.518],phoneHidden:true,phone:{x:-.75,z:2.4,size:[.55,1.228]}},
   {id:'family',src:'family-walk',position:[.95,.2,2.05],size:[1.8,1.55],phone:{x:.55,z:3.1,size:[1.5,1.29]}}
  ] as Layer[]},
- {id:'recipes',title:'구좌를 요리하는 가장 쉬운 방식',paper:'#ffe9d2',english:'03 · MENU & RECIPE',intro:'식당의 당근 메뉴와\n집에서 따라 하는 레시피를 모았어요.',dialog:'벽 판에는 당근 뇨끼, 당근 김밥, 당근전 레시피가 붙어 있어요. 메모를 눌러 레시피 포스터를 보고, 빈 메모나 레시피 책을 눌러 여러분의 당근 레시피도 보내 주세요.',label:'레시피 보기',color:'#81a69c',detail:'poster-gnocchi',layers:[
-  // Painted layers (GPT, art-src/gpt/page-3 → scripts/prepare-gpt-art.mjs): a kitchen wall with a wooden board and four notes clipped to it in a row
-  // (glued to the wall, so they fold with it): gnocchi, gimbap and cheese-jeon open their recipe posters (src/PosterBook.tsx), and a blank note
-  // that, like the booklet of more recipes on the left page, asks readers to send their own recipe. A prep table stands in front.
-  // On the phone the wall is the upright page (its sides cropped): the notes stand in one row just in front of it, lifted to the board; the table
-  // stays inside the page and the booklet stands in front of its left end.
-  {id:'back',src:'kitchen-back',position:[0,.24,-1.7],size:[6.45,2.559]},
-  clickable({id:'note-gnocchi',on:'back',src:'note-gnocchi',position:[-1.25,1.27,-1.66],size:[.72,.727],detail:'poster-gnocchi',phone:{x:-1.2,z:.3,size:[.8,.808],lift:1.1}}),
-  clickable({id:'note-gimbap',on:'back',src:'note-gimbap',position:[-.49,1.27,-1.66],size:[.72,.723],detail:'poster-gimbap',phone:{x:-.4,z:.3,size:[.8,.803],lift:1.1}}),
-  clickable({id:'note-cheese-jeon',on:'back',src:'note-cheese-jeon',position:[.49,1.27,-1.66],size:[.72,.725],detail:'poster-jeon',phone:{x:.4,z:.3,size:[.8,.805],lift:1.1}}),
-  clickable({id:'note-blank',on:'back',src:'note-blank',position:[1.25,1.27,-1.66],size:[.72,.725],detail:'recipe-share',phone:{x:1.2,z:.3,size:[.8,.806],lift:1.1}}),
-  {id:'table',src:'prep-table',position:[.45,.27,2.4],size:[4.1,1.905],phone:{x:.45,z:3.05,size:[3.5,1.626]}},
-  clickable({id:'booklet',src:'recipe-booklet',position:[-2.2,.27,1.7],size:[1.5,1.084],detail:'recipe-share',phone:{x:-1.6,z:3.2,size:[1.2,.867]}})
+ {id:'recipes',title:'구좌를 요리하는 가장 쉬운 방식',paper:'#ffe9d2',english:'03 · MENU & RECIPE',intro:'식당의 당근 메뉴와\n집에서 따라 하는 레시피를 모았어요.',dialog:'냉장고 문에 당근 뇨끼, 당근 김밥, 당근 치즈전 레시피가 붙어 있어요. 메모를 눌러 레시피 포스터를 보고, 빈 메모나 식탁 위 나만의 레시피 책을 눌러 여러분의 당근 레시피도 보내 주세요.',label:'레시피 보기',color:'#81a69c',detail:'poster-gnocchi',layers:[
+  // Painted layers (GPT, art-src/gpt/page-3/new/new2 → scripts/prepare-gpt-art.mjs): a Jeju kitchen wall with a window on the evening sea, an
+  // old fridge on the left page with four magnet notes on its door (glued to it, so they fold with it), and a low table at the right front with
+  // the "나만의 레시피" book lying on its left end (glued to the table). The gnocchi, gimbap and cheese-jeon notes open their recipe posters
+  // (src/PosterBook.tsx); the blank note and the book ask readers to send their own recipe. The fridge and the table have contact shadows
+  // baked under their feet, so their cards stand a little lower than the page.
+  {id:'back',src:'kitchen-back',position:[0,.24,-1.7],size:[6.45,2.562]},
+  {id:'fridge',src:'kitchen-fridge',position:[-2,.186,.3],size:[1.3,2.909],phone:{x:-1.4,z:1.4,size:[1.35,3.02]}},
+  clickable({id:'magnet-gnocchi',on:'fridge',src:'magnet-gnocchi',position:[-2.12,2.08,.34],size:[.46,.401],detail:'poster-gnocchi',phone:{x:-1.52,z:1.44,size:[.47,.41],lift:2.04}}),
+  clickable({id:'magnet-gimbap',on:'fridge',src:'magnet-gimbap',position:[-1.63,2.08,.34],size:[.46,.4],detail:'poster-gimbap',phone:{x:-1.03,z:1.44,size:[.47,.408],lift:2.04}}),
+  clickable({id:'magnet-cheese-jeon',on:'fridge',src:'magnet-cheese-jeon',position:[-2.12,1.58,.34],size:[.46,.401],detail:'poster-jeon',phone:{x:-1.52,z:1.44,size:[.47,.41],lift:1.56}}),
+  clickable({id:'magnet-blank',on:'fridge',src:'magnet-blank',position:[-1.63,1.58,.34],size:[.46,.423],detail:'recipe-share',phone:{x:-1.03,z:1.44,size:[.47,.432],lift:1.56}}),
+  {id:'table',src:'kitchen-table-low',position:[1.75,.156,1.6],size:[2.7,1.546],phone:{x:.6,z:2.75,size:[2.9,1.661]}},
+  clickable({id:'recipe-book',on:'table',src:'my-recipe-book',position:[.95,1.1,1.66],size:[.85,.619],detail:'recipe-share',phone:{x:-.15,z:2.81,size:[.85,.619],lift:.67}})
  ] as Layer[]}
 ];
 type StoryState = {phase:Phase;chapter:number;dialog:boolean;detail:string|null;visited:number[];audioReady:boolean;introPagesTurned:number;error:string|null;set:(patch:Partial<StoryState>)=>void};

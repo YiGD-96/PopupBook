@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {Vector3,PerspectiveCamera} from 'three';
 import {scenes} from '../src/story.ts';
 import {UPRIGHT_SCALE,STAGE,isBackdrop,standingPlacement,surfaceY,standingFoldIn,standingFoldOut,standingSheetProgress,standingSheetPoint,uprightPagePoint,backdropCrop} from '../src/standingLayout.ts';
-import {STANDING_CAMERA_POSITION,STANDING_TARGET,STANDING_FRAME_POINTS,standingFov} from '../src/standingView.ts';
+import {STANDING_CAMERA_POSITION,STANDING_TARGET,STANDING_FRAME_POINTS,STANDING_PAGE_POINTS,STANDING_PAGE_FILL,standingFov} from '../src/standingView.ts';
 import {paperPoint,PAGE_WIDTH,PAGE_HEIGHT} from '../src/paperGeometry.ts';
 import {STANDING_FILM_ASPECT,STANDING_FRAME_REACH,standingMediaSize} from '../src/standingMedia.ts';
 
@@ -20,11 +20,17 @@ test('every standing card stays on the flat page, clear of its edges and in fron
  // Each spread has a backdrop for the upright page.
  for(const scene of scenes)assert.ok(scene.layers.some(isBackdrop));
 });
-test('the phone camera holds the whole standing book and every card on common phone canvases',()=>{
- for(const [w,h] of [[426,600],[396,520],[466,720],[396,440]]){
-  const c=camera(w,h),inside=(p,label)=>{const v=new Vector3(...p).project(c);assert.ok(Math.abs(v.x)<=.99&&Math.abs(v.y)<=.99,`${label} clipped at ${w}×${h}: ${v.x.toFixed(2)},${v.y.toFixed(2)}`);};
-  STANDING_FRAME_POINTS.forEach((p,i)=>inside(p,'frame point '+i));
-  for(const scene of scenes)for(const layer of scene.layers.filter(l=>!isBackdrop(l))){const {x,z,size}=standingPlacement(layer);for(const dx of [-.5,.5])inside([x+dx*size[0],surfaceY(z)+size[1],z],`${scene.id}/${layer.id}`);}
+test('the phone camera fills the width with the upright page and holds the book top to bottom and every card on common phone canvases',()=>{
+ for(const [w,h] of [[393,852],[426,600],[396,520],[466,720],[396,440]]){
+  const c=camera(w,h),at=p=>new Vector3(...p).project(c);
+  // The upright page spans STANDING_PAGE_FILL of the width on a phone held upright; on a squatter canvas the book's height sets the view
+  // and the page spans less. Never past the sides.
+  const across=Math.max(...STANDING_PAGE_POINTS.map(p=>Math.abs(at(p).x)));if(w/h<STANDING_FRAME_REACH)near(across,STANDING_PAGE_FILL,1e-6);else assert.ok(across<STANDING_PAGE_FILL);
+  // Up and down the whole book stays on the canvas (only the lower board's near corners may run off the sides).
+  STANDING_FRAME_POINTS.forEach((p,i)=>assert.ok(Math.abs(at(p).y)<=.99,`frame point ${i} clipped at ${w}×${h}`));
+  // Every card's middle and top are on the canvas (one by the page's front corners may be cut at the side).
+  for(const scene of scenes)for(const layer of scene.layers.filter(l=>!isBackdrop(l))){const {x,z,size}=standingPlacement(layer),v=at([x,surfaceY(z)+size[1],z]);
+   assert.ok(Math.abs(v.x)<=.99&&Math.abs(v.y)<=.99,`${scene.id}/${layer.id} off the canvas at ${w}×${h}: ${v.x.toFixed(2)},${v.y.toFixed(2)}`);}
  }
 });
 test('a standing turn folds the cards away before the sheet moves and raises the next ones only once it stands',()=>{
