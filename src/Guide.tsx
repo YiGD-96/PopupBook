@@ -30,8 +30,10 @@ export default function Guide({step,locate,onNext}:{step:1|2;locate:()=>GuideRec
  const width=Math.min(280,view.w-32);
  // The spotlight keeps inside the screen and stays centred on its target (the page arrow sits near the edge on a phone): near an edge
  // it narrows on both sides alike.
- const spot=!swipe&&rect&&(()=>{const cx=rect.x+rect.width/2,cy=rect.y+rect.height/2;
-  const hw=Math.max(8,Math.min(rect.width/2+PAD,cx-4,view.w-4-cx)),hh=Math.max(8,Math.min(rect.height/2+PAD,cy-4,view.h-4-cy));
+ // A card's box ends at its foot, with no margin below: the card stands on the page there, and the picture's own ground shadow already
+ // reaches past the figure (with the margin the farmer's frame came well below his boots).
+ const spot=!swipe&&rect&&(()=>{const foot=step===1?0:PAD,cx=rect.x+rect.width/2,cy=rect.y+(rect.height+foot-PAD)/2;
+  const hw=Math.max(8,Math.min(rect.width/2+PAD,cx-4,view.w-4-cx)),hh=Math.max(8,Math.min((rect.height+PAD+foot)/2,cy-4,view.h-4-cy));
   return {x:cx-hw,y:cy-hh,width:hw*2,height:hh*2};})();
  const below=!spot||spot.y+spot.height+GAP+BUBBLE_H<view.h-12;
  const centre=spot?spot.x+spot.width/2:view.w/2;

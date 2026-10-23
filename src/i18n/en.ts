@@ -423,6 +423,7 @@ const words:Record<string,string>={
  "혼자 짓지 않는 농사":"Farming is never done alone",
  "홀그레인 머스터드":"Whole-grain mustard",
  "홈으로":"home",
+ "화면을 누르면 시작해요":"Tap the screen to start",
  "화산재 흙과 겨울이 만든 단맛":"Sweetened by volcanic soil and winter",
  "화살표를 눌러 책장을 넘겨요":"Press the arrow to turn the page",
  "후추":"Black pepper",

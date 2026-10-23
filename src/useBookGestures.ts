@@ -15,7 +15,7 @@ export function useBookGestures(surface:RefObject<HTMLDivElement|null>,api:RefOb
    const vertical=Math.abs(dy)>Math.abs(dx)*1.2;
    if(vertical&&Math.abs(dy)>12&&!matchMedia(STANDING_QUERY).matches){gesture=null;return;}
    if(Math.max(Math.abs(dx),Math.abs(dy))<10)return;
-   gesture.axis=vertical?'y':'x';gesture.last=vertical?gesture.y:gesture.x;const direction=(vertical?dy:dx)<0?1:-1;const chapter=useStory.getState().chapter;if(chapter+direction<0||chapter+direction>2){gesture=null;return;}if(!api.current?.previewTurn(direction,0)){gesture=null;return;}gesture.direction=direction;element.setPointerCapture(e.pointerId);setDragging(true);}
+   gesture.axis=vertical?'y':'x';gesture.last=vertical?gesture.y:gesture.x;const direction=(vertical?dy:dx)<0?1:-1;const chapter=useStory.getState().chapter;if(direction===1&&chapter===2){gesture=null;finishBook('drag');return;}if(chapter+direction<0||chapter+direction>2){gesture=null;return;}if(!api.current?.previewTurn(direction,0)){gesture=null;return;}gesture.direction=direction;element.setPointerCapture(e.pointerId);setDragging(true);}
   // Up and down count as far as sideways (the book's width): measured against the phone's height, a slow swipe had to travel almost twice
   // as far (about 140 px) before the page would turn, so only fast flicks did.
   e.preventDefault();const along=gesture.axis==='y'?e.clientY:e.clientX,delta=gesture.axis==='y'?dy:dx,span=element.clientWidth;
@@ -26,6 +26,8 @@ export function useBookGestures(surface:RefObject<HTMLDivElement|null>,api:RefOb
  // Safari can report the capture lost just before the finger lifts: wait a moment for that lift (end) before turning the page back.
  // Only this element's own capture counts: a touch is captured to the canvas it lands on, and taking the capture over (setPointerCapture
  // above) makes the canvas lose it; that event bubbles up here and used to cancel every phone drag the moment it began.
+ // Past the last spread there is no page to turn: a swipe or scroll that way brings up the closing card instead (the next arrow's job there).
+ const finishBook=(method:'drag'|'wheel')=>{if(useStory.getState().phase==='EXPLORING'){noteTurn(method);api.current?.finish();}};
  const lost=(e:PointerEvent)=>{const g=gesture;if(e.target!==element||!g?.direction||e.pointerId!==g.pointer)return;window.setTimeout(()=>{if(gesture!==g)return;settleLost();},80);};
  const settleLost=()=>{if(gesture?.direction){gesture=null;cancelAnimationFrame(frame);api.current?.settleTurn(false);setDragging(false);setReleaseReady(false);}};
  // Only a change of width ends a drag: a phone's toolbar showing or hiding changes the height alone (and fires resize) mid-drag.
@@ -33,6 +35,7 @@ export function useBookGestures(surface:RefObject<HTMLDivElement|null>,api:RefOb
  const click=(e:MouseEvent)=>{if(performance.now()<suppressUntil){e.preventDefault();e.stopImmediatePropagation();}};
  const wheel=(e:WheelEvent)=>{if(blockedRef.current||e.ctrlKey||gesture)return;const now=performance.now();const idle=now-wheelLast;wheelLast=now;const phase=useStory.getState().phase;if(!['EXPLORING','ENDING','DRAGGING_PAGE','TURNING_PAGE','LOADING_PAGE','OPENING_POPUP'].includes(phase))return;const delta=wheelDelta(e.deltaX,e.deltaY,e.deltaMode,element.clientHeight);if(import.meta.env.DEV)element.dataset.lastWheel=String(delta);if(!delta)return;const direction=delta>0?1:-1;const chapter=useStory.getState().chapter;
   const reading=phase==='EXPLORING'||phase==='ENDING';
+  if(reading&&direction===1&&chapter===2){e.preventDefault();if(phase==='EXPLORING'&&now>=wheelLockedUntil){wheelLockedUntil=now+1500;finishBook('wheel');}wheelSum=0;return;}
   if(reading&&(chapter+direction<0||chapter+direction>2)){wheelSum=0;return;}
   e.preventDefault();if(!reading||now<wheelLockedUntil||(wheelLockedUntil>0&&idle<240)){wheelSum=0;return;}
   if(idle>240||Math.sign(wheelSum)!==Math.sign(delta))wheelSum=0;wheelSum+=delta;

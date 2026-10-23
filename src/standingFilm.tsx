@@ -105,7 +105,7 @@ async function titlePage(){
  const canvas=document.createElement('canvas');canvas.width=1600;canvas.height=1196;const c=canvas.getContext('2d')!;
  c.textAlign='center';c.textBaseline='alphabetic';
  c.fillStyle='rgba(150,140,110,.85)';c.font=`400 27px Georgia,serif`;c.fillText(SITE.label.split('').join(String.fromCharCode(8202)),800,500);
- c.fillStyle='rgba(84,74,58,.85)';c.font=`700 72px ${FILM_FONT}`;c.fillText(SITE.title,800,618);
+ c.fillStyle='rgba(84,74,58,.85)';c.font=`700 72px ${FILM_FONT}`;c.fillText(SITE.filmTitle,800,618);
  c.fillStyle='rgba(150,140,110,.55)';c.fillRect(760,668,80,3);
  c.fillStyle='rgba(84,74,58,.7)';c.font=`400 35px ${FILM_FONT}`;c.fillText(SITE.name,800,748);
  const texture=new CanvasTexture(canvas);texture.colorSpace=SRGBColorSpace;texture.anisotropy=4;return texture;

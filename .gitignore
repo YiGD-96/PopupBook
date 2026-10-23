@@ -12,3 +12,6 @@ intro-cache/
 # Raw source art (GPT originals, zips) and retired assets stay local; only what the site uses is committed.
 art-src/
 _archive/
+
+# Intro films while scripts/render-intro.mjs is still writing them
+*.partial.mp4

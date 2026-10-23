@@ -53,7 +53,7 @@ test('the phone film, scaled by standingMediaSize, lines up with the live standi
  // The three.js-free sizing uses the frame's reach ratio; it must be the one the camera framing actually has.
  const portrait=standingFov(100,1000),square=standingFov(1000,100),t=f=>Math.tan(f*Math.PI/360);
  near(t(portrait)/t(square)/10,STANDING_FRAME_REACH,2e-5);
- const film=[900,Math.round(900/STANDING_FILM_ASPECT)];
+ const film=[864,Math.round(864/STANDING_FILM_ASPECT)];
  for(const [w,h] of [[390,722],[375,551],[412,658],[736,598],[426,600]]){
   // A world point projects to the same canvas pixel whether drawn live or through the film shown at that size, centred.
   const live=camera(w,h),movie=camera(...film),size=standingMediaSize(w,h);near(size.width/size.height,STANDING_FILM_ASPECT,1e-9);

@@ -16,10 +16,10 @@ export type Poster={
  /** Leave out while there is no real photo yet. */
  photo?:boolean;
 };
-// The Gujwa carrot Short stands in for the dishes that have none of their own yet; the jeon has its own.
+// The Gujwa carrot Short stands in for the dishes that have none of their own yet; the gnocchi and the jeon have their own.
 const SHORTS='DRb3IIKUJSY';
 export const posters:Record<string,Poster>={
- 'poster-gnocchi':{file:'gnocchi',title:{ko:'당근 뇨끼',en:'Carrot Gnocchi',zh:'胡萝卜面疙瘩'},shorts:SHORTS,photo:true,
+ 'poster-gnocchi':{file:'gnocchi',title:{ko:'당근 뇨끼',en:'Carrot Gnocchi',zh:'胡萝卜面疙瘩'},shorts:'xQMgSiBRk60',photo:true,
   caption:{ko:'직접 만든 당근 뇨끼',en:'Our carrot gnocchi',zh:'亲手做的胡萝卜面疙瘩'}},
  'poster-gimbap':{file:'gimbap',title:{ko:'당근 김밥',en:'Carrot Kimbap',zh:'胡萝卜紫菜包饭'},shorts:SHORTS,photo:true,
   caption:{ko:'직접 만든 당근 김밥',en:'Our carrot kimbap',zh:'亲手做的胡萝卜紫菜包饭'}},

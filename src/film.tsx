@@ -77,7 +77,7 @@ async function journalPages(){
  const canvas=document.createElement('canvas');canvas.width=900;canvas.height=1205;const c=canvas.getContext('2d')!;
  c.drawImage(paper,0,0,900,1205);c.textAlign='center';c.textBaseline='alphabetic';
  c.fillStyle='rgba(150,140,110,.85)';c.font=`400 20px Georgia,serif`;c.fillText(SITE.label.split('').join(String.fromCharCode(8202)),450,470);
- c.fillStyle='rgba(84,74,58,.85)';c.font=`700 54px ${FONT}`;c.fillText(SITE.title,450,560);
+ c.fillStyle='rgba(84,74,58,.85)';c.font=`700 54px ${FONT}`;c.fillText(SITE.filmTitle,450,560);
  c.fillStyle='rgba(150,140,110,.55)';c.fillRect(420,600,60,2);
  c.fillStyle='rgba(84,74,58,.7)';c.font=`400 26px ${FONT}`;c.fillText(SITE.name,450,660);
  return [...pages,toTexture(canvas)];
