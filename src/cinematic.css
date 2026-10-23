@@ -95,24 +95,21 @@
 .cinematic-reader .site-header .brand{gap:16px;font-size:15px;font-weight:600;letter-spacing:-.02em;color:#186049}
 .brand-logo{display:block;height:26px;width:auto}
 .brand-name{padding-left:16px;border-left:1px solid #d8d2bd;white-space:nowrap}
-/* Ending card (the team's torn paper note with a pin): real text and buttons over one decoration, the paper and its pin
-   (public/media/ending-paper.jpg cut to its torn outline by ending-paper-mask.png), which never takes a click. Everything inside scales
-   with the card width (cqw: 1% of the width inside the padding, 2.163px on the 250px card), so a narrower card on small phones keeps
-   the same layout instead of overflowing. */
-.reader-mode .is-ending .hero-copy{width:250px;container-type:inline-size;padding:32.2px 18.8px 17.2px 14.9px;border:0;border-radius:0;text-align:left;backdrop-filter:none;background:none;box-shadow:none}
-.reader-mode .is-ending .hero-copy::before{content:'';position:absolute;inset:0;z-index:-1;background:url(/media/ending-paper.jpg) 0 0/100% 100% no-repeat;-webkit-mask:url(/media/ending-paper-mask.png) 0 0/100% 100% no-repeat;mask:url(/media/ending-paper-mask.png) 0 0/100% 100% no-repeat;pointer-events:none}
-.reader-mode .is-ending .hero-copy>.eyebrow{display:flex;justify-content:flex-start;margin:0 0 0 2.08cqw;font:700 max(7px,2.87cqw)/4.16cqw Georgia,serif;letter-spacing:.07em;color:#1f260c}
-.reader-mode .is-ending h1{margin:3.73cqw 0 0 2.08cqw;font-family:'Nanum Pen Script',cursive;font-size:13.87cqw;font-weight:400;line-height:13.78cqw;letter-spacing:.1em;color:#151a08}
+/* Ending card (the team's pinned paper design): real text and buttons over one decoration, the aged paper with its pin and carrot
+   drawing (public/media/ending-card.jpg cut to its outline by ending-card-mask.png), which never takes a click. Everything inside
+   scales with the card width (cqw: 1% of the width inside the padding, 2.192px on the 250px card). */
+.reader-mode .is-ending .hero-copy{width:250px;container-type:inline-size;padding:163px 15.8px 13.5px 15px;border:0;border-radius:0;text-align:center;backdrop-filter:none;background:none;box-shadow:none}
+.reader-mode .is-ending .hero-copy::before{content:'';position:absolute;inset:0;z-index:-1;background:url(/media/ending-card.jpg) 0 0/100% 100% no-repeat;-webkit-mask:url(/media/ending-card-mask.png) 0 0/100% 100% no-repeat;mask:url(/media/ending-card-mask.png) 0 0/100% 100% no-repeat;pointer-events:none}
+.reader-mode .is-ending h1{margin:0;font-family:'Pretendard Variable',Pretendard,'Noto Sans KR',sans-serif;font-size:11.59cqw;font-weight:800;line-height:13.72cqw;letter-spacing:0;color:#24130a}
 .reader-mode .is-ending h1 br{display:inline}
-.reader-mode .is-ending .hero-description{margin:3.19cqw 0 0 2.08cqw;font:7.67cqw/8.32cqw 'Nanum Pen Script',cursive;letter-spacing:0;color:#0d0a05}
-.reader-mode .is-ending .hero-description+.hero-description{margin-top:4.79cqw}
+.reader-mode .is-ending .hero-description{margin:3.15cqw 0 0;font:500 6.52cqw/7.93cqw 'Pretendard Variable',Pretendard,'Noto Sans KR',sans-serif;letter-spacing:0;color:#2f1c10}
 .cinematic-reader .is-ending .hand-underline{color:#d98327}
-.reader-mode .is-ending .hero-copy>.ending-link{display:flex;width:100%;min-height:11.05cqw;margin-top:5.46cqw;padding:0 3cqw;gap:1.76cqw;border-radius:2.45cqw;background:#a9613f;box-shadow:none;font:5.92cqw 'Nanum Pen Script',cursive;color:#fdf0e4;text-decoration:none}
-.reader-mode .is-ending .hero-copy>.ending-link:hover{background:#96533a}
-.reader-mode .is-ending .hero-copy>.ending-link svg{width:6.75cqw;height:6.75cqw;margin-left:0;transform:scaleY(.6);stroke-width:1.9}
-.reader-mode .is-ending .hero-copy>.ending-restart{display:flex;width:100%;min-height:11.23cqw;margin-top:1.48cqw;padding:0 3cqw;gap:2.45cqw;border:max(1px,.46cqw) solid #a5603d;border-radius:2.45cqw;background:transparent;font:5.73cqw 'Nanum Pen Script',cursive;color:#5a2a14}
-.reader-mode .is-ending .hero-copy>.ending-restart:hover{background:#a5603d1a}
-.reader-mode .is-ending .hero-copy>.ending-restart svg{width:5.92cqw;height:5.92cqw;transform:scaleX(-1);stroke-width:2.4}
+.reader-mode .is-ending .hero-copy>.ending-link{display:flex;width:100%;min-height:16.33cqw;margin-top:3.83cqw;padding:0 3cqw;gap:0;border-radius:1.64cqw;background:#ab541d;box-shadow:none;font:800 8.39cqw 'Pretendard Variable',Pretendard,'Noto Sans KR',sans-serif;color:#f9edda;text-decoration:none}
+.reader-mode .is-ending .hero-copy>.ending-link:hover{background:#984818}
+.reader-mode .is-ending .hero-copy>.ending-link svg{width:9.53cqw;height:9.53cqw;margin-left:0;stroke-width:2.6}
+.reader-mode .is-ending .hero-copy>.ending-restart{display:flex;width:100%;min-height:13cqw;margin-top:2.6cqw;padding:0 3cqw;gap:2.28cqw;border:max(1px,.55cqw) solid #a5561f;border-radius:1.64cqw;background:transparent;font:800 6.98cqw 'Pretendard Variable',Pretendard,'Noto Sans KR',sans-serif;color:#2f1a0e}
+.reader-mode .is-ending .hero-copy>.ending-restart:hover{background:#a5561f1a}
+.reader-mode .is-ending .hero-copy>.ending-restart svg{width:8.21cqw;height:8.21cqw;transform:scaleX(-1);stroke-width:2.8}
 @media(max-width:760px){
  .reader-mode .is-ending .hero-copy{left:auto;right:0;width:250px;max-width:100%}
 }

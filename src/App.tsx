@@ -279,7 +279,7 @@ export default function App() {
     <main id="main"><section className={'hero '+(intro?'is-cover':'is-open')+(ending?' is-ending':'')} aria-label={SITE.title+' 팝업북'}>
       {chromeVisible&&<div className="hero-copy">
         {coverMode?<div className="cover-intro"><span>{SITE.label}</span><h1>{SITE.title}</h1><p role="status"><LoaderCircle size={14} className="spin"/>{introText}</p></div>:
-        ending?<><span className="eyebrow">JEJU LOCAL MAGAZINE</span><h1>당근 하나로,<br/>제주를 다시 보다</h1><p className="hero-description">구좌의 밭에서 시작된 이야기부터<br/>우리의 식탁에 닿기까지.</p><p className="hero-description">구좌 당근의 이야기를 기사로도 만나보세요.</p><a className="primary-button ending-link" href={SITE.article} target="_blank" rel="noreferrer">지금 바로 기사 읽으러 가기<span className="sr-only"> (새 창에서 열림)</span><ArrowRight size={17}/></a><button className="secondary-button ending-restart" onClick={beginIntro}><RotateCcw size={17}/>처음부터 다시 보기</button></>:
+        ending?<><h1>구좌 당근 이야기를<br/>기사로 만나보세요.</h1><p className="hero-description">밭에서 식탁까지,<br/>그 이야기를 이어 읽어요.</p><a className="primary-button ending-link" href={SITE.article} target="_blank" rel="noreferrer">기사 바로 읽기<span className="sr-only"> (새 창에서 열림)</span><ArrowRight size={21}/></a><button className="secondary-button ending-restart" onClick={beginIntro}><RotateCcw size={18}/>처음으로</button></>:
         <><h1 className="sr-only" aria-label={scene.title} ref={storyRef} tabIndex={-1}>{scene.title}</h1>
 
         </>}
