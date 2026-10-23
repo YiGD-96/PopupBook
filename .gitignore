@@ -7,6 +7,8 @@ qa/
 .env
 .env.*
 !.env.example
+# The production address (no secrets): builds made for the webzine get absolute share links without setting it by hand
+!.env.production
 intro-cache/
 
 # Raw source art (GPT originals, zips) and retired assets stay local; only what the site uses is committed.

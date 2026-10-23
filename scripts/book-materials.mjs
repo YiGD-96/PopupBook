@@ -4,7 +4,8 @@ export async function makeBookMaterials({createCanvas,loadImage,sharp,fs,path,pr
  let seed=97016;
  const random=()=>{seed=(Math.imul(1664525,seed)+1013904223)>>>0;return seed/4294967296;};
  // The live book downloads these while the intro film plays, so the grainy ones (cloth, papyrus) are saved at a quality that keeps them small.
- const QUALITY={'cloth-side':82,endpaper:80,inside:84};
+ // cover at 88: at the default 94 it was 680 KB, over the webzine host's 500 KB per picture (444 KB, no visible difference).
+ const QUALITY={'cloth-side':82,endpaper:80,inside:84,cover:88};
  async function save(name,canvas){if(name==='cloth'||name==='cover-edge')return loadImage(canvas.toBuffer('image/png'));const bytes=await sharp(canvas.toBuffer('image/png')).webp({quality:QUALITY[name]??94,effort:5}).toBuffer();await fs.writeFile(path.join(destination,`${name}.webp`),bytes);return loadImage(bytes);}
  function surface(w,h,color,strength=4,cloth=true){
   const canvas=createCanvas(w,h),ctx=canvas.getContext('2d');ctx.fillStyle=color;ctx.fillRect(0,0,w,h);
