@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode, type RefObject } from 'react';
 import { Canvas, advance, useFrame, useThree } from '@react-three/fiber';
-import { Box3, Group, Mesh, Texture, PerspectiveCamera, Vector3, WebGLRenderTarget, type MeshBasicMaterial } from 'three';
+import { Group, Mesh, Texture, PerspectiveCamera, Vector3, WebGLRenderTarget, type MeshBasicMaterial } from 'three';
 import gsap from 'gsap';
 import { loadTexture, loadScene, readyScene } from './assets';
 import { type Director, type Layer, scenes, useStory, playSound } from './story';
@@ -100,11 +100,16 @@ function Book({onReady,onFailure}:{onReady:(director:Director)=>void;onFailure:(
  function fail(error:unknown){if(!mounted.current)return;timeline.current?.kill();pending.current?.();generation.current++;clearTurn();hinges.current.forEach(h=>h.rotation.x=0);stand.current.value=1;console.error('StoryDirector',error);useStory.getState().set({phase:'ERROR',error:error instanceof Error?error.message:'책을 펼치는 중 잠시 멈췄어요. 다시 시도해 주세요.'});}
  // The printed pages are read from paperRef while rendering. `show` re-renders when pages arrive that are needed now; the preload of
  // the next chapter (warmChapter) only fills the ref, so it does not re-render the whole book while the reader looks at a spread.
+ // The printed pages under each spread: the open book's only. The phone's standing book prints its painted floor instead and never shows
+ // them, so it neither downloads nor uploads them (they were about 640 KB more to wait for before the first spread).
  async function preparePaper(target=0,show=true){
+  if(standingRef.current)return;
   const entries=await Promise.all(['left','right'].map(async side=>{const name=`page-${target}-${side}`;return [name,paperRef.current[name]??await loadTexture(name)] as const;}));
   if(!mounted.current)return;const fresh=entries.some(([name])=>!paperRef.current[name]);
   paperRef.current={...paperRef.current,...Object.fromEntries(entries)};if(fresh&&show)setPaperShown(n=>n+1);
  }
+ // A phone turned on its side shows the open book, which does print the pages: the spread's are fetched then.
+ useEffect(()=>{if(!standing&&prepared.current)void preparePaper(useStory.getState().chapter);},[standing]);
  // Draws the first spread once off-screen so its first visible frame does not pay for any remaining GPU setup.
  function warmFirstFrame(){
   const target=new WebGLRenderTarget(128,128);target.texture.colorSpace=gl.outputColorSpace;const previousTarget=gl.getRenderTarget();
@@ -124,11 +129,15 @@ function Book({onReady,onFailure}:{onReady:(director:Director)=>void;onFailure:(
   const [firstArt,,materialArt]=await Promise.all([loadScene(0),preparePaper(),Promise.all(OPEN_BOOK_MATERIALS.map(async name=>[name,await loadTexture('book-'+name)] as const)).then(entries=>Object.fromEntries(entries) as Record<string,Texture>)]);
   const active=()=>mounted.current&&token===generation.current;
   if(!active())return;setTextures(firstArt);setMaterials(materialArt);
-  if(!await prepareBookRenderer(gl,[...Object.values(materialArt),...Object.values(firstArt),...Object.values(paperRef.current)],world,camera,active,undefined,warmFirstFrame))return;
+  // The turning sheet's floor painting (a stage's `-sheet`) is only seen in a turn: it is uploaded after the book is ready, in the prologue.
+  const sheetFloor=scenes[0].stage?firstArt[scenes[0].stage+'-sheet']:undefined;
+  if(!await prepareBookRenderer(gl,[...Object.values(materialArt),...Object.values(firstArt).filter(t=>t!==sheetFloor),...Object.values(paperRef.current)],world,camera,active,undefined,warmFirstFrame))return;
+  
   // The turning sheets' shaders exist before the first turn (otherwise the first turn would compile them on its first frame).
   if(materialArt.endpaper){const sheets=sheetMaterials(materialArt.endpaper);warmMaterials(gl,world,camera,sheets);sheets.forEach(m=>m.dispose());}
   warmMaterials(gl,world,camera,await prepareHalos(firstArt,0));if(!active())return;
   prepared.current=true;useStory.getState().set({phase:'COVER'});
+  if(sheetFloor)window.setTimeout(()=>{if(active())gl.initTexture(sheetFloor);},600);
  }
  async function openPopup(target:number,token:number,alreadyOpen=false){
   useStory.getState().set({phase:'LOADING_PAGE',dialog:false,detail:null});const [art]=await Promise.all([loadScene(target),preparePaper(target)]);if(!mounted.current||token!==generation.current)return;
@@ -211,7 +220,7 @@ function Book({onReady,onFailure}:{onReady:(director:Director)=>void;onFailure:(
   const token=++generation.current;configureTurn(target);useStory.getState().set({phase:'LOADING_PAGE',dialog:false,detail:null});
   try{await incomingLoad.current;if(!mounted.current||token!==generation.current)return;ensureUploaded(target);useStory.getState().set({phase:'TURNING_PAGE'});await renderWait();playSound('page');await animate(tl=>tl.to(progress.current,{value:1,duration:1.35,ease:'power2.inOut'}));if(!mounted.current||token!==generation.current)return;await openPopup(target,token,true);}catch(e){if(token===generation.current)fail(e);}
  }
- function previewTurn(direction:1|-1,value:number){const s=useStory.getState();if(s.phase==='EXPLORING'||s.phase==='ENDING'){const target=s.chapter+direction;if(target<0||target>=scenes.length||!Object.keys(paperRef.current).length||!readable())return false;generation.current++;configureTurn(target);s.set({phase:'DRAGGING_PAGE',dialog:false,detail:null});}if(useStory.getState().phase!=='DRAGGING_PAGE'||turnRef.current?.direction!==direction)return false;progress.current.value=Math.max(0,Math.min(1,value));return true;}
+ function previewTurn(direction:1|-1,value:number){const s=useStory.getState();if(s.phase==='EXPLORING'||s.phase==='ENDING'){const target=s.chapter+direction;if(target<0||target>=scenes.length||(!standingRef.current&&!Object.keys(paperRef.current).length)||!readable())return false;generation.current++;configureTurn(target);s.set({phase:'DRAGGING_PAGE',dialog:false,detail:null});}if(useStory.getState().phase!=='DRAGGING_PAGE'||turnRef.current?.direction!==direction)return false;progress.current.value=Math.max(0,Math.min(1,value));return true;}
  async function settle(commit:boolean){
   if(useStory.getState().phase!=='DRAGGING_PAGE'||!turnRef.current)return;
   const info=turnRef.current,token=generation.current;useStory.getState().set({phase:'TURNING_PAGE'});
@@ -229,17 +238,20 @@ function Book({onReady,onFailure}:{onReady:(director:Director)=>void;onFailure:(
  /** Opens a story in the side panel: a clicked card's own detail, or (from the button) the chapter's main one; the card answers with a hop. */
  /** The on-screen box of a clickable card (for the reading guide, src/Guide.tsx): its picture's bounds (not its glow), projected, as it
   *  stands upright (measured with its hinge stood up for the moment, then put back), so a guide shown while the cards still rise points
-  *  at where the card will be. */
+  *  at where the card will be. Each picture's own corners are projected, not a box around the card in the world: on the phone the cards
+  *  lean back, and that box's near corners reached below the card's foot (the farmer's frame came down over the dog). */
  function locate(detail?:string){
   const scene=scenes[useStory.getState().chapter];
   const layer=scene.layers.find(l=>l.interactive&&l.detail===(detail??scene.detail))??scene.layers.find(l=>l.interactive);if(!layer)return null;
   const group=hinges.current.get(`${layer.id}:right`)??hinges.current.get(`${layer.id}:left`);if(!group)return null;
-  const fold=group.rotation.x,box=new Box3();group.rotation.x=0;group.updateWorldMatrix(true,true);
-  group.traverse(o=>{const mesh=o as Mesh;if(mesh.isMesh&&(mesh.material as MeshBasicMaterial).depthWrite!==false)box.expandByObject(mesh);});
+  const fold=group.rotation.x,corners:Vector3[]=[];group.rotation.x=0;group.updateWorldMatrix(true,true);
+  group.traverse(o=>{const mesh=o as Mesh;if(!mesh.isMesh||(mesh.material as MeshBasicMaterial).depthWrite===false)return;
+   mesh.geometry.computeBoundingBox();const b=mesh.geometry.boundingBox;if(!b)return;
+   for(let i=0;i<8;i++)corners.push(new Vector3(i&1?b.max.x:b.min.x,i&2?b.max.y:b.min.y,i&4?b.max.z:b.min.z).applyMatrix4(mesh.matrixWorld));});
   group.rotation.x=fold;group.updateWorldMatrix(false,true);
-  if(box.isEmpty())return null;
+  if(!corners.length)return null;
   const rect=gl.domElement.getBoundingClientRect();let x0=Infinity,y0=Infinity,x1=-Infinity,y1=-Infinity;
-  for(let i=0;i<8;i++){const p=new Vector3(i&1?box.max.x:box.min.x,i&2?box.max.y:box.min.y,i&4?box.max.z:box.min.z).project(camera);
+  for(const corner of corners){const p=corner.project(camera);
    const x=rect.left+(p.x+1)/2*rect.width,y=rect.top+(1-p.y)/2*rect.height;x0=Math.min(x0,x);y0=Math.min(y0,y);x1=Math.max(x1,x);y1=Math.max(y1,y);}
   return {x:x0,y:y0,width:x1-x0,height:y1-y0};
  }
@@ -336,7 +348,8 @@ function ContextMonitor({onFailure}:{onFailure:()=>void}){const {gl}=useThree();
  * ended and the reader waited a further ~2.5 s on a 9 Mbps connection.
  */
 export function preloadBook(){
- void Promise.all([loadScene(0),...['left','right'].map(side=>loadTexture(`page-0-${side}`)),...OPEN_BOOK_MATERIALS.map(name=>loadTexture('book-'+name))]).catch(()=>{});
+ const standing=typeof matchMedia==='function'&&matchMedia(STANDING_QUERY).matches;
+ void Promise.all([loadScene(0),...(standing?[]:['left','right'].map(side=>loadTexture(`page-0-${side}`))),...OPEN_BOOK_MATERIALS.map(name=>loadTexture('book-'+name))]).catch(()=>{});
 }
 /** A tap on the book that hits no picture closes what floats over it without a backdrop: the closing message (ENDING), which hands the
  *  last spread back, and a story's side panel (src/DetailPanel.tsx). The story books have their own backdrop (src/outsideTap.ts). */

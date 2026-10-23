@@ -4,6 +4,8 @@ export const SITE={
   name:'구좌 당근을 만나는 사람들',
   label:'JEJU LOCAL MAGAZINE — VOL. 01',
   title:'당근을 따라, 구좌',
+  // The title printed on the book's first page in the intro film (scripts/render-intro.mjs): the book's own line, not the magazine's name.
+  filmTitle:'오늘 한 끼, 구좌 당근',
   // "어디서나 곁들임이던 채소가, / 구좌를 [찾아오는 이유]가 된다." — the bracketed part is highlighted on the site.
   tagline:['어디서나 곁들임이던 채소가,','구좌를 ','찾아오는 이유','가 된다.'],
   description:'어디서나 곁들임이던 채소가, 구좌를 찾아오는 이유가 된다. 제주 구좌 당근을 키우는 사람부터 요리하는 사람까지, 로컬 여행 웹진 구좌 당근을 만나는 사람들.',

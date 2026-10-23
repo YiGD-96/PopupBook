@@ -1,4 +1,4 @@
-import { Component, lazy, Suspense, useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import { Component, lazy, Suspense, useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { ArrowRight, ArrowLeft, X, RotateCcw, MousePointer2, Check, LoaderCircle, ChevronsRight } from 'lucide-react';
 import {SITE} from './site';
 import { type Director, scenes, useStory, playSound, unlockAudio } from './story';
@@ -24,9 +24,13 @@ import { useOpeningPref } from './openingPref';
 import { details } from './details';
 import { noteStory, noteTurn, parseHash, track } from './analytics';
 import { url } from './base.ts';
+import { prefetchFirstSpread } from './artFetch';
 const Storybook = lazy(() => import('./Storybook'));
-// Once the intro film has buffered, the book's code and first spread download alongside it (src/Storybook.tsx preloadBook).
-const preloadBook = () => { void import('./Storybook').then(module => module.preloadBook()).catch(() => {}); };
+// Once the intro film has downloaded past its stopping point, the book's code (three.js) and the first spread's pictures start
+// downloading (src/artFetch.ts, no three.js), and the code then prepares them (src/Storybook.tsx preloadBook). Not before: on a slow
+// connection even the code, fetched as the film started, held the film up.
+const loadBookCode = () => import('./Storybook');
+const preloadBook = () => { prefetchFirstSpread(); void loadBookCode().then(module => module.preloadBook()).catch(() => {}); };
 
 class CanvasBoundary extends Component<{children:ReactNode;onError:()=>void},{failed:boolean}> {
   state = {failed:false};
@@ -89,6 +93,18 @@ const ENDING:Record<Lang,{title:ReactNode;from:ReactNode;go:string;restart:strin
  en:{title:<>Read the story<br/>as an article.</>,from:<>From field to table,<br/>the story reads on.</>,go:'Read the article',restart:'Start over'},
  zh:{title:<>旧左胡萝卜的故事<br/>请在报道中阅读。</>,from:<>从田间到餐桌，<br/>故事仍在继续。</>,go:'立即阅读报道',restart:'回到开头'},
 };
+/** The ending card's paper and its cut-out mask (src/cinematic.css), fetched and decoded once the last chapter is reached, so the card
+ *  comes up whole: before, its words could show a moment before the picture behind them. True once both are ready (or have failed). */
+const ENDING_ART=['/media/ending-card.jpg','/media/ending-card-mask.png'];
+function useEndingArt(wanted:boolean){
+  const [ready,setReady]=useState(false);
+  useEffect(()=>{
+    if(!wanted||ready)return;let live=true;
+    void Promise.all(ENDING_ART.map(src=>{const image=new Image();image.src=url(src);return image.decode().catch(()=>{});})).then(()=>{if(live)setReady(true);});
+    return()=>{live=false;};
+  },[wanted,ready]);
+  return ready;
+}
 export default function App() {
   const state=useStory();const {lang,t}=useT();
   const {phase,chapter,audioReady}=state;
@@ -127,6 +143,7 @@ export default function App() {
   const intro=introVisible||closed;
   const busy=!['COVER','PROLOGUE','EXPLORING','ENDING','ERROR'].includes(phase);
   const ending=phase==='ENDING';
+  const endingArt=useEndingArt(chapter===scenes.length-1);
   const scene=scenes[chapter];
   const closeModal=useCallback(()=>setModal(null),[]);
   const closeDetail=useCallback(()=>useStory.getState().set({detail:null}),[]);
@@ -262,7 +279,9 @@ export default function App() {
     window.addEventListener('keydown',keys);return()=>window.removeEventListener('keydown',keys);
   },[modal,introVisible]);
   useEffect(()=>{document.body.classList.add('book-reading');window.scrollTo({top:0,behavior:'instant'});return()=>document.body.classList.remove('book-reading');},[]);
-  useEffect(()=>{
+  // Before the first paint (a layout effect): the cover still is often cached and shows at once, and painted before its size was set it
+  // stood centred and full height, then jumped about 60 px down to the film's place a moment later (a slow phone showed it for ~0.2 s).
+  useLayoutEffect(()=>{
     const surface=surfaceRef.current;if(!surface)return;
     const update=()=>{
       const zoom=bookZoom(surface.clientWidth,surface.clientHeight);
@@ -282,7 +301,8 @@ export default function App() {
   const detailOpen=!!state.detail&&!introVisible&&!ending;
   return <div className={"app-shell reader-mode cinematic-reader"+(introVisible?" intro-active":"")+(detailOpen?" has-detail":"")}>
     {!introVisible&&<a className="skip-link" href="#main">{t('이야기로 바로 가기')}</a>}
-    {(introVisible||prologue==='open')&&!skipOpening&&<div className="opening-skip">
+    {/* While the film plays and while the reading guide shows, not over the prologue (its own button goes on into the book). */}
+    {(introVisible||guide!==0)&&!skipOpening&&<div className="opening-skip">
       <label className="opening-remember"><input type="checkbox" checked={rememberSkip} onChange={e=>setRememberSkip(e.target.checked)}/><i aria-hidden="true"><Check size={11} strokeWidth={3}/></i>{t('다음부터 보지 않기')}</label>
       <span className="opening-skip-rule" aria-hidden="true"/>
       <button type="button" className="opening-skip-button" onClick={skipNow}>{t('건너뛰기')}<ChevronsRight size={15} aria-hidden="true"/></button>
@@ -298,7 +318,7 @@ export default function App() {
     {/* The spread's title, on its own above the book, with a dot per chapter (the one being read lit). Read by screen readers from the h1 below. */}
     {chromeVisible&&!ending&&<div className="chapter-title" key={chapter} aria-hidden="true"><span>{scene.english}</span><strong>{t(scene.title)}</strong><div className="chapter-dots">{scenes.map((item,index)=><i key={item.id} className={index===chapter?'is-on':''}/>)}</div></div>}
     <main id="main"><section className={'hero '+(intro?'is-cover':'is-open')+(ending?' is-ending':'')} aria-label={t(SITE.title)+' — '+t('팝업북')}>
-      {chromeVisible&&<div className="hero-copy">
+      {chromeVisible&&<div className={'hero-copy'+(ending&&!endingArt?' is-waiting':'')}>
         {coverMode?<div className="cover-intro"><span>{SITE.label}</span><h1>{SITE.title}</h1><p role="status"><LoaderCircle size={14} className="spin"/>{introText}</p></div>:
         ending?<><h1>{ENDING[lang].title}</h1><p className="hero-description">{ENDING[lang].from}</p><a className="primary-button ending-link" href={SITE.article} target="_blank" rel="noreferrer">{ENDING[lang].go}<span className="sr-only"> {t('(새 창에서 열림)')}</span><ArrowRight size={21}/></a><button className="secondary-button ending-restart" onClick={beginIntro}><RotateCcw size={18}/>{ENDING[lang].restart}</button></>:
         <><h1 className="sr-only" aria-label={t(scene.title)} ref={storyRef} tabIndex={-1}>{t(scene.title)}</h1>

@@ -22,6 +22,9 @@
 .intro-screen.is-standing .intro-media{width:var(--standing-media-width,100%);height:var(--standing-media-height,100%);left:calc(50% - var(--standing-media-width,100%)/2);top:calc(50% - var(--standing-media-height,100%)/2 + var(--standing-drop,0px));transform:none}
 .intro-cover[hidden]{display:none}
 .intro-video.is-waiting{opacity:0}
+/* Shown only when the browser would not start the film by itself (src/Intro.tsx): a touch starts it. */
+.intro-touch{position:absolute;left:50%;bottom:max(84px,12%);z-index:2;margin:0;padding:8px 16px;border-radius:999px;transform:translateX(-50%);background:rgba(26,17,11,.72);color:#f3e2c4;font-size:13px;white-space:nowrap;pointer-events:none;animation:intro-touch 1.6s ease-in-out infinite alternate}
+@keyframes intro-touch{from{opacity:.55}to{opacity:1}}
 .intro-active .scene-loading{display:none}
 @keyframes reader-arrive{from{opacity:0}to{opacity:1}}
 @media(max-width:1050px) and (min-width:761px){
@@ -102,13 +105,15 @@
 .reader-mode .is-ending .hero-copy::before{content:'';position:absolute;inset:0;z-index:-1;background:url(/media/ending-card.jpg) 0 0/100% 100% no-repeat;-webkit-mask:url(/media/ending-card-mask.png) 0 0/100% 100% no-repeat;mask:url(/media/ending-card-mask.png) 0 0/100% 100% no-repeat;pointer-events:none}
 .reader-mode .is-ending h1{margin:0;font-family:'Pretendard Variable',Pretendard,'Noto Sans KR','Noto Sans SC',sans-serif;font-size:11.59cqw;font-weight:800;line-height:13.72cqw;letter-spacing:0;color:#24130a}
 .reader-mode .is-ending h1 br{display:inline}
+/* Until its paper has loaded (App.tsx useEndingArt), so words and picture come up together. */
+.reader-mode .is-ending .hero-copy.is-waiting{visibility:hidden}
 .reader-mode .is-ending .hero-description{margin:3.15cqw 0 0;font:500 6.52cqw/7.93cqw 'Pretendard Variable',Pretendard,'Noto Sans KR','Noto Sans SC',sans-serif;letter-spacing:0;color:#2f1c10}
 .reader-mode .is-ending .hero-copy>.ending-link{display:flex;width:100%;min-height:16.33cqw;margin-top:3.83cqw;padding:0 3cqw;gap:0;border-radius:1.64cqw;background:#ab541d;box-shadow:none;font:800 8.39cqw 'Pretendard Variable',Pretendard,'Noto Sans KR','Noto Sans SC',sans-serif;color:#f9edda;text-decoration:none}
 .reader-mode .is-ending .hero-copy>.ending-link:hover{background:#984818}
 .reader-mode .is-ending .hero-copy>.ending-link svg{width:9.53cqw;height:9.53cqw;margin-left:0;stroke-width:2.6}
-.reader-mode .is-ending .hero-copy>.ending-restart{display:flex;width:100%;min-height:13cqw;margin-top:2.6cqw;padding:0 3cqw;gap:2.28cqw;border:max(1px,.55cqw) solid #a5561f;border-radius:1.64cqw;background:transparent;font:800 6.98cqw 'Pretendard Variable',Pretendard,'Noto Sans KR','Noto Sans SC',sans-serif;color:#2f1a0e}
+.reader-mode .is-ending .hero-copy>.ending-restart{display:flex;width:100%;min-height:16.33cqw;margin-top:2.6cqw;padding:0 3cqw;gap:2.28cqw;border:max(1px,.55cqw) solid #a5561f;border-radius:1.64cqw;background:transparent;font:800 8.39cqw 'Pretendard Variable',Pretendard,'Noto Sans KR','Noto Sans SC',sans-serif;color:#2f1a0e}
 .reader-mode .is-ending .hero-copy>.ending-restart:hover{background:#a5561f1a}
-.reader-mode .is-ending .hero-copy>.ending-restart svg{width:8.21cqw;height:8.21cqw;transform:scaleX(-1);stroke-width:2.8}
+.reader-mode .is-ending .hero-copy>.ending-restart svg{width:9.53cqw;height:9.53cqw;transform:scaleX(-1);stroke-width:2.8}
 @media(max-width:760px){
  /* On a phone the closing note comes up in the middle of the screen, over the book (which keeps its place). */
  .reader-mode .is-ending .hero-copy{left:50%;right:auto;top:50%;bottom:auto;transform:translate(-50%,-50%);width:250px;max-width:calc(100% - 32px)}
@@ -307,7 +312,7 @@ html,body{background:#1a110b}
 .settings-switch input:checked+i{background:#c4531f}.settings-switch input:checked+i::after{transform:translateX(16px)}
 .settings-switch input:focus-visible+i{outline:2px solid #d9a35f;outline-offset:2px}
 /* Skipping the opening (src/App.tsx): one pill like the top ones, over the film and the prologue, bottom right (bottom centre on a phone). */
-.opening-skip{position:fixed;z-index:9;right:max(18px,6.2%);bottom:24px;display:flex;align-items:center;gap:10px;min-height:36px;padding:3px 3px 3px 14px;border:1px solid rgba(255,236,205,.22);border-radius:999px;background:rgba(26,17,11,.62);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);font-size:12px;color:#e2d0b2;white-space:nowrap;animation:reader-arrive .45s ease-out both}
+.opening-skip{position:fixed;z-index:41;right:max(18px,6.2%);bottom:24px;display:flex;align-items:center;gap:10px;min-height:36px;padding:3px 3px 3px 14px;border:1px solid rgba(255,236,205,.22);border-radius:999px;background:rgba(26,17,11,.62);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);font-size:12px;color:#e2d0b2;white-space:nowrap;animation:reader-arrive .45s ease-out both}
 .opening-remember{display:inline-flex;align-items:center;gap:7px;cursor:pointer}
 .opening-remember input{position:absolute;opacity:0;width:1px;height:1px}
 .opening-remember i{display:grid;place-items:center;width:16px;height:16px;border:1px solid rgba(255,236,205,.45);border-radius:5px;color:transparent;transition:background .15s,border-color .15s,color .15s}
@@ -510,7 +515,7 @@ html,body{background:#1a110b}
  .wz-page>.wz-cutout{flex:none;height:340px}
  .wz-end{display:flex;align-items:center;justify-content:flex-end;gap:10px;margin-top:22px;padding-top:16px;border-top:1px solid #cdb995;color:#7a6a55;font-size:var(--body)}
  .wz-end>span{display:none} /* the count is already in the bar under the sheet */
- .wz-end button{display:inline-flex;align-items:center;gap:4px;min-height:42px;padding:0 16px;border:1px solid #c9b48d;border-radius:999px;background:#fffaf0;color:#6b4a37;font:inherit;font-weight:600;cursor:pointer}
+ .wz-end button{display:inline-flex;align-items:center;justify-content:center;gap:4px;flex:0 0 148px;min-height:42px;padding:0 12px;border:1px solid #c9b48d;border-radius:999px;background:#fffaf0;color:#6b4a37;font:inherit;font-weight:600;cursor:pointer}
  .wz-end button.is-next{background:#6b4a37;border-color:#6b4a37;color:#fff9e9}
  .wz-close{top:6px;right:6px;width:34px;height:34px}
 }

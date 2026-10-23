@@ -10,7 +10,8 @@
  * Each film is encoded twice from the same frames: H.264 (book-opening*.mp4, plays everywhere) and AV1 (book-opening*-av1.mp4, about half
  * the size at the same quality; src/Intro.tsx plays it where the browser decodes it smoothly in hardware).
  * Environment: CODEX_NODE_MODULES (sharp, @napi-rs/canvas), FFMPEG_PATH, CHROME_PATH, INTRO_WIDTH (the book frame's width in pixels:
- * 1440 desktop, 900 phone (exactly 9:20), so the film stays sharp on large and high-density screens), INTRO_FPS, INTRO_CRF (x264 quality, 19),
+ * 1440 desktop, 864 phone (exactly 9:20: 864×1920, as tall as many phones' hardware decoders go — at 900×2000 some phones could not
+ * play it at all), so the film stays sharp on large and high-density screens), INTRO_FPS, INTRO_CRF (x264 quality, 19),
  * INTRO_AV1_CRF (libaom quality, 30),
  * INTRO_INSPECT (comma-separated times: only write those frames as PNG to INTRO_INSPECT_DIR).
  */
@@ -29,7 +30,9 @@ const {createCanvas,loadImage}=require('@napi-rs/canvas'),sharp=require('sharp')
 const ffmpeg=process.env.FFMPEG_PATH||'C:/Program Files/ffmpeg-8.0.1-essentials_build/bin/ffmpeg.exe';
 const chrome=process.env.CHROME_PATH||'C:/Program Files/Google/Chrome/Application/chrome.exe';
 const standing=process.argv.includes('--standing'),suffix=standing?'-standing':'';
-const width=Number(process.env.INTRO_WIDTH||(standing?900:1440)),fps=Number(process.env.INTRO_FPS||60),crf=Number(process.env.INTRO_CRF||19),av1Crf=Number(process.env.INTRO_AV1_CRF||30);
+const width=Number(process.env.INTRO_WIDTH||(standing?864:1440)),fps=Number(process.env.INTRO_FPS||60),crf=Number(process.env.INTRO_CRF||19),av1Crf=Number(process.env.INTRO_AV1_CRF||30);
+/** Seconds of film kept after its stopping point (uiRevealAt): a margin for the pause, which comes .04 s before it. */
+const FILM_TAIL=.25;
 const media=path.join(project,'public/media');const review=path.join(project,'intro-cache/review');await fs.mkdir(review,{recursive:true});await fs.mkdir(media,{recursive:true});
 const raster=path.join(project,'public/art-raster');await fs.mkdir(raster,{recursive:true});
 
@@ -98,20 +101,28 @@ try{
  await fs.writeFile(path.join(media,`intro-meta${suffix}.json`),JSON.stringify({...meta,fps},null,2)+'\n');
  if(process.argv.includes('--stills')){console.log(`Rendered stills ${meta.width}×${meta.height}.`);}
  else{
-  const frames=Math.round(meta.duration*fps),output=path.join(media,`book-opening${suffix}.mp4`);
+  // The film is encoded only a little past the moment it stops on the open book (uiRevealAt): the site always pauses there and the live
+  // book takes over (src/Intro.tsx), so the cards rising after it were about a third of every download and never shown. The stills
+  // above still come from the whole timeline (book-open is its last frame, the fallback when the film cannot play).
+  const frames=Math.round(Math.min(meta.duration,meta.uiRevealAt+FILM_TAIL)*fps),output=path.join(media,`book-opening${suffix}.mp4`);
   // Both films are converted with the BT.709 matrix and tagged as sRGB, so browsers decode them to the colours the live book renders
   // (untagged, FFmpeg converts with BT.601 while browsers assume BT.709 for HD video, which shifts saturated colours).
   const colour=['-vf','scale=out_color_matrix=bt709:out_range=tv','-colorspace','bt709','-color_primaries','bt709','-color_trc','iec61966-2-1','-color_range','tv'];
   const av1Output=path.join(media,`book-opening${suffix}-av1.mp4`);
   const input=['-y','-f','image2pipe','-c:v','png','-framerate',String(fps),'-i','pipe:0','-an',...colour];
+  // Each film is written under a temporary name and swapped in only once complete: a dev server serves public/media as it is, and a
+  // half-written film (no index yet) made the intro fail and skip while a render ran.
+  const partial=file=>file.replace(/\.mp4$/,'.partial.mp4');
   const encoders=[
-   spawn(ffmpeg,[...input,'-c:v','libx264','-preset','medium','-crf',String(crf),'-pix_fmt','yuv420p','-movflags','+faststart',output],{stdio:['pipe','ignore','pipe']}),
-   spawn(ffmpeg,[...input,'-c:v','libaom-av1','-cpu-used','4','-row-mt','1','-tiles','2x2','-crf',String(av1Crf),'-b:v','0','-pix_fmt','yuv420p','-movflags','+faststart',av1Output],{stdio:['pipe','ignore','pipe']}),
+   spawn(ffmpeg,[...input,'-c:v','libx264','-preset','medium','-crf',String(crf),'-pix_fmt','yuv420p','-movflags','+faststart',partial(output)],{stdio:['pipe','ignore','pipe']}),
+   spawn(ffmpeg,[...input,'-c:v','libaom-av1','-cpu-used','4','-row-mt','1','-tiles','2x2','-crf',String(av1Crf),'-b:v','0','-pix_fmt','yuv420p','-movflags','+faststart',partial(av1Output)],{stdio:['pipe','ignore','pipe']}),
   ];
   const logs=encoders.map(encoder=>{const log={text:''};encoder.stderr.on('data',chunk=>log.text+=chunk);encoder.stdin.on('error',()=>{});return log;});
   for(let f=0;f<frames;f++){const png=await frame(f/fps);for(const encoder of encoders)if(!encoder.stdin.write(png))await once(encoder.stdin,'drain');if(f%fps===0)console.log(`Rendered ${f/fps}/${meta.duration}s`);}
   for(const [i,encoder] of encoders.entries()){encoder.stdin.end();const [code]=await once(encoder,'exit');if(code!==0)throw new Error(logs[i].text);}
-  for(const file of [output,av1Output]){const stat=await fs.stat(file);console.log(`Created ${path.basename(file)}: ${meta.width}×${meta.height}, ${fps} fps, ${meta.duration}s (${(stat.size/1048576).toFixed(2)} MiB).`);}
+  // Windows refuses a rename onto a file that is open (a dev server streaming it): then it is copied over and the partial removed.
+  for(const file of [output,av1Output])await fs.rename(partial(file),file).catch(async()=>{await fs.copyFile(partial(file),file);await fs.rm(partial(file));});
+  for(const file of [output,av1Output]){const stat=await fs.stat(file);console.log(`Created ${path.basename(file)}: ${meta.width}×${meta.height}, ${fps} fps, ${(frames/fps).toFixed(2)}s of ${meta.duration}s (${(stat.size/1048576).toFixed(2)} MiB).`);}
  }
  }
 }finally{await cleanup();}
