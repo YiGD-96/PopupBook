@@ -7,6 +7,7 @@ import { photoSrc, posterSrc, posters, shortsEmbed, shortsThumb, shortsUrl } fro
 import { useLocalized, useT } from './i18n';
 import './poster.css';
 import { tappedOutside } from './outsideTap';
+import { measureShort, measuredEmbed } from './youtube';
 
 /**
  * A recipe poster from the kitchen wall as a book (src/posters.ts): it rises from the pop-up book like the shops' web-magazine pages
@@ -16,7 +17,8 @@ import { tappedOutside } from './outsideTap';
  * a play button until the reader presses it; then the player loads in the frame (youtube-nocookie), so opening the book costs nothing
  * extra. On phones the two pages run on as one page that scrolls.
  * Both the player and the "open on YouTube" link send this site's address as the referrer, so YouTube Studio lists the views under
- * External (and Embedded) with this site's domain; a click on the link is also counted here as `shorts_open`.
+ * External (and Embedded) with this site's domain; a click on the link is also counted here as `shorts_open`. Once playing, the player
+ * reports start, 25/50/75 %, completion and pauses (src/youtube.ts).
  */
 const EMPTY:Record<Lang,string>={ko:'사진과 영상을 준비하고 있어요',en:'Photos and video are coming soon',zh:'照片和视频即将上线'};
 const SCROLL:Record<Lang,string>={ko:'아래로 내려 보세요',en:'Scroll down',zh:'向下滑动'};
@@ -25,10 +27,13 @@ const WATCH:Record<Lang,string>={ko:'쇼츠로 만드는 과정 보기',en:'Watc
 const ON_YOUTUBE:Record<Lang,string>={ko:'YouTube에서 보기',en:'Open on YouTube',zh:'在 YouTube 上观看'};
 export default function PosterBook({id,onClose,onOpen}:{id:string;onClose:()=>void;onOpen:(id:string)=>void}){
  const detail=useLocalized(details[id]),poster=posters[id];const lang=useLocale(s=>s.lang);const {t}=useT();
- const heading=useRef<HTMLHeadingElement>(null),sheet=useRef<HTMLElement>(null);const [open,setOpen]=useState(false);const [playing,setPlaying]=useState(false);const closing=useRef(0);
+ const heading=useRef<HTMLHeadingElement>(null),sheet=useRef<HTMLElement>(null),player=useRef<HTMLIFrameElement>(null);const [open,setOpen]=useState(false);const [playing,setPlaying]=useState(false);const closing=useRef(0);
  // Mounted lying back, then raised on the next frame so the transition runs; closing lowers it again before it goes.
  useEffect(()=>{const frame=requestAnimationFrame(()=>setOpen(true));return()=>{cancelAnimationFrame(frame);window.clearTimeout(closing.current);};},[]);
  useEffect(()=>{if(open)heading.current?.focus({preventScroll:true});},[open,id]);
+ // The Short's player, measured from the moment it appears (src/youtube.ts).
+ useEffect(()=>{const frame=player.current,short=posters[id]?.shorts;if(!playing||!frame||!short)return;
+  return measureShort(frame,{videoId:short,title:posters[id].title.ko,contentId:id});},[playing,id]);
  // Another language is another poster: start it from the top.
  useEffect(()=>{sheet.current?.scrollTo({top:0});},[lang]);
  const close=()=>{setOpen(false);closing.current=window.setTimeout(onClose,matchMedia('(prefers-reduced-motion: reduce)').matches?0:420);};
@@ -50,7 +55,7 @@ export default function PosterBook({id,onClose,onOpen}:{id:string;onClose:()=>vo
       <div className="pb-real">
        {shorts&&<figure className="pb-shorts">
         <div className="pb-shorts-frame">
-         {playing?<iframe src={shortsEmbed(shorts)} title={`${title} — YouTube Shorts`} allow="autoplay; encrypted-media; picture-in-picture; fullscreen" referrerPolicy="strict-origin-when-cross-origin" allowFullScreen/>
+         {playing?<iframe ref={player} src={measuredEmbed(shortsEmbed(shorts))} title={`${title} — YouTube Shorts`} allow="autoplay; encrypted-media; picture-in-picture; fullscreen" referrerPolicy="strict-origin-when-cross-origin" allowFullScreen/>
           :<button type="button" className="pb-shorts-cover" onClick={()=>{setPlaying(true);track('shorts_play',{story:id});}} aria-label={WATCH[lang]}>
            <img src={shortsThumb(shorts)} alt="" decoding="async" draggable={false}/><span className="pb-shorts-tag">Shorts</span><span className="pb-play" aria-hidden="true"><Play size={26} fill="currentColor"/></span>
           </button>}

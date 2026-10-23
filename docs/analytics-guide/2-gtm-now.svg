@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="360" viewBox="0 0 760 360" font-family="Pretendard, 'Noto Sans KR', 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif">
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0 10 5 0 10z" fill="#1a73e8"/></marker>
+    <marker id="g" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0 10 5 0 10z" fill="#b9a68c"/></marker>
+    <filter id="s" x="-10%" y="-10%" width="120%" height="130%"><feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="#5e3a1c" flood-opacity=".15"/></filter>
+  </defs>
+  <rect width="760" height="360" rx="18" fill="#f3f7fd"/>
+  <text x="32" y="44" font-size="20" font-weight="700" fill="#1f3b63">지금 방식 · GTM (Google Tag Manager)</text>
+  <text x="32" y="70" font-size="14" fill="#55708f">사이트에는 GTM만 붙이고, 어디로 보낼지는 GTM 화면에서 정해요.</text>
+
+  <!-- Book -->
+  <g filter="url(#s)"><rect x="32" y="100" width="200" height="200" rx="14" fill="#fff"/></g>
+  <rect x="32" y="100" width="200" height="38" rx="14" fill="#e07a3a"/>
+  <rect x="32" y="124" width="200" height="14" fill="#e07a3a"/>
+  <text x="50" y="125" font-size="15" font-weight="700" fill="#fff">📖 팝업북</text>
+  <text x="50" y="166" font-size="13" fill="#2f7a5c" font-weight="600">✓ 처음 접속</text>
+  <text x="50" y="188" font-size="13" fill="#2f7a5c" font-weight="600">✓ 링크 클릭 · 주소 변경</text>
+  <line x1="50" y1="204" x2="214" y2="204" stroke="#eee3d2"/>
+  <text x="50" y="226" font-size="13" fill="#b07a5a">✗ 장 넘김</text>
+  <text x="50" y="248" font-size="13" fill="#b07a5a">✗ 이야기 열기 · 쇼츠 재생</text>
+  <text x="50" y="276" font-size="11" fill="#a08566">책 안의 일은 아직 안 보내요</text>
+
+  <!-- arrows to GTM -->
+  <line x1="240" y1="175" x2="318" y2="175" stroke="#1a73e8" stroke-width="3" marker-end="url(#a)"/>
+  <line x1="240" y1="238" x2="318" y2="238" stroke="#b9a68c" stroke-width="2" stroke-dasharray="6 5" marker-end="url(#g)"/>
+  <text x="279" y="258" font-size="11" fill="#a08566" text-anchor="middle">끊김</text>
+
+  <!-- GTM -->
+  <g filter="url(#s)"><rect x="328" y="100" width="170" height="200" rx="14" fill="#fff"/></g>
+  <rect x="328" y="100" width="170" height="38" rx="14" fill="#1a73e8"/>
+  <rect x="328" y="124" width="170" height="14" fill="#1a73e8"/>
+  <text x="346" y="125" font-size="15" font-weight="700" fill="#fff">🧰 GTM</text>
+  <text x="346" y="162" font-size="12" fill="#55708f">GTM-TKZ7BMMZ</text>
+  <rect x="346" y="176" width="134" height="30" rx="8" fill="#e8f0fe"/>
+  <text x="358" y="196" font-size="12" fill="#1a73e8" font-weight="600">태그: GA4</text>
+  <rect x="346" y="214" width="134" height="30" rx="8" fill="#e8f0fe"/>
+  <text x="358" y="234" font-size="12" fill="#1a73e8" font-weight="600">태그: GA4 (두 번째)</text>
+  <rect x="346" y="252" width="134" height="30" rx="8" fill="#f1f3f4"/>
+  <text x="358" y="272" font-size="12" fill="#5f6368">+ 다른 도구</text>
+
+  <!-- arrows out -->
+  <line x1="506" y1="191" x2="572" y2="150" stroke="#1a73e8" stroke-width="3" marker-end="url(#a)"/>
+  <line x1="506" y1="229" x2="572" y2="229" stroke="#1a73e8" stroke-width="3" marker-end="url(#a)"/>
+  <line x1="506" y1="267" x2="572" y2="306" stroke="#1a73e8" stroke-width="3" marker-end="url(#a)"/>
+
+  <!-- destinations -->
+  <g filter="url(#s)"><rect x="582" y="118" width="148" height="56" rx="12" fill="#fff"/></g>
+  <text x="600" y="143" font-size="14" font-weight="700" fill="#e37400">📊 GA4 ①</text>
+  <text x="600" y="162" font-size="11" fill="#8a6c4c">웹진 전체</text>
+  <g filter="url(#s)"><rect x="582" y="200" width="148" height="56" rx="12" fill="#fff"/></g>
+  <text x="600" y="225" font-size="14" font-weight="700" fill="#e37400">📊 GA4 ②</text>
+  <text x="600" y="244" font-size="11" fill="#8a6c4c">팝업북만</text>
+  <g filter="url(#s)"><rect x="582" y="282" width="148" height="56" rx="12" fill="#fff"/></g>
+  <text x="600" y="307" font-size="14" font-weight="700" fill="#5f6368">🎯 광고·기타</text>
+  <text x="600" y="326" font-size="11" fill="#8a6c4c">필요할 때 추가</text>
+
+  <text x="32" y="336" font-size="12" fill="#55708f">바꿀 때: GTM 화면에서 "제출(게시)" → 코드·배포 필요 없음</text>
+</svg>

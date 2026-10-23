@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="300" viewBox="0 0 760 300" font-family="Pretendard, 'Noto Sans KR', 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif">
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0 10 5 0 10z" fill="#c8693a"/></marker>
+    <filter id="s" x="-10%" y="-10%" width="120%" height="130%"><feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="#5e3a1c" flood-opacity=".15"/></filter>
+  </defs>
+  <rect width="760" height="300" rx="18" fill="#fbf6ec"/>
+  <text x="32" y="44" font-size="20" font-weight="700" fill="#5e3a1c">처음 방식 · GA4 직접 연결</text>
+  <text x="32" y="70" font-size="14" fill="#8a6c4c">책이 GA4에 직접 보고해요. 무엇을 보낼지는 책 코드에 정해져 있어요.</text>
+
+  <!-- Book -->
+  <g filter="url(#s)">
+    <rect x="40" y="100" width="250" height="160" rx="14" fill="#fff"/>
+  </g>
+  <rect x="40" y="100" width="250" height="38" rx="14" fill="#e07a3a"/>
+  <rect x="40" y="124" width="250" height="14" fill="#e07a3a"/>
+  <text x="62" y="125" font-size="15" font-weight="700" fill="#fff">📖 팝업북 (사이트)</text>
+  <text x="62" y="164" font-size="13" fill="#5e3a1c">• 장 넘김</text>
+  <text x="62" y="186" font-size="13" fill="#5e3a1c">• 이야기 열기 / 닫기</text>
+  <text x="62" y="208" font-size="13" fill="#5e3a1c">• 쇼츠 재생 · 링크 클릭</text>
+  <text x="62" y="230" font-size="13" fill="#5e3a1c">• 인트로 끝 · 마지막 장</text>
+  <text x="62" y="250" font-size="11" fill="#a08566">코드: src/analytics.ts</text>
+
+  <!-- Arrow -->
+  <line x1="300" y1="180" x2="458" y2="180" stroke="#c8693a" stroke-width="3" marker-end="url(#a)"/>
+  <rect x="318" y="150" width="122" height="24" rx="12" fill="#fde3cf"/>
+  <text x="379" y="167" font-size="12" font-weight="600" fill="#a24f25" text-anchor="middle">직접 전송</text>
+  <text x="379" y="204" font-size="11" fill="#8a6c4c" text-anchor="middle">인트로가 끝난 뒤</text>
+
+  <!-- GA4 -->
+  <g filter="url(#s)">
+    <rect x="470" y="100" width="250" height="160" rx="14" fill="#fff"/>
+  </g>
+  <rect x="470" y="100" width="250" height="38" rx="14" fill="#f9ab00"/>
+  <rect x="470" y="124" width="250" height="14" fill="#f9ab00"/>
+  <text x="492" y="125" font-size="15" font-weight="700" fill="#fff">📊 Google Analytics 4</text>
+  <rect x="492" y="152" width="40" height="80" rx="4" fill="#fde7b0"/>
+  <rect x="542" y="182" width="40" height="50" rx="4" fill="#fbd27a"/>
+  <rect x="592" y="166" width="40" height="66" rx="4" fill="#f9ab00"/>
+  <rect x="642" y="200" width="40" height="32" rx="4" fill="#fde7b0"/>
+  <text x="492" y="250" font-size="11" fill="#a08566">책 전용 이벤트가 그대로 보여요</text>
+
+  <!-- Setting tag -->
+  <rect x="32" y="272" width="696" height="0" fill="none"/>
+</svg>

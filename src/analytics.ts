@@ -1,6 +1,8 @@
 /**
- * Google Analytics 4 for the book. gtag.js loads only when VITE_GA_ID is set (or a gtag snippet is already on the page), after the intro,
- * so it never competes with the first paint or the intro film. Events are queued in dataLayer until it arrives.
+ * Measuring the book. Every event goes to Google Tag Manager's dataLayer (GTM-TKZ7BMMZ in index.html) as { event: name, ...params }, with
+ * the reader's chapter, language and layout added, so GTM can forward any of them to GA4 or elsewhere (docs/analytics-guide). GA4 can also
+ * be wired directly without GTM: gtag.js then loads only when VITE_GA_ID is set, after the intro, so it never competes with the first paint
+ * or the intro film. Use one of the two for a given GA4 property, not both, or each event is counted twice.
  *
  * What is measured (GA4 event → parameters):
  *  page_view          a spread, the ending or a story shown: page_location carries the hash (#farmer, #cooks/cook-02, #ending)
@@ -10,6 +12,14 @@
  *  story_link_click   a link followed: link_url, link_text, link_location (story | ending | header | about), content_id, outbound
  *  intro_complete     the intro film ended: layout (open | standing), dropped_frames
  *  story_complete     the ending reached; restart: the reader starts over from the cover; about_open: the about box opened
+ *  ui_click           any button or link pressed anywhere: ui_label, ui_type (button | link | radio | …), ui_area (header | settings |
+ *                     contents | prologue | guide | poster_book | webzine | story_book | story_panel | ending | modal | intro | page),
+ *                     ui_state (the control's aria-expanded / aria-checked / aria-pressed before the press), link_url, content_id
+ *  language_change    the reader chose a language: language, previous_language
+ *  video_start / video_progress / video_complete / video_pause   a YouTube Short in a recipe poster book (src/PosterBook.tsx): video_title,
+ *                     video_url, video_provider 'youtube', video_percent (25 | 50 | 75 | 100), video_current_time, video_duration, content_id
+ *  shorts_play / shorts_open   the Short's play button pressed / "open on YouTube" followed
+ * Every event also carries book_chapter (farmer | cooks | recipes), book_lang (ko | en | zh) and book_layout (phone | desktop).
  *
  * The URL hash follows what is on screen (history.replaceState, so the back button is not filled with page turns), and a link with a
  * hash opens that spread or story after the intro (src/App.tsx). Turn off GA4 Enhanced measurement › "Page changes based on browser
@@ -17,14 +27,36 @@
  */
 import { scenes, useStory } from './story.ts';
 import { details } from './details.ts';
+import { useLocale } from './locale.ts';
 
 declare global { interface Window { dataLayer?: unknown[]; gtag?: (...args: unknown[]) => void } }
 const GA_ID = (import.meta as { env?: Record<string, string | undefined> }).env?.VITE_GA_ID;
 
 type Params = Record<string, string | number | boolean | undefined>;
-export function track(name: string, params: Params = {}) {
- window.gtag?.('event', name, params);
+// Every parameter name pushed so far: each push sets the ones it does not carry back to undefined, because GTM's data model keeps the
+// last value of every key, and an event would otherwise pick up, say, the content_id of an earlier one.
+const pushedKeys = new Set<string>();
+function context(): Params {
+ const chapter = scenes[useStory.getState().chapter];
+ const phone = typeof matchMedia === 'function' && matchMedia('(max-width: 760px) and (orientation: portrait)').matches;
+ return { book_chapter: chapter?.id, book_lang: useLocale.getState().lang, book_layout: phone ? 'phone' : 'desktop' };
 }
+export function track(name: string, params: Params = {}) {
+ if (typeof window === 'undefined') return;
+ const full: Params = { ...context(), ...params };
+ window.gtag?.('event', name, full);
+ const entry: Record<string, unknown> = {};
+ for (const key of pushedKeys) entry[key] = undefined;
+ for (const [key, value] of Object.entries(full)) { entry[key] = value; pushedKeys.add(key); }
+ (window.dataLayer = window.dataLayer || []).push({ event: name, ...entry });
+}
+
+/** Where on the page a control sits, from the nearest known part of the interface. */
+const AREAS: [string, string][] = [['.settings-menu', 'settings'], ['.contents-modal', 'contents'], ['.prologue', 'prologue'], ['.guide', 'guide'],
+ ['.poster-book', 'poster_book'], ['.webzine-book', 'webzine'], ['.detail-book', 'story_book'], ['.detail-panel', 'story_panel'], ['.is-ending', 'ending'],
+ ['.modal-backdrop,[role="dialog"]', 'modal'], ['.site-header,.top-actions', 'header'], ['.cover-intro,.intro', 'intro']];
+function areaOf(element: Element) { for (const [selector, area] of AREAS) if (element.closest(selector)) return area; return 'page'; }
+const CONTROLS = 'button,a[href],[role="button"],[role="radio"],[role="tab"],[role="menuitem"],[role="switch"],summary,input[type="checkbox"],input[type="radio"],select';
 
 /** Readable ids in the URL: the chapter's own id, a story's id after a slash, 'ending' for the closing page. */
 export function locationHash(chapter: number, detail: string | null, ending: boolean) {
@@ -107,4 +139,22 @@ export function initAnalytics() {
   const where = link.closest('.detail-panel,.detail-book,.webzine-book') ? 'story' : link.closest('.is-ending') ? 'ending' : link.closest('.site-header') ? 'header' : link.closest('[role="dialog"]') ? 'about' : 'page';
   track('story_link_click', { link_url: link.href, link_text: link.textContent?.trim().slice(0, 100), link_location: where, content_id: useStory.getState().detail ?? undefined, outbound: link.host !== location.host });
  }, true);
+
+ // Every button and link the reader presses, wherever it is: what it says (or its accessible name), what kind of control, which part of the
+ // interface, and the state it was in (a menu open or closed, an option on or off). The book's own cards are drawn in WebGL and are
+ // reported as select_content instead.
+ document.addEventListener('click', event => {
+  const control = (event.target as Element | null)?.closest?.(CONTROLS);
+  if (!control) return;
+  const label = (control.getAttribute('aria-label') || control.textContent || control.getAttribute('title') || '').replace(/\s+/g, ' ').trim().slice(0, 80);
+  const type = control.getAttribute('role') || (control.tagName === 'A' ? 'link' : control.tagName === 'INPUT' ? (control as HTMLInputElement).type : control.tagName.toLowerCase());
+  const state = control.getAttribute('aria-expanded') ?? control.getAttribute('aria-checked') ?? control.getAttribute('aria-pressed') ?? undefined;
+  const href = control.tagName === 'A' ? (control as HTMLAnchorElement).href : undefined;
+  track('ui_click', { ui_label: label || undefined, ui_type: type, ui_area: areaOf(control), ui_state: state, link_url: href, content_id: useStory.getState().detail ?? undefined });
+ }, true);
+
+ // The language the reader picks (not the default they started with).
+ useLocale.subscribe((state, previous) => {
+  if (state.lang !== previous.lang && state.chosen) track('language_change', { language: state.lang, previous_language: previous.lang });
+ });
 }
