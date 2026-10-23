@@ -78,9 +78,9 @@
 @keyframes detail-in{from{opacity:0;transform:translateX(18px)}to{opacity:1;transform:none}}
 /* A story shown as one picture (details.ts `sheet`, the recipe call poster): the poster is the whole panel, sized to fit the screen's height,
    and its buttons are links laid over it. */
-.detail-panel.is-sheet{bottom:auto;width:min(400px,34vw,calc((100svh - 116px) * .75));background:#f3e3c6;border:0;border-radius:6px;overflow:hidden}
+.detail-panel.is-sheet{bottom:auto;width:min(400px,34vw,calc((100svh - 116px) * .75));background:none;border:0;border-radius:0;box-shadow:none}
 .detail-sheet{position:relative;width:100%;margin:0}
-.detail-sheet img{display:block;width:100%;height:auto}
+.detail-sheet img{display:block;width:100%;height:auto;filter:drop-shadow(0 10px 22px #3c281440)}
 .detail-sheet-link{position:absolute;border-radius:4px;transition:background .15s}
 .detail-sheet-link:hover{background:#a9613f1f}
 .detail-sheet-link:focus-visible{outline:3px solid #a9613f;outline-offset:2px}
@@ -88,7 +88,7 @@
 @media(max-width:760px){
  .detail-panel{top:auto;left:10px;right:10px;bottom:10px;width:auto;max-height:64svh;border-radius:20px;animation-name:detail-up}
  .detail-body{padding:26px 20px 22px}
- .detail-panel.is-sheet{width:min(calc(100% - 20px),calc((100svh - 90px) * .75));max-height:none;margin:0 auto;border-radius:6px}
+ .detail-panel.is-sheet{bottom:10px;width:min(calc(100% - 20px),calc((100svh - 90px) * .75));max-height:none;margin:0 auto;border-radius:6px}
  @keyframes detail-up{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:none}}
 }
 /* Magazine brand (gujwa-carrot.vercel.app): logo, then the name after a thin rule. */
