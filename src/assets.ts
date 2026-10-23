@@ -32,4 +32,4 @@ const pictureOf=(layer:{src:string;phoneSrc?:string})=>standingScreen()&&layer.p
 const sceneArt=(chapter:number):[string,string][]=>{const scene=scenes[chapter] as {stage?:string;layers:{src:string;phoneSrc?:string}[]};return [...scene.layers.map(l=>[l.src,pictureOf(l)] as [string,string]),...(scene.stage?[[scene.stage,scene.stage],[scene.stage+'-sheet',scene.stage+'-sheet']] as [string,string][]:[])];};
 export async function loadScene(chapter:number):Promise<Record<string,Texture>>{return Object.fromEntries(await Promise.all(sceneArt(chapter).map(async ([name,file])=>[name,await loadTexture(file)])));}
 export function readyScene(chapter:number):Record<string,Texture>|null {const pairs=sceneArt(chapter);if(pairs.some(([,file])=>!ready.has(file)))return null;return Object.fromEntries(pairs.map(([name,file])=>[name,ready.get(file)!]));}
-export function preloadScene(chapter:number){if(chapter<scenes.length)void loadScene(chapter).catch(()=>{});}
+

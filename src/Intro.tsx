@@ -4,6 +4,7 @@ import {playSound} from './story';
 import {SITE} from './site';
 import {STANDING_QUERY} from './standingMedia';
 import { url } from './base.ts';
+import { useT } from './i18n';
 
 /**
  * The film's file: AV1 (about half the bytes of H.264 at the same sharpness) where this browser decodes it smoothly and power-efficiently
@@ -31,11 +32,12 @@ const MOUNT_LEAD=2.2;
  * `onUnfolding` is called with the film's time when it pauses on the open book, just before its cards would rise; `onFinished` follows
  * at once (the rest of the film — the cards rising — is left to the live book, which stands them up after the prologue).
  */
-type Props={onFinished:(report:IntroReport)=>void;onUnfolding:(time:number)=>void;onBuffered?:()=>void;onNearEnd?:()=>void;leaving:boolean};
-export default function Intro({onFinished,onUnfolding,onBuffered,onNearEnd,leaving}:Props){
+/** `skip`: the reader skipped the opening (src/App.tsx): the film stops and hands over at once, as when it cannot play. */
+type Props={onFinished:(report:IntroReport)=>void;onUnfolding:(time:number)=>void;onBuffered?:()=>void;onNearEnd?:()=>void;leaving:boolean;skip?:boolean};
+export default function Intro({onFinished,onUnfolding,onBuffered,onNearEnd,leaving,skip=false}:Props){
  const nearEnd=useRef(false);
  // Phones held upright get the portrait film of the standing book (scripts/render-intro.mjs --standing), chosen once per intro.
- const [standing]=useState(()=>typeof matchMedia==='function'&&matchMedia(STANDING_QUERY).matches);
+ const [standing]=useState(()=>typeof matchMedia==='function'&&matchMedia(STANDING_QUERY).matches);const {t}=useT();
  const media=standing?'-standing':'',uiAt=standing?STANDING_INTRO_UI_AT:INTRO_UI_AT;
  const video=useRef<HTMLVideoElement>(null);
  const [src,setSrc]=useState<string|null>(null);
@@ -89,18 +91,19 @@ export default function Intro({onFinished,onUnfolding,onBuffered,onNearEnd,leavi
   }).catch(()=>{if(attempts.current<2){attempts.current++;window.setTimeout(()=>replay.current(),350);}else setFailed(true);});
  },[hold,uiAt]);
  replay.current=play;
+ useEffect(()=>{if(!skip)return;video.current?.pause();finish();},[skip,finish]);
  useEffect(()=>{
   if(!holdFinished||(!src&&!failed))return;
   if(failed){finish();return;}
   if(started.current)return;
   started.current=true;play();
  },[holdFinished,src,failed,finish,play]);
- return <div className={'intro-screen'+(standing?' is-standing':'')+(leaving?' is-leaving':'')} data-stage={stage} data-cover-hold-ms={holdDuration} aria-label={SITE.title+' 책을 펼치는 중'}>
-  <img className="intro-cover intro-media" src={url(`/media/book-cover${media}.webp`)} alt={SITE.title+' 그림책 표지 — '+SITE.coverAlt} onLoad={()=>setCoverReady(true)} onError={e=>{if(!e.currentTarget.src.endsWith('/art-raster/cover.webp'))e.currentTarget.src=url('/art-raster/cover.webp');else setCoverReady(true);}} hidden={stage!=='cover'}/>
+ return <div className={'intro-screen'+(standing?' is-standing':'')+(leaving?' is-leaving':'')} data-stage={stage} data-cover-hold-ms={holdDuration} aria-label={t(SITE.title)+' — '+t('책을 펼치는 중')}>
+  <img className="intro-cover intro-media" src={url(`/media/book-cover${media}.webp`)} alt={t(SITE.title)+' — '+t(SITE.coverAlt)} onLoad={()=>setCoverReady(true)} onError={e=>{if(!e.currentTarget.src.endsWith('/art-raster/cover.webp'))e.currentTarget.src=url('/art-raster/cover.webp');else setCoverReady(true);}} hidden={stage!=='cover'}/>
   <video className={'intro-media intro-video'+(stage==='cover'?' is-waiting':'')} ref={video} src={src??undefined} muted playsInline preload="auto" tabIndex={-1} aria-hidden="true"
    onPlaying={()=>{actualHold.current||=Math.round(performance.now()-(shownAt.current??performance.now()));setHoldDuration(actualHold.current);setStage('opening');}}
    onTimeUpdate={e=>{const element=e.currentTarget,time=element.currentTime;if(!nearEnd.current&&bufferedOnce.current&&time>=uiAt-MOUNT_LEAD){nearEnd.current=true;onNearEnd?.();}if(time>=uiAt-HOLD_BEFORE&&!unfolded.current){hold(element,time);return;}if(time<INTRO_COVER_HOLD)return;const page=Math.floor((time-INTRO_COVER_HOLD)*3);if(page!==soundPage.current){soundPage.current=page;playSound('flip');}}}
    onProgress={buffered} onCanPlayThrough={buffered} onEnded={finish} onError={()=>{setFailed(true);onBuffered?.();}}/>
-  {failed&&stage==='ready'&&<img className="intro-media" src={url(`/media/book-open${media}.webp`)} alt={'펼쳐진 '+SITE.title+' 그림책'}/>}
+  {failed&&stage==='ready'&&<img className="intro-media" src={url(`/media/book-open${media}.webp`)} alt={t(SITE.title)+' — '+t('펼쳐진 그림책')}/>}
  </div>;
 }

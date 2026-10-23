@@ -16,7 +16,7 @@ test('folded cards stack front on top, and stand exactly where they did when upr
 test('the recipe notes stick to the fridge, the recipe book lies on the table, and every card that stands on another is in the same spread',()=>{
  const layers=scenes[2].layers,fridge=layers.find(l=>l.id==='fridge'),table=layers.find(l=>l.id==='table');
  assert.equal(gluedParent(fridge,layers),null);
- for(const id of ['magnet-gnocchi','magnet-gimbap','magnet-cheese-jeon','magnet-blank'])assert.equal(gluedParent(layers.find(l=>l.id===id),layers),fridge,id);
+ for(const id of ['magnet-gnocchi','magnet-gimbap','magnet-jeon','magnet-blank'])assert.equal(gluedParent(layers.find(l=>l.id===id),layers),fridge,id);
  assert.equal(gluedParent(layers.find(l=>l.id==='recipe-book'),layers),table);
  // Every `on` names a card of the same spread.
  for(const scene of scenes)for(const layer of scene.layers)if(layer.on)assert.ok(gluedParent(layer,scene.layers),`${scene.id}/${layer.id}`);

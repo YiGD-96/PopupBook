@@ -6,7 +6,7 @@
  */
 import { useEffect, useMemo, type ReactNode } from 'react';
 import { useThree } from '@react-three/fiber';
-import { BackSide, CanvasTexture, Color, DoubleSide, Euler, Matrix4, Quaternion, SRGBColorSpace, Vector3, type PerspectiveCamera, type Texture } from 'three';
+import { BackSide, CanvasTexture, DoubleSide, Euler, Matrix4, Quaternion, SRGBColorSpace, Vector3, type PerspectiveCamera, type Texture } from 'three';
 import { loadScene, loadTexture } from './assets';
 import { scenes, type Layer } from './story';
 import { flatLift, gluedParent, riseOrder, stackRanks } from './popupStack';

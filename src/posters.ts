@@ -16,15 +16,15 @@ export type Poster={
  /** Leave out while there is no real photo yet. */
  photo?:boolean;
 };
-// The same Short stands in for the dishes that have none of their own yet (the user's temporary link); the cheese-jeon has its own.
-const SHORTS='j4WDQC1tTyI';
+// The Gujwa carrot Short stands in for the dishes that have none of their own yet; the jeon has its own.
+const SHORTS='DRb3IIKUJSY';
 export const posters:Record<string,Poster>={
  'poster-gnocchi':{file:'gnocchi',title:{ko:'당근 뇨끼',en:'Carrot Gnocchi',zh:'胡萝卜面疙瘩'},shorts:SHORTS,photo:true,
-  caption:{ko:'직접 만든 당근 뇨끼',en:'Our carrot gnocchi, made at home',zh:'亲手做的胡萝卜面疙瘩'}},
+  caption:{ko:'직접 만든 당근 뇨끼',en:'Our carrot gnocchi',zh:'亲手做的胡萝卜面疙瘩'}},
  'poster-gimbap':{file:'gimbap',title:{ko:'당근 김밥',en:'Carrot Kimbap',zh:'胡萝卜紫菜包饭'},shorts:SHORTS,photo:true,
-  caption:{ko:'직접 만든 당근 김밥',en:'Our carrot kimbap, made at home',zh:'亲手做的胡萝卜紫菜包饭'}},
+  caption:{ko:'직접 만든 당근 김밥',en:'Our carrot kimbap',zh:'亲手做的胡萝卜紫菜包饭'}},
  'poster-jeon':{file:'jeon',title:{ko:'당근전',en:'Carrot Pancakes',zh:'胡萝卜煎饼'},shorts:'izTQxOcRgkg',photo:true,
-  caption:{ko:'직접 부친 당근 치즈전',en:'Our carrot cheese pancakes, made at home',zh:'亲手煎的胡萝卜芝士煎饼'}},
+  caption:{ko:'직접 부친 당근전',en:'Our carrot pancakes',zh:'亲手煎的胡萝卜煎饼'}},
 };
 export const posterSrc=(poster:Poster,lang:Lang)=>url(`/media/posters/${poster.file}-${lang}.webp`);
 export const photoSrc=(poster:Poster)=>url(`/media/posters/photo-${poster.file}.webp`);

@@ -2,6 +2,8 @@ import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { details } from './details';
 import { webzines, type WzBlock, type WzFlow, type WzMenu } from './webzine';
+import { useLocalized, useT } from './i18n';
+import { tappedOutside } from './outsideTap';
 
 /**
  * A story as the web magazine's pages (the farmer's, or a shop's) (src/webzine.ts, laid out like the mockup 웹진 2페이지 시안): it rises from the pop-up book like
@@ -35,7 +37,7 @@ function Block({block,first}:{block:WzBlock;first:boolean}){
  }
 }
 export default function WebzineBook({id,onClose}:{id:string;onClose:()=>void;onOpen?:(id:string)=>void}){
- const detail=details[id],zine=webzines[id];const heading=useRef<HTMLDivElement>(null);const sheet=useRef<HTMLElement>(null);const [open,setOpen]=useState(false);const closing=useRef(0);
+ const {t}=useT(),detail=useLocalized(details[id]),zine=useLocalized(webzines[id]);const heading=useRef<HTMLDivElement>(null);const sheet=useRef<HTMLElement>(null);const [open,setOpen]=useState(false);const closing=useRef(0);
  const [index,setIndex]=useState(0);const [direction,setDirection]=useState<1|-1>(1);const last=(zine?.spreads.length??1)-1;
  // Mounted lying back, then raised on the next frame so the transition runs; closing lowers it again before it goes.
  useEffect(()=>{const frame=requestAnimationFrame(()=>setOpen(true));return()=>{cancelAnimationFrame(frame);window.clearTimeout(closing.current);};},[]);
@@ -52,27 +54,27 @@ export default function WebzineBook({id,onClose}:{id:string;onClose:()=>void;onO
  if(!detail||!zine)return null;
  const spread=zine.spreads[index];
  const withMedia=(blocks:WzBlock[])=>blocks.some(block=>['photoText','hero','menu','menus','side','cutout'].includes(block.t))?' has-media':'';
- return <div className={'detail-book-backdrop'+(open?' is-open':'')} onClick={e=>{if(e.target===e.currentTarget)close();}}>
+ return <div className={'detail-book-backdrop'+(open?' is-open':'')} onClick={e=>{if(tappedOutside(e))close();}}>
   <div className="webzine-book" role="dialog" aria-modal="true" aria-labelledby="wz-title">
-   <button className="wz-close" onClick={close} aria-label="책 닫기"><X size={20}/></button>
+   <button className="wz-close" onClick={close} aria-label={t('책 닫기')}><X size={20}/></button>
    <article className="wz-sheet" ref={sheet}>
     <div className="wz-inner">
      <header className="wz-bar"><span>{zine.kicker}</span><i aria-hidden="true"/><em aria-hidden="true">{(zine.label??['People','Who Cook'])[0]}<br/>{(zine.label??['People','Who Cook'])[1]}</em></header>
      <div key={index} className={'wz-spread '+(direction===1?'is-next':'is-prev')} ref={heading} tabIndex={-1}>
-      <section className={'wz-page is-left'+withMedia(spread.left)+(spread.dense==='left'?' is-dense':'')} aria-label="왼쪽 쪽">{spread.left.map((block,i)=><Block key={i} block={block} first={index===0&&i===spread.left.findIndex(b=>b.t==='h1')}/>)}</section>
-      <section className={'wz-page is-right'+withMedia(spread.right)+(spread.dense==='right'?' is-dense':'')} aria-label="오른쪽 쪽">{spread.right.map((block,i)=><Block key={i} block={block} first={false}/>)}</section>
+      <section className={'wz-page is-left'+withMedia(spread.left)+(spread.dense==='left'?' is-dense':'')} aria-label={t('왼쪽 쪽')}>{spread.left.map((block,i)=><Block key={i} block={block} first={index===0&&i===spread.left.findIndex(b=>b.t==='h1')}/>)}</section>
+      <section className={'wz-page is-right'+withMedia(spread.right)+(spread.dense==='right'?' is-dense':'')} aria-label={t('오른쪽 쪽')}>{spread.right.map((block,i)=><Block key={i} block={block} first={false}/>)}</section>
      </div>
      <div className="wz-end">
       <span aria-live="polite">{index+1} / {last+1}</span>
-      {index>0&&<button onClick={()=>turn(-1)}><ChevronLeft size={16}/>이전 쪽</button>}
-      {index<last?<button className="is-next" onClick={()=>turn(1)}>다음 쪽으로<ChevronRight size={16}/></button>:<button className="is-next" onClick={close}>이야기 닫기<X size={16}/></button>}
+      {index>0&&<button onClick={()=>turn(-1)}><ChevronLeft size={16}/>{t('이전 쪽')}</button>}
+      {index<last?<button className="is-next" onClick={()=>turn(1)}>{t('다음 쪽으로')}<ChevronRight size={16}/></button>:<button className="is-next" onClick={close}>{t('이야기 닫기')}<X size={16}/></button>}
      </div>
     </div>
    </article>
-   <nav className="wz-nav" aria-label="웹진 쪽 넘기기">
-    <button onClick={()=>turn(-1)} disabled={index===0} aria-label="이전 쪽"><ChevronLeft size={18}/></button>
+   <nav className="wz-nav" aria-label={t('웹진 쪽 넘기기')}>
+    <button onClick={()=>turn(-1)} disabled={index===0} aria-label={t('이전 쪽')}><ChevronLeft size={18}/></button>
     <span aria-live="polite">{index+1} / {last+1}</span>
-    <button onClick={()=>turn(1)} disabled={index===last} aria-label="다음 쪽"><ChevronRight size={18}/></button>
+    <button onClick={()=>turn(1)} disabled={index===last} aria-label={t('다음 쪽')}><ChevronRight size={18}/></button>
    </nav>
   </div>
  </div>;

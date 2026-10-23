@@ -1,5 +1,5 @@
 import { Component, lazy, Suspense, useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
-import { ArrowRight, ArrowLeft, X, RotateCcw, MousePointer2, Check, LoaderCircle } from 'lucide-react';
+import { ArrowRight, ArrowLeft, X, RotateCcw, MousePointer2, Check, LoaderCircle, ChevronsRight } from 'lucide-react';
 import {SITE} from './site';
 import { type Director, scenes, useStory, playSound, unlockAudio } from './story';
 import { useBookGestures } from './useBookGestures';
@@ -9,6 +9,7 @@ import {BOOK_FRAME_WIDTH,BOOK_FRAME_HEIGHT,FILM_SPAN,bookZoom} from './bookView'
 import {STANDING_DROP,STANDING_QUERY,standingMediaSize} from './standingMedia';
 import {artSource} from './artSource';
 import DetailPanel from './DetailPanel';
+import { prefetchChapterStories } from './storyPrefetch';
 import DetailBook from './DetailBook';
 import WebzineBook from './WebzineBook';
 import { webzines } from './webzine';
@@ -16,8 +17,10 @@ import PosterBook from './PosterBook';
 import { posters } from './posters';
 import Prologue from './Prologue';
 import Guide from './Guide';
-import LanguageMenu from './LanguageMenu';
-import { detectLanguage } from './locale';
+import SettingsMenu from './SettingsMenu';
+import { useT } from './i18n';
+import type { Lang } from './locale';
+import { useOpeningPref } from './openingPref';
 import { details } from './details';
 import { noteStory, noteTurn, parseHash, track } from './analytics';
 import { url } from './base.ts';
@@ -56,6 +59,7 @@ function DeskAir(){
   return <div className="desk-air" aria-hidden="true"/>;
 }
 function Modal({title,children,onClose,className=''}:{title:string;children:ReactNode;onClose:()=>void;className?:string}) {
+  const {t}=useT();
   const ref=useRef<HTMLDivElement>(null);
   useEffect(()=>{
     const previous=document.activeElement as HTMLElement;
@@ -74,14 +78,20 @@ function Modal({title,children,onClose,className=''}:{title:string;children:Reac
   },[onClose]);
   return <div className="modal-backdrop" onClick={e=>{if(e.target===e.currentTarget)onClose();}}>
     <div className={"modal "+className} role="dialog" aria-modal="true" aria-label={title} ref={ref}>
-      <div className="modal-head"><h2>{title}</h2><button className="icon-button" onClick={onClose} aria-label="닫기"><X size={21}/></button></div>
+      <div className="modal-head"><h2>{title}</h2><button className="icon-button" onClick={onClose} aria-label={t('닫기')}><X size={21}/></button></div>
       {children}
     </div>
   </div>;
 }
+/** The closing note's words, whole per language (their line breaks and order differ). */
+const ENDING:Record<Lang,{title:ReactNode;from:ReactNode;go:string;restart:string}>={
+ ko:{title:<>구좌 당근 이야기를<br/>기사로 만나보세요.</>,from:<>밭에서 식탁까지,<br/>그 이야기를 이어 읽어요.</>,go:'기사 바로 읽기',restart:'처음으로'},
+ en:{title:<>Read the story<br/>as an article.</>,from:<>From field to table,<br/>the story reads on.</>,go:'Read the article',restart:'Start over'},
+ zh:{title:<>旧左胡萝卜的故事<br/>请在报道中阅读。</>,from:<>从田间到餐桌，<br/>故事仍在继续。</>,go:'立即阅读报道',restart:'回到开头'},
+};
 export default function App() {
-  const state=useStory();
-  const {phase,chapter,dialog,audioReady}=state;
+  const state=useStory();const {lang,t}=useT();
+  const {phase,chapter,audioReady}=state;
   const api=useRef<Director|null>(null);
   const [fallback,setFallback]=useState(()=>new URLSearchParams(window.location.search).get('view')==='paper');
   const [modal,setModal]=useState<'about'|null>(null);
@@ -97,11 +107,17 @@ export default function App() {
   const [fallbackAttempt,setFallbackAttempt]=useState(0);
   // The prologue (src/Prologue.tsx) covers the open book from the moment the film pauses until the reader starts; the reader UI appears as it closes.
   const [prologue,setPrologue]=useState<'none'|'open'|'closing'>('none');
+  // Skipping the opening (film, prologue and guide): now with 건너뛰기, or every visit once "다음부터 보지 않기" is ticked (src/openingPref.ts:
+  // saved at once in this browser; "시작 영상 보기" in the settings turns it back on). A restart (처음부터 다시 보기) still plays it.
+  const [skipOpening,setSkipOpening]=useState(()=>useOpeningPref.getState().skip);const rememberSkip=useOpeningPref(s=>s.skip),setRememberSkip=useOpeningPref(s=>s.setSkip);
+  const skipOpeningRef=useRef(skipOpening);skipOpeningRef.current=skipOpening;
   // The two-step reading guide (src/Guide.tsx): 0 closed, 1 the glowing cards, 2 the page arrow. It follows every "책장 속으로".
   const [guide,setGuide]=useState<0|1|2>(0);const guidePending=useRef(false);
   // A spread still loading 1.2 s after the turn was asked for (a slow connection): only then is it worth a word.
   const [slowLoad,setSlowLoad]=useState(false);
   useEffect(()=>{if(phase!=='LOADING_PAGE'){setSlowLoad(false);return;}const timer=window.setTimeout(()=>setSlowLoad(true),1200);return()=>window.clearTimeout(timer);},[phase]);
+  // The stories this spread's cards open have their first pictures fetched while the reader looks at it (src/storyPrefetch.ts).
+  useEffect(()=>phase==='EXPLORING'?prefetchChapterStories(chapter):undefined,[phase,chapter]);
   const storyRef=useRef<HTMLHeadingElement>(null);
   const surfaceRef=useRef<HTMLDivElement>(null);
   const paperTurn=useRef<{direction:1|-1;progress:number}|null>(null);
@@ -117,7 +133,6 @@ export default function App() {
   const openDetail=useCallback((id:string)=>{noteStory('related');useStory.getState().set({detail:id});},[]);
   // A shared link (#cooks, #recipes/recipe-02, #ending) opens that spread or story once the intro has handed over to the book.
   // The book as text (built into index.html by src/seo.ts): for reading without the pictures, for screen readers and for crawlers.
-  const openText=useCallback(()=>{const text=document.getElementById('book-text');if(!text)return;text.hidden=false;document.body.classList.add('text-open');text.focus();track('text_view');},[]);
   useEffect(()=>{
     const text=document.getElementById('book-text');if(!text)return;
     const close=()=>{if(text.hidden)return;text.hidden=true;document.body.classList.remove('text-open');};
@@ -178,7 +193,7 @@ export default function App() {
   const mountEarly=useCallback(()=>{if(new URLSearchParams(window.location.search).get('view')!=='paper'&&supportsWebGL())setSceneMounted(true);},[]);
   // The film pauses on the open book: the prologue comes up over it while the live book takes the film's place underneath.
   const finishIntro=useCallback((report:IntroReport)=>{
-    setIntroReport(report);setPrologue('open');
+    setIntroReport(report);setPrologue(skipOpeningRef.current?'none':'open');
     track('intro_complete',{layout:report.standing?'standing':'open',dropped_frames:report.droppedFrames??undefined,media_failed:report.mediaFailed});
     if(new URLSearchParams(window.location.search).get('view')!=='paper'&&!supportsWebGL())setFallback(true);
     setMediaFinished(true);setSceneMounted(true);
@@ -201,8 +216,11 @@ export default function App() {
     track('prologue_start');guidePending.current=true;setPrologue('closing');setChromeVisible(true);api.current?.rise();
     window.setTimeout(()=>setPrologue('none'),520);
   },[]);
+  // Skipped, the book opens to reading as soon as it is ready under the (skipped) prologue: the cards stand up, no guide.
+  useEffect(()=>{if(!skipOpening||phase!=='PROLOGUE')return;setPrologue('none');setChromeVisible(true);api.current?.rise();},[skipOpening,phase]);
+  const skipNow=useCallback(()=>{track('intro_skip',{remember:rememberSkip});guidePending.current=false;setGuide(0);setSkipOpening(true);},[rememberSkip]);
   const beginIntro=useCallback(()=>{
-    track('restart');api.current=null;setEngineReady(false);setSceneMounted(false);setMediaFinished(false);setIntroLeaving(false);setIntroVisible(true);setIntroRun(n=>n+1);setIntroReport(null);setChromeVisible(false);setChromeVideoTime(null);setPrologue('none');
+    setSkipOpening(false);track('restart');api.current=null;setEngineReady(false);setSceneMounted(false);setMediaFinished(false);setIntroLeaving(false);setIntroVisible(true);setIntroRun(n=>n+1);setIntroReport(null);setChromeVisible(false);setChromeVideoTime(null);setPrologue('none');
     useStory.getState().set({phase:'INIT',chapter:0,dialog:false,visited:[],error:null,introPagesTurned:0});
   },[]);
   useEffect(()=>{
@@ -213,8 +231,6 @@ export default function App() {
     setIntroLeaving(true);const timer=window.setTimeout(()=>setIntroVisible(false),280);
     return()=>window.clearTimeout(timer);
   },[phase,introVisible]);
-  // The reader's country sets the language (src/locale.ts) unless they chose one; looked up once the cover is up, off the film's start.
-  useEffect(()=>{const timer=window.setTimeout(()=>{void detectLanguage();},1500);return()=>window.clearTimeout(timer);},[]);
   useEffect(()=>{
     document.addEventListener('pointerdown',unlockAudio,true);
     document.addEventListener('pointerup',unlockAudio,true);
@@ -262,25 +278,30 @@ export default function App() {
     update();const observer=new ResizeObserver(update);observer.observe(surface);return()=>observer.disconnect();
   },[]);
 
-  const introText=phase==='INIT'?'책을 준비하고 있어요':'당신의 작은 여행을 펼쳐요';
+  const introText=t(phase==='INIT'?'책을 준비하고 있어요':'당신의 작은 여행을 펼쳐요');
   const detailOpen=!!state.detail&&!introVisible&&!ending;
   return <div className={"app-shell reader-mode cinematic-reader"+(introVisible?" intro-active":"")+(detailOpen?" has-detail":"")}>
-    {!introVisible&&<a className="skip-link" href="#main">이야기로 바로 가기</a>}
+    {!introVisible&&<a className="skip-link" href="#main">{t('이야기로 바로 가기')}</a>}
+    {(introVisible||prologue==='open')&&!skipOpening&&<div className="opening-skip">
+      <label className="opening-remember"><input type="checkbox" checked={rememberSkip} onChange={e=>setRememberSkip(e.target.checked)}/><i aria-hidden="true"><Check size={11} strokeWidth={3}/></i>{t('다음부터 보지 않기')}</label>
+      <span className="opening-skip-rule" aria-hidden="true"/>
+      <button type="button" className="opening-skip-button" onClick={skipNow}>{t('건너뛰기')}<ChevronsRight size={15} aria-hidden="true"/></button>
+    </div>}
     {/* Top right, side by side: the contents (once the reader's header shows) and the language switch, as two matching pills. */}
     <div className="top-actions">
-      {chromeVisible&&<nav aria-label="메인 메뉴"><button className="top-pill" onClick={()=>{setModal('about');track('about_open');}}>목차</button></nav>}
-      <LanguageMenu/>
+      {chromeVisible&&<nav aria-label={t('메인 메뉴')}><button className="top-pill" onClick={()=>{setModal('about');track('about_open');}}>{t('목차')}</button></nav>}
+      <SettingsMenu/>
     </div>
     {chromeVisible&&<header className="site-header">
-      <a href={url("/")} className="brand" aria-label={SITE.name+' 홈으로'}><img className="brand-logo" src={url("/media/logo.webp")} alt="carrot" width={87} height={26}/><span className="brand-name">{SITE.name}</span></a>
+      <a href={url("/")} className="brand" aria-label={t(SITE.name)+' — '+t('홈으로')}><img className="brand-logo" src={url("/media/logo.webp")} alt="carrot" width={87} height={26}/><span className="brand-name">{t(SITE.name)}</span></a>
     </header>}
     {/* The spread's title, on its own above the book, with a dot per chapter (the one being read lit). Read by screen readers from the h1 below. */}
-    {chromeVisible&&!ending&&<div className="chapter-title" key={chapter} aria-hidden="true"><span>{scene.english}</span><strong>{scene.title}</strong><div className="chapter-dots">{scenes.map((item,index)=><i key={item.id} className={index===chapter?'is-on':''}/>)}</div></div>}
-    <main id="main"><section className={'hero '+(intro?'is-cover':'is-open')+(ending?' is-ending':'')} aria-label={SITE.title+' 팝업북'}>
+    {chromeVisible&&!ending&&<div className="chapter-title" key={chapter} aria-hidden="true"><span>{scene.english}</span><strong>{t(scene.title)}</strong><div className="chapter-dots">{scenes.map((item,index)=><i key={item.id} className={index===chapter?'is-on':''}/>)}</div></div>}
+    <main id="main"><section className={'hero '+(intro?'is-cover':'is-open')+(ending?' is-ending':'')} aria-label={t(SITE.title)+' — '+t('팝업북')}>
       {chromeVisible&&<div className="hero-copy">
         {coverMode?<div className="cover-intro"><span>{SITE.label}</span><h1>{SITE.title}</h1><p role="status"><LoaderCircle size={14} className="spin"/>{introText}</p></div>:
-        ending?<><span className="eyebrow">JEJU LOCAL MAGAZINE</span><h1>당근 하나로,<br/>제주를 다시 보다</h1><p className="hero-description">구좌의 밭에서 시작된 이야기부터<br/>우리의 식탁에 닿기까지.</p><p className="hero-description">구좌 당근의 이야기를 기사로도 만나보세요.</p><a className="primary-button ending-link" href={SITE.article} target="_blank" rel="noreferrer">지금 바로 기사 읽으러 가기<span className="sr-only"> (새 창에서 열림)</span><ArrowRight size={17}/></a><button className="secondary-button ending-restart" onClick={beginIntro}><RotateCcw size={17}/>처음부터 다시 보기</button></>:
-        <><h1 className="sr-only" aria-label={scene.title} ref={storyRef} tabIndex={-1}>{scene.title}</h1>
+        ending?<><h1>{ENDING[lang].title}</h1><p className="hero-description">{ENDING[lang].from}</p><a className="primary-button ending-link" href={SITE.article} target="_blank" rel="noreferrer">{ENDING[lang].go}<span className="sr-only"> {t('(새 창에서 열림)')}</span><ArrowRight size={21}/></a><button className="secondary-button ending-restart" onClick={beginIntro}><RotateCcw size={18}/>{ENDING[lang].restart}</button></>:
+        <><h1 className="sr-only" aria-label={t(scene.title)} ref={storyRef} tabIndex={-1}>{t(scene.title)}</h1>
 
         </>}
       </div>}
@@ -288,30 +309,30 @@ export default function App() {
         <div ref={surfaceRef} className={'canvas-wrap '+(dragging?'is-dragging':'')} data-phase={phase} data-intro-pages={state.introPagesTurned} data-audio-ready={audioReady} data-cover-hold-ms={introReport?.coverHoldMs} data-video-frames={introReport?.videoFrames} data-video-dropped-frames={introReport?.droppedFrames} data-video-failed={introReport?.mediaFailed} data-chrome-visible={chromeVisible} data-chrome-video-time={chromeVideoTime} aria-label={intro?SITE.title+' 입체 그림책':(chapter+1)+'장 '+scene.title+' 입체 종이 풍경'}>
           {sceneMounted&&(fallback?<StaticBook closed={closed} onInteract={staticInteract}/>:<CanvasBoundary onError={onFailure}><Suspense fallback={null}><Storybook onReady={director=>{api.current=director;setEngineReady(true);}} onFailure={onFailure}/></Suspense></CanvasBoundary>)}
           <DeskAir/>
-          {introVisible&&<Intro key={introRun} onFinished={finishIntro} onUnfolding={showChrome} onBuffered={preloadBook} onNearEnd={mountEarly} leaving={introLeaving}/>}
+          {introVisible&&<Intro key={introRun} onFinished={finishIntro} onUnfolding={showChrome} onBuffered={preloadBook} onNearEnd={mountEarly} leaving={introLeaving} skip={skipOpening}/>}
         </div>
-        {!introVisible&&!audioReady&&intro&&<p className="audio-hint">소리는 화면을 터치하면 함께 시작돼요</p>}
+        {!introVisible&&!audioReady&&intro&&<p className="audio-hint">{t('소리는 화면을 터치하면 함께 시작돼요')}</p>}
         {/* No indicator while a page turns (it made turns feel slower); only a next spread still loading after a while says so. */}
-        {slowLoad&&prologue==='none'&&guide===0&&<div className="scene-loading" role="status"><LoaderCircle size={16} className="spin"/>다음 풍경을 준비해요</div>}
+        {slowLoad&&prologue==='none'&&guide===0&&<div className="scene-loading" role="status"><LoaderCircle size={16} className="spin"/>{t('다음 풍경을 준비해요')}</div>}
         {chromeVisible&&!coverMode&&<>
-          <button className="reader-arrow reader-prev" aria-label="이전 책장" title="이전 책장" disabled={busy||introVisible||chapter===0} onClick={()=>api.current?.go(chapter-1)}><ArrowLeft size={24}/></button>
-          {!ending&&<button className="reader-arrow reader-next" aria-label={chapter===2?'여행 마무리':'다음 책장'} title={chapter===2?'여행 마무리':'다음 책장'} disabled={busy||introVisible} onClick={()=>chapter===2?api.current?.finish():api.current?.go(chapter+1)}><ArrowRight size={24}/></button>}
+          <button className="reader-arrow reader-prev" aria-label={t('이전 책장')} title={t('이전 책장')} disabled={busy||introVisible||chapter===0} onClick={()=>api.current?.go(chapter-1)}><ArrowLeft size={24}/></button>
+          {!ending&&<button className="reader-arrow reader-next" aria-label={t(chapter===2?'여행 마무리':'다음 책장')} title={t(chapter===2?'여행 마무리':'다음 책장')} disabled={busy||introVisible} onClick={()=>chapter===2?api.current?.finish():api.current?.go(chapter+1)}><ArrowRight size={24}/></button>}
 
         </>}
-        {phase==='ERROR'&&<div className="scene-error" role="alert"><p>{state.error}</p><button className="secondary-button" onClick={()=>api.current?.retry()}><RotateCcw size={16}/> 다시 시도</button></div>}
+        {phase==='ERROR'&&<div className="scene-error" role="alert"><p>{state.error&&t(state.error)}</p><button className="secondary-button" onClick={()=>api.current?.retry()}><RotateCcw size={16}/> {t('다시 시도')}</button></div>}
       </div>
     </section></main>
     {prologue!=='none'&&<Prologue ready={phase==='PROLOGUE'||prologue==='closing'} closing={prologue==='closing'} onStart={startReading}/>}
     {guide!==0&&<Guide step={guide} locate={guide===1?locateCard:locateArrow} onNext={nextGuide}/>}
     {detailOpen&&state.detail&&(webzines[state.detail]?<WebzineBook key={state.detail} id={state.detail} onClose={closeDetail} onOpen={openDetail}/>:posters[state.detail]?<PosterBook key={state.detail} id={state.detail} onClose={closeDetail} onOpen={openDetail}/>:details[state.detail]?.spread?<DetailBook key={state.detail} id={state.detail} onClose={closeDetail} onOpen={openDetail}/>:<DetailPanel id={state.detail} onClose={closeDetail} onOpen={openDetail}/>)}
     {/* The contents ("목차" in the header): the three chapters, each one a way in; the one being read is marked. */}
-    {modal==='about'&&<Modal title="목차" className="contents-modal" onClose={closeModal}>
-      <p className="contents-lead">{SITE.title} · 세 장면</p>
+    {modal==='about'&&<Modal title={t('목차')} className="contents-modal" onClose={closeModal}>
+      <p className="contents-lead">{t(SITE.title)} · {t('세 장면')}</p>
       <ol className="contents-list">{scenes.map((item,index)=><li key={item.id}>
         <button type="button" className={index===chapter?'is-current':''} aria-current={index===chapter?'page':undefined} onClick={()=>{closeModal();if(index!==chapter){noteTurn('link');api.current?.go(index);}}}>
           <span className="contents-no">0{index+1}</span>
-          <span className="contents-body"><small>{item.english}</small><strong>{item.title}</strong><em>{item.intro.replace(/\n/g,' ')}</em></span>
-          {index===chapter?<span className="contents-here">읽는 중</span>:<ArrowRight size={18} aria-hidden="true"/>}
+          <span className="contents-body"><small>{item.english}</small><strong>{t(item.title)}</strong><em>{t(item.intro).replace(/\n/g,' ')}</em></span>
+          {index===chapter?<span className="contents-here">{t('읽는 중')}</span>:<ArrowRight size={18} aria-hidden="true"/>}
         </button>
       </li>)}</ol>
     </Modal>}

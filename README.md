@@ -49,7 +49,7 @@ React 19 + TypeScript + Vite + Three.js / React Three Fiber / Drei + GSAP + Zust
 - `src/bookPreparation.ts`: 첫 장 텍스처의 단계별 GPU 업로드, 셰이더·실제 렌더 준비, 취소된 초기화 차단.
 - `src/Intro.tsx`, `src/introPlayback.ts`: 표지 정지 화면(영상 첫 프레임) → 영상 재생(첫 1초 표지 유지) → 준비된 실제 책으로 전환.
 - `src/analytics.ts`: GA4 이벤트(장 보기·이야기 열기/닫기·책장 넘김 방법·링크 클릭·인트로 완료·마무리)와 화면을 따라가는 주소 해시(`#farmer`, `#cooks/cook-02`, `#ending`). 해시가 붙은 주소로 들어오면 인트로 뒤 그 장·이야기가 열린다. `VITE_GA_ID`가 있을 때만 인트로가 끝난 뒤 gtag.js를 불러온다. GA4 향상된 측정의 "브라우저 기록 이벤트 기반 페이지 변경"은 꺼 두어야 페이지 조회가 두 번 세지 않는다.
-- `src/seo.ts` + `vite.config.ts`의 `book-seo` 플러그인: 빌드할 때 책 데이터로 글 버전(전체 장·이야기·레시피·자주 묻는 질문, "글로 읽기"로 열림), JSON-LD(WebSite·WebPage·책과 장·Recipe 3개·FAQPage), 메타·Open Graph·Twitter 태그를 `index.html`에 넣고 `robots.txt`·`llms.txt`·`sitemap.xml`을 만든다. 자바스크립트를 실행하지 않는 검색·AI 크롤러도 이야기 전체를 읽는다. `VITE_SITE_URL`(배포 주소)이 있어야 canonical·sitemap·절대 URL이 생긴다(`.env.example`).
+- `src/seo.ts` + `vite.config.ts`의 `book-seo` 플러그인: 빌드할 때 책 데이터로 글 버전(전체 장·이야기·레시피·자주 묻는 질문; 화면에는 숨겨져 있고 화면 읽기 프로그램과 검색 엔진이 읽음), JSON-LD(WebSite·WebPage·책과 장·Recipe 3개·FAQPage), 메타·Open Graph·Twitter 태그를 `index.html`에 넣고 `robots.txt`·`llms.txt`·`sitemap.xml`을 만든다. 자바스크립트를 실행하지 않는 검색·AI 크롤러도 이야기 전체를 읽는다. `VITE_SITE_URL`(배포 주소)이 있어야 canonical·sitemap·절대 URL이 생긴다(`.env.example`).
 - `src/site.ts`: 매거진의 이름·표지 문구·소개 문구(그대로 옮긴 것).
 - `src/standingBook.tsx`, `src/standingLayout.ts`, `src/standingView.ts`: 세로 휴대폰에서 책을 90°로 세워 보여 주는 화면(윗장에 배경, 아랫장에 카드, 아랫장이 올라가며 넘김).
 - `src/artSource.ts`: 미리 변환한 WebP 일러스트 경로.

@@ -159,15 +159,21 @@ export function StandingGluedCard({parent,...card}:StandingCardProps&{parent:Lay
  useEffect(()=>{const group=ref.current;group.userData.glued=true;hinges.current.set(key,group);return()=>{hinges.current.delete(key);};},[key,hinges]);
  return <group ref={ref} position={[place.x-base.x,surfaceY(place.z)+(place.lift??0)-surfaceY(base.z)-(base.lift??0),place.z-base.z]}><StandingFace {...card}/></group>;
 }
+/** Standing cards lean back this much (radians) toward the camera, which looks down at 34° (src/standingView.ts): standing straight up
+ *  they looked about a sixth shorter than they are and the scene pressed flat; leaned, about 95%. The lean fades as a card folds, so a
+ *  folded card still lies flat on the page. */
+export const CARD_LEAN=14*Math.PI/180;
 export function StandingLayer({layer,texture,hinges,onClick,turn,progress,incoming=false,rank=0,children}:StandingCardProps&{turn:StandingTurn;progress:RefObject<{value:number}>;rank?:number;children?:ReactNode}){
  const place=standingPlacement(layer);
- const anchor=useRef<Group>(null!),ref=useRef<Group>(null!);
+ const anchor=useRef<Group>(null!),ref=useRef<Group>(null!),lean=useRef<Group>(null!);
  const key=`${incoming?'incoming:':''}${layer.id}:right`;
  useEffect(()=>{const group=ref.current;hinges.current.set(key,group);return()=>{hinges.current.delete(key);};},[key,hinges]);
  useFrame(()=>{
   if(turn){const p=progress.current.value;ref.current.rotation.x=incoming?standingFoldIn(p):standingFoldOut(p);anchor.current.visible=incoming?p>.78:p<.3;anchor.current.userData.staged=false;}else{anchor.current.userData.staged=incoming;anchor.current.visible=!incoming;}
   // Folded cards stack, front ones on top (src/popupStack.ts); upright the lift is zero.
   anchor.current.position.set(place.x,surfaceY(place.z)+(place.lift??0)+flatLift(rank,ref.current.rotation.x),place.z);
+  // The hinge goes from 0 (standing) to −π/2 (flat); the lean is full standing and none flat.
+  lean.current.rotation.x=-CARD_LEAN*Math.max(0,Math.min(1,1+ref.current.rotation.x/(Math.PI/2)));
  });
- return <group ref={anchor}><group ref={ref}><StandingFace layer={layer} texture={texture} onClick={onClick} incoming={incoming}/>{children}</group></group>;
+ return <group ref={anchor}><group ref={ref}><group ref={lean}><StandingFace layer={layer} texture={texture} onClick={onClick} incoming={incoming}/>{children}</group></group></group>;
 }

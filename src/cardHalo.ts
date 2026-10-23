@@ -10,12 +10,13 @@
  */
 import gsap from 'gsap';
 import { CanvasTexture, DoubleSide, MeshBasicMaterial, SRGBColorSpace, type Texture } from 'three';
-import { scenes, type Layer } from './story';
+import { scenes, useStory, type Layer, type Phase } from './story';
 
 // A soft glow spreading wide around the card, made small (`size` px, so it stays soft) and starting right at the cut-out's edge (`edge`:
 // the band along the outline, as a fraction of `size`). `reach`: the least width of the glow in world units, so a small card (the fly
 // swatter on the phone) still glows visibly.
-export const HALO={color:'#ffc768',size:128,pad:.1,spread:.018,edge:.012,reach:.05,boost:1.7,peak:1,rest:.4,seen:.18};
+// One glow for every spread: chapter 1's deep orange with its stronger rim (it reads on the pale paintings too).
+export const HALO={color:'#ff9418',size:128,pad:.1,spread:.018,edge:.012,reach:.05,boost:2.4,peak:1,rest:.7,seen:.32};
 /** A spread's own glow (src/story.ts `halo`): a deeper colour, a stronger rim and rest where the default would vanish into its painting. */
 export type HaloTone={color:string;boost:number;rest:number;seen:number};
 export function haloTone(layer:Layer):HaloTone{
@@ -88,10 +89,20 @@ export function loadHalo(texture:Texture,tone:Pick<HaloTone,'color'|'boost'>=HAL
 }
 /** The halo if it was made already (none is made here). */
 export const madeHalo=(texture:Texture)=>halos.get(texture);
-/** Waits for an idle moment (never a frame that is drawing a turn). */
+/** While the book moves (a spread loading, a page turning or dragged, cards rising), work that can wait does. */
+const MOVING=new Set<Phase>(['LOADING_PAGE','TURNING_PAGE','DRAGGING_PAGE','OPENING_POPUP']);
+/** The book is still: nothing loading or moving and no animation running (cards rising, a glow blinking), so the canvas draws nothing
+ *  and a long task costs no frame. (All the book's animations end; the card hop repeats once.) */
+export const bookStill=()=>!MOVING.has(useStory.getState().phase)&&!gsap.globalTimeline.getChildren(false,true,true).length;
+/** Waits for an idle moment while the book is still. requestIdleCallback's timeout (so the work is not put off for ever on a busy page)
+ *  used to run the work in the middle of a turn: a halo made then (tens of milliseconds) stalled the turn (2 → 3 notably, whose next
+ *  spread has many cards), and right after one it stuttered the landing spread's blinking glow. So stillness is checked again after it
+ *  and the wait goes on until the book is still. */
 export const idle=()=>new Promise<void>(resolve=>{
  const request=(window as unknown as {requestIdleCallback?:(f:()=>void,o?:{timeout:number})=>number}).requestIdleCallback;
- if(request)request(()=>resolve(),{timeout:600});else window.setTimeout(resolve,120);
+ const attempt=()=>{const go=()=>{if(!bookStill()){window.setTimeout(attempt,250);return;}resolve();};
+  if(request)request(go,{timeout:600});else window.setTimeout(go,120);};
+ attempt();
 });
 /** Makes a halo in idle time, then calls back. */
 export function makeHaloSoon(texture:Texture,ready:(halo:Halo)=>void,tone?:HaloTone,extent?:number,reach?:number){void idle().then(()=>loadHalo(texture,tone,extent,reach)).then(ready).catch(()=>{});}

@@ -14,7 +14,14 @@ export function attachedPaperPose(x:number,y:number,z:number,progress:number,dir
  return {position:[point[0]+normal[0]*offset,point[1]+normal[1]*offset+.018,z] as [number,number,number],rotation:angle+(face===-1?Math.PI:0),normal};
 }
 export function pageReveal(progress:number,start:number,end:number){const t=Math.max(0,Math.min(1,(progress-start)/(end-start)));return t*t*(3-2*t);}
+/** The turning sheet stands upright at this point of a turn (its angle is progress × π). */
+export const PAGE_UPRIGHT=.5;
+/** The spread being left folds its cards flat by this point, before the sheet stands upright and its other side comes into view. */
+export const FOLDED_BY=.42;
+/** A card's fold during a turn (0 standing, −π/2 flat on its page). The spread being left folds flat by FOLDED_BY; the next spread's
+ *  cards lie flat until the sheet is upright and rise as it lands, so the two spreads' cards never stand at once (the old ones used to
+ *  stand until 70% of the turn and the new ones to show from 35%, so both showed around the upright sheet, the old ones from behind). */
 export function popupFoldAngle(progress:number,incoming=false){
  const p=Math.max(0,Math.min(1,progress));
- return -Math.PI/2*(incoming?1-p:Math.min(p/.7,1));
+ return -Math.PI/2*(incoming?1-Math.max(0,(p-PAGE_UPRIGHT)/(1-PAGE_UPRIGHT)):Math.min(p/FOLDED_BY,1));
 }
