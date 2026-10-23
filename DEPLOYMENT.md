@@ -32,6 +32,8 @@
 2. `main`에 올리면 `.github/workflows/deploy-pages.yml`이 `npm ci` → `npm run build` → `dist`를 Pages에 배포합니다. Actions 탭에서 수동 실행(Run workflow)도 됩니다.
 3. 선택: GA4를 쓰려면 Settings → Secrets and variables → Actions → **Variables**에 `VITE_GA_ID`를 추가합니다.
 
+웹진(https://lxwebzine.hankyung.com/2026-1/team5)이 기본 주소입니다: `.env.production`에 `VITE_SITE_URL`로 적혀 있어, 그냥 `npm run build`해도 공유 미리보기 사진(og:image)과 canonical·sitemap이 그 전체 주소로 들어갑니다(카카오톡·페이스북은 경로만 적힌 사진을 못 가져옵니다). 빌드 환경에서 `VITE_SITE_URL`을 주면 그쪽이 우선합니다(GitHub Pages 워크플로처럼).
+
 다른 사이트에 올릴 때는 `npm run build`로 만든 `dist` 폴더 전체를 그 사이트의 원하는 경로에 그대로 올리면 됩니다. 검색용 절대 주소(canonical, og:image, sitemap)는 빌드할 때 `VITE_SITE_URL=그 사이트 주소`로 맞춥니다.
 
 서버 함수는 쓰지 않으므로 Pages에서도 그대로 동작합니다. 책의 언어는 기본이 한국어이고, 읽는 사람이 설정(오른쪽 위 톱니)에서 고르면 그 브라우저에 기억됩니다.

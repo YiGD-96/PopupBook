@@ -476,3 +476,8 @@ node scripts/render-intro.mjs
 - 바꾼 것: ① 첫 장 그림을 three.js 없이 먼저 받기 시작(`src/artFetch.ts`, assets.ts가 그 다운로드를 이어받음) — 영상이 재생 중이고 멈출 지점+0.3초까지 받아졌을 때, 책 코드도 그때 함께(재생 시작 때 받게 했더니 5Mbps에서 영상이 더 끊김). 책 마운트도 같은 시점부터. ② phone은 그리지도 않는 인쇄 페이지(page-N-left/right, 640KB)를 안 받음(가로로 돌리면 그때 받음). ③ 넘김용 바닥 그림(-stage-sheet)은 버튼 전 업로드에서 빼고 프롤로그 중에. ④ 인트로 영상은 멈추는 지점 + 0.25초까지만 인코딩(뒤는 한 번도 안 보이던 부분): phone H.264 3.35→2.32MiB, 데스크톱 H.264 3.74→2.32MiB. 정지 사진(book-open)은 그대로 전체 타임라인 마지막.
 - 렌더 스크립트는 영상을 `*.partial.mp4`로 쓰고 다 되면 바꿔 넣음(렌더 중 dev 서버가 반쯤 쓴 파일을 내보내 인트로가 건너뛰어졌던 일). Windows에서 열린 파일이라 rename이 막히면 복사.
 - A/B(직전 push 624054f 빌드와 번갈아, phone 393×852, CPU 정상): 버튼까지 5Mbps 11.3s→9.4s, 12Mbps 6.4s→5.8s; 영상 멈춘 뒤 버튼까지 6.5→4.6s, 2.3→1.6s; 영상 끊김 중앙값은 같음.
+
+**(2026-10-23) 웹진 점검 안내 — 공유 미리보기 사진·500KB:**
+- og:image가 경로만(`/media/og-image.jpg`) 들어가 카카오톡·페이스북 미리보기에 사진이 안 나온다는 안내: 웹진에 올린 빌드가 `VITE_SITE_URL` 없이 만들어졌기 때문. → `.env.production`(커밋함, 비밀 없음)에 `VITE_SITE_URL=https://lxwebzine.hankyung.com/2026-1/team5`. 그냥 `npm run build`해도 og:image·og:url·canonical·JSON-LD·sitemap이 전체 주소. GitHub Pages 워크플로처럼 빌드 환경에서 주면 그쪽이 우선.
+- 500KB 넘는 사진: `book-materials/cover.webp` 680KB → 품질 88로 444KB(눈으로 차이 없음, `book-materials.mjs` QUALITY.cover). 빌드 결과에 500KB 넘는 그림 없음.
+- 웹진에 다시 올린 뒤, 카카오톡은 예전 미리보기를 기억하므로 카카오 공유 디버거에서 캐시 초기화 필요.
