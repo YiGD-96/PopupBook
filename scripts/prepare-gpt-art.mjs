@@ -3,7 +3,7 @@
  * textures: trimmed to the painted silhouette, given the cream die-cut border of the paper cards, sized for how large the card can
  * appear, saved as WebP in public/art-raster. The backdrop is cropped to its landscape band and framed as a card with a cream border
  * on its sides and top (none at its foot).
- * Run: node scripts/prepare-gpt-art.mjs [page-N]   (prints each card's aspect, which src/story.ts uses for the layer size)
+ * Run: node scripts/prepare-gpt-art.mjs [page-N] [name]   (prints each card's aspect, which src/story.ts uses for the layer size)
  */
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -71,28 +71,15 @@ const art=[
  {dir:'page-3',name:'my-recipe-book',src:'new/new2/my-recipe-book',width:700,clean:150},
  {dir:'page-3',name:'magnet-gnocchi',src:'new/new2/magnet-carrot-gnocchi',width:420,clean:90,plain:true},
  {dir:'page-3',name:'magnet-gimbap',src:'new/new2/magnet-carrot-gimbap',width:420,clean:90,plain:true},
- {dir:'page-3',name:'magnet-cheese-jeon',src:'new/new2/magnet-carrot-cheese-jeon',width:420,clean:90,plain:true},
+ {dir:'page-3',name:'magnet-jeon',src:'new/new2/square-magnet-carrot-jeon',width:420,clean:90,plain:true},
  {dir:'page-3',name:'magnet-blank',src:'new/new2/magnet-blank',width:420,clean:90,plain:true},
- // Earlier kitchen pieces, no longer in the book (kept so their WebP files can be rebuilt).
- {dir:'page-3',name:'prep-table',src:'new/prep-table',width:1500,clean:110,plain:true,cast:{dy:.1,blur:.011,alpha:.55,rows:.8}},
- {dir:'page-3',name:'recipe-booklet',src:'new/recipe-booklet',width:760,clean:150,cast:{dy:.045,blur:.008,alpha:.6}},
- {dir:'page-3',name:'note-gnocchi',src:'note-carrot-gnocchi',width:520,clean:90,plain:true},
- {dir:'page-3',name:'note-gimbap',src:'note-carrot-gimbap',width:520,clean:90,plain:true},
- {dir:'page-3',name:'note-cheese-jeon',src:'note-carrot-cheese-jeon',width:520,clean:90,plain:true},
- {dir:'page-3',name:'note-blank',src:'new/note-blank',width:520,clean:90,plain:true},
  // The earlier notes are no longer on the wall; their pictures still illustrate the recipes in the structured data (src/seo.ts).
  {dir:'page-3',name:'note-rape',src:'new/note-carrot-rape',width:520,clean:90,plain:true},
  {dir:'page-3',name:'note-soup',src:'new/note-carrot-soup',width:520,clean:90,plain:true},
  {dir:'page-3',name:'note-pickle',src:'new/note-carrot-pickles',width:520,clean:90,plain:true},
  {dir:'page-3',name:'note-burger',src:'new/note-carrot-burger',width:620,clean:90,plain:true},
- {dir:'page-3',name:'note-roast',src:'new/note-carrot-roast',width:520,clean:90,plain:true},
- {dir:'page-3',name:'note-juice',src:'new/note-carrot-juice',width:520,clean:90,plain:true},
- {dir:'page-3',name:'dish-rape',width:480},
+ // The soup is still drawn on the intro film's journal page (src/film.tsx).
  {dir:'page-3',name:'dish-soup',width:520},
- {dir:'page-3',name:'dish-pickle',width:360},
- {dir:'page-3',name:'dish-plate',width:520,shadow:{pad:.1,spread:.85,alpha:.5}},
- {dir:'page-3',name:'dish-juice',width:400,shadow:{pad:.07,spread:.8,alpha:.5}},
- {dir:'page-3',name:'dish-burger',width:480,shadow:{pad:.1,spread:.85,alpha:.5}},
 ];
 const CREAM='#fff9e9';
 /**
@@ -191,9 +178,9 @@ async function backdrop(file,width,{top,bottom,left=0,right,overlays=[],widen}){
  const card=await sharp({create:{width:w,height:h,channels:4,background:CREAM}}).composite([{input:round(w,h,radius),blend:'dest-in'},{input:painted,left:border,top:border}]).png().toBuffer();
  return {image:sharp(card),w,h};
 }
-const only=process.argv[2]; // e.g. "page-3": prepare just that page's art
+const only=process.argv[2],name=process.argv[3]; // e.g. "page-3": prepare just that page's art; "page-3 magnet-jeon": just that card
 for(const item of art){
- if(only&&item.dir!==only)continue;
+ if((only&&item.dir!==only)||(name&&item.name!==name))continue;
  let file=path.join(project,'art-src/gpt',item.dir,`${item.src??item.name}.png`);
  if(item.stage){
   const flat=item.stage==='page',floor=item.floor==='farm'?await farmFloor(sharp,project,1446,1080,{top:0}):item.floor==='kitchen'?await oakFloor(sharp,project,1446,1080):await pathFloor(sharp,project,1446,1080,{widenRight:{dx:.12,u0:.62,v0:.42,v1:1}});

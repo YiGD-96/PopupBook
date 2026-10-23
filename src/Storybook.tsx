@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode, type RefObject } from 'react';
 import { Canvas, advance, useFrame, useThree } from '@react-three/fiber';
-import { Box3, Group, Mesh, Texture, PerspectiveCamera, Vector3, WebGLRenderTarget, DoubleSide, type MeshBasicMaterial } from 'three';
+import { Box3, Group, Mesh, Texture, PerspectiveCamera, Vector3, WebGLRenderTarget, type MeshBasicMaterial } from 'three';
 import gsap from 'gsap';
 import { loadTexture, loadScene, readyScene } from './assets';
 import { type Director, type Layer, scenes, useStory, playSound } from './story';
@@ -153,6 +153,8 @@ function Book({onReady,onFailure}:{onReady:(director:Director)=>void;onFailure:(
    const queue=[...Object.values(art),...['left','right'].map(side=>paperRef.current[`page-${target}-${side}`]).filter(Boolean)];
    // The halos come first (a turn soon after needs them most), then the pictures one upload at a time.
    const halosReady=prepareHalos(art,target);
+   // Uploads go on while the landed spread's glow blinks (a page turned before they are done would stall at its start, which shows far
+   // more than a hitch in a blink); the halos, a longer task each, wait for a still book (src/cardHalo.ts idle).
    const step=()=>{if(!mounted.current||token!==generation.current||useStory.getState().phase!=='EXPLORING')return;const texture=queue.shift();
     // Last, the next spread's card materials are bound to their (shared) shader program, so its first frame in a turn is cheap.
     if(!texture){const cards=scenes[target].layers.map(l=>art[l.src]).filter(Boolean).map(cardMaterial);void halosReady.then(async halos=>{if(!mounted.current||token!==generation.current||useStory.getState().phase!=='EXPLORING')return;warmMaterials(gl,world,camera,[...cards,...halos]);
@@ -253,9 +255,14 @@ function Book({onReady,onFailure}:{onReady:(director:Director)=>void;onFailure:(
  }),[]);
  useEffect(()=>{mounted.current=true;const current=++generation.current;void prepareStartup(current).catch(error=>{if(mounted.current&&current===generation.current)fail(error);});const director:Director={reveal:(standingFilmed,hold)=>void reveal(standingFilmed,hold),rise,go:n=>void go(n),finish:()=>{if(useStory.getState().phase==='EXPLORING'&&useStory.getState().chapter===scenes.length-1)useStory.getState().set({phase:'ENDING',dialog:false});},interact,previewTurn,settleTurn:commit=>void settle(commit),retry,locate,highlight:()=>{if(useStory.getState().phase==='EXPLORING')pulseHalos(clickableCards(useStory.getState().chapter));}};onReady(director);return()=>{mounted.current=false;generation.current++;timeline.current?.kill();pending.current?.();hinges.current.forEach(g=>gsap.killTweensOf(g.scale));document.body.style.cursor='';};},[]);
  const paper=paperRef.current;
- const moving=turn!==null;const leftChapter=moving&&turn.direction===-1?turn.to:chapter;const rightChapter=moving&&turn.direction===1?turn.to:chapter;const front=moving?paper[`page-${turn.direction===1?turn.from:turn.to}-right`]:null;const back=moving?paper[`page-${turn.direction===1?turn.to:turn.from}-left`]:null;
- // The turning sheet keeps its last pictures between turns (hidden); before the first turn it holds the first spread's right page.
- if(moving&&front&&back)lastSheet.current={front,back,direction:turn.direction};
+ // Under a turn, the page the sheet uncovers is the next spread's, once its picture is in: on the first turn to a spread it is still loading
+ // for a moment, and the page stays the current one meanwhile (it used to be left out, so the floor vanished; the sheet waits too).
+ const moving=turn!==null;const leftChapter=moving&&turn.direction===-1&&paper[`page-${turn.to}-left`]?turn.to:chapter;const rightChapter=moving&&turn.direction===1&&paper[`page-${turn.to}-right`]?turn.to:chapter;const front=moving?paper[`page-${turn.direction===1?turn.from:turn.to}-right`]:null;const back=moving?paper[`page-${turn.direction===1?turn.to:turn.from}-left`]:null;
+ // The turning sheet keeps its last pictures between turns (hidden); before the first turn it holds the first spread's right page. It shows
+ // only once this turn's own pictures are in: a turn started before the next spread's page had loaded used to show the last turn's (after
+ // 1 → 2, chapter 1's dirt floor lying on the right page while 2 → 3 began).
+ const sheetReady=moving&&!!front&&!!back;
+ if(sheetReady)lastSheet.current={front,back,direction:turn.direction};
  else if(!lastSheet.current&&paper['page-0-right'])lastSheet.current={front:paper['page-0-right'],back:paper['page-0-right'],direction:1};
  const sheet=lastSheet.current;
  if(!materials.inside)return <Camera standing={standing}/>;
@@ -282,7 +289,7 @@ function Book({onReady,onFailure}:{onReady:(director:Director)=>void;onFailure:(
  return <><Camera/><DeskFog/><DeskBackdrop materials={materials}/><group>
  <OpenCase materials={materials}/>
  {paper[`page-${leftChapter}-left`]&&<PrintedPage texture={paper[`page-${leftChapter}-left`]} edge={materials['paper-edge']} left/>}{paper[`page-${rightChapter}-right`]&&<PrintedPage texture={paper[`page-${rightChapter}-right`]} edge={materials['paper-edge']}/>}
- {sheet&&<TurningPage front={sheet.front} back={sheet.back} progress={progress} direction={sheet.direction} visible={moving}/>}
+ {sheet&&<TurningPage front={sheet.front} back={sheet.back} progress={progress} direction={sheet.direction} visible={sheetReady}/>}
  {/* One group, keyed by chapter: when a turn ends the incoming cards stay mounted and become the spread's own (no rebuild). */}
  <group>{spreadCards(chapter,textures,{hinges,onClick:interact,turn,progress})}
  {turn&&turn.to!==chapter?spreadCards(turn.to,turn.incoming,{hinges,onClick:interact,turn,progress},true):staged&&staged.to!==chapter?spreadCards(staged.to,staged.art,{hinges,onClick:interact,turn:null,progress},true):null}</group>
@@ -331,7 +338,13 @@ function ContextMonitor({onFailure}:{onFailure:()=>void}){const {gl}=useThree();
 export function preloadBook(){
  void Promise.all([loadScene(0),...['left','right'].map(side=>loadTexture(`page-0-${side}`)),...OPEN_BOOK_MATERIALS.map(name=>loadTexture('book-'+name))]).catch(()=>{});
 }
+/** A tap on the book that hits no picture closes what floats over it without a backdrop: the closing message (ENDING), which hands the
+ *  last spread back, and a story's side panel (src/DetailPanel.tsx). The story books have their own backdrop (src/outsideTap.ts). */
+function closeOnMiss(){const s=useStory.getState();if(s.phase==='ENDING')s.set({phase:'EXPLORING'});else if(s.detail&&s.phase==='EXPLORING')s.set({detail:null});}
 export default function Storybook({onReady,onFailure}:{onReady:(director:Director)=>void;onFailure:()=>void}){
  // The canvas resolution lives here: R3F re-applies the dpr prop on every render, so the governor's choice (FramePacer) is the prop.
- const [dpr,setDpr]=useState(()=>Math.min(window.devicePixelRatio,2));
- return <Canvas frameloop="never" flat shadows={false} camera={{position:[...BOOK_CAMERA_POSITION],fov:30,near:.1,far:70}} dpr={dpr} gl={{antialias:true,alpha:true,powerPreference:'high-performance'}}><FramePacer onDpr={setDpr}/><Book onReady={onReady} onFailure={onFailure}/></Canvas>;}
+ // Drawn at the screen's own sharpness up to 2× (a large screen at 3× costs too much), and up to 3× on a phone held upright: its canvas is
+ // small (an iPhone at 3× draws about what a laptop does at 1.5×), and at 2× the browser stretched the picture and blurred the small
+ // handwriting on the cards (chapter 3's fridge notes). FramePacer still steps it down if frames come late.
+ const [dpr,setDpr]=useState(()=>Math.min(window.devicePixelRatio,typeof matchMedia==='function'&&matchMedia(STANDING_QUERY).matches?3:2));
+ return <Canvas frameloop="never" flat shadows={false} camera={{position:[...BOOK_CAMERA_POSITION],fov:30,near:.1,far:70}} dpr={dpr} gl={{antialias:true,alpha:true,powerPreference:'high-performance'}} onPointerMissed={closeOnMiss}><FramePacer onDpr={setDpr}/><Book onReady={onReady} onFailure={onFailure}/></Canvas>;}

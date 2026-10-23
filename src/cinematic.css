@@ -8,10 +8,10 @@
 .cinematic-reader .reader-arrow{top:50%;backdrop-filter:none;background:transparent;border:0;box-shadow:none;width:52px;height:62px;border-radius:0;color:#797862}
 .cinematic-reader .reader-arrow svg{width:28px;height:28px;stroke-width:1.25}
 .cinematic-reader .reader-arrow:disabled{opacity:.25}
-.cinematic-reader .hero-copy .narration{left:0;right:220px;bottom:20px;width:auto;max-width:none;display:flex;align-items:center;gap:13px;backdrop-filter:none;background:none;border:0;border-radius:0;box-shadow:none;padding:0}
-.cinematic-reader .narration-label{white-space:nowrap;margin:0;font-size:9px}
-.cinematic-reader .narration p{font-size:10px;line-height:1.8}
-.cinematic-reader .hero-copy .interaction-button{bottom:12px;background:none;font-size:11px;min-height:42px;padding:0 8px}
+
+
+
+
 .cinematic-reader .static-cover,.cinematic-reader .static-spread,.cinematic-reader .static-spread img{filter:none;box-shadow:none}
 .cinematic-reader .static-cover{transform:translate(-50%,-50%)}
 .cinematic-reader .static-spread{transform:perspective(1200px) rotateX(15deg)}
@@ -31,25 +31,23 @@
  .cinematic-reader .site-header{left:18px;right:18px;height:62px;gap:12px}
  .cinematic-reader .site-header .brand{font-size:17px;gap:8px}
  /* The book takes the full height (nothing sits under it any more), so it stands in the middle of the screen and the intro film is not
-    cut off; only the ending keeps room below for its card. */
+    cut off (the closing note comes up over it, in the middle). */
  .cinematic-reader .hero .book-stage .canvas-wrap{inset:0 -18px 0}
- .cinematic-reader .hero.is-ending .book-stage .canvas-wrap{bottom:122px}
  .cinematic-reader .reader-arrow{top:calc(46% + var(--standing-drop,0px));width:38px;height:52px}
  .cinematic-reader .reader-arrow svg{width:22px;height:22px}
  /* The upright page now reaches the screen's sides (src/standingView.ts): the arrows lie on the painting, so they carry a soft shadow. */
  .cinematic-reader .book-stage .reader-arrow{color:#fff3dc}.cinematic-reader .reader-arrow svg{stroke-width:2;filter:drop-shadow(0 1px 2px rgba(20,10,4,.75)) drop-shadow(0 0 6px rgba(20,10,4,.45))}
- .cinematic-reader .hero-copy .narration{left:0;right:0;bottom:59px;width:100%;max-width:none;padding:8px 0;display:block}
- .cinematic-reader .narration-label{margin-bottom:5px}
- .cinematic-reader .narration p{font-size:11px}
- .cinematic-reader .hero-copy .interaction-button{bottom:16px;font-size:10px}
+ 
+ 
+ 
+ 
  .cinematic-reader .reader-prev{left:-11px}.cinematic-reader .reader-next{right:-11px}
  .cinematic-reader .hero-copy{animation-duration:.3s}
 }
 @media(max-height:680px) and (max-width:760px){
- .cinematic-reader .hero.is-ending .book-stage .canvas-wrap{bottom:116px}
  .cinematic-reader .site-header{height:55px}
- .cinematic-reader .hero-copy .narration{bottom:50px}
- .cinematic-reader .hero-copy .interaction-button{bottom:9px}
+ 
+ 
 }
 /* Story panel opened by a clicked pop-up object: beside the book on wide screens, a sheet from the bottom on phones. */
 .detail-panel{position:fixed;z-index:30;top:88px;right:96px;bottom:28px;width:min(380px,34vw);display:flex;background:#fbf6ea;border:1px solid #eadfc8;border-radius:18px;box-shadow:0 18px 40px rgba(94,71,56,.14);animation:detail-in .32s ease-out both;color:#5e4738}
@@ -78,9 +76,9 @@
 @keyframes detail-in{from{opacity:0;transform:translateX(18px)}to{opacity:1;transform:none}}
 /* A story shown as one picture (details.ts `sheet`, the recipe call poster): the poster is the whole panel, sized to fit the screen's height,
    and its buttons are links laid over it. */
-.detail-panel.is-sheet{bottom:auto;width:min(400px,34vw,calc((100svh - 116px) * .75));background:#f3e3c6;border:0;border-radius:6px;overflow:hidden}
+.detail-panel.is-sheet{bottom:auto;width:min(400px,34vw,calc((100svh - 116px) * .75));background:none;border:0;border-radius:0;box-shadow:none}
 .detail-sheet{position:relative;width:100%;margin:0}
-.detail-sheet img{display:block;width:100%;height:auto}
+.detail-sheet img{display:block;width:100%;height:auto;filter:drop-shadow(0 10px 22px #3c281440)}
 .detail-sheet-link{position:absolute;border-radius:4px;transition:background .15s}
 .detail-sheet-link:hover{background:#a9613f1f}
 .detail-sheet-link:focus-visible{outline:3px solid #a9613f;outline-offset:2px}
@@ -88,48 +86,44 @@
 @media(max-width:760px){
  .detail-panel{top:auto;left:10px;right:10px;bottom:10px;width:auto;max-height:64svh;border-radius:20px;animation-name:detail-up}
  .detail-body{padding:26px 20px 22px}
- .detail-panel.is-sheet{width:min(calc(100% - 20px),calc((100svh - 90px) * .75));max-height:none;margin:0 auto;border-radius:6px}
+ /* bottom again: the wide-screen .is-sheet rule (bottom:auto) is more specific than the phone's .detail-panel, and with top and bottom both
+    auto the recipe call opened below the screen. */
+ .detail-panel.is-sheet{bottom:10px;width:min(calc(100% - 20px),calc((100svh - 90px) * .75));max-height:none;margin:0 auto;border-radius:6px}
  @keyframes detail-up{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:none}}
 }
 /* Magazine brand (gujwa-carrot.vercel.app): logo, then the name after a thin rule. */
 .cinematic-reader .site-header .brand{gap:16px;font-size:15px;font-weight:600;letter-spacing:-.02em;color:#186049}
 .brand-logo{display:block;height:26px;width:auto}
 .brand-name{padding-left:16px;border-left:1px solid #d8d2bd;white-space:nowrap}
-/* Ending card (the team's torn paper note with a pin): real text and buttons over one decoration, the paper and its pin
-   (public/media/ending-paper.jpg cut to its torn outline by ending-paper-mask.png), which never takes a click. Everything inside scales
-   with the card width (cqw: 1% of the width inside the padding, 2.163px on the 250px card), so a narrower card on small phones keeps
-   the same layout instead of overflowing. */
-.reader-mode .is-ending .hero-copy{width:250px;container-type:inline-size;padding:32.2px 18.8px 17.2px 14.9px;border:0;border-radius:0;text-align:left;backdrop-filter:none;background:none;box-shadow:none}
-.reader-mode .is-ending .hero-copy::before{content:'';position:absolute;inset:0;z-index:-1;background:url(/media/ending-paper.jpg) 0 0/100% 100% no-repeat;-webkit-mask:url(/media/ending-paper-mask.png) 0 0/100% 100% no-repeat;mask:url(/media/ending-paper-mask.png) 0 0/100% 100% no-repeat;pointer-events:none}
-.reader-mode .is-ending .hero-copy>.eyebrow{display:flex;justify-content:flex-start;margin:0 0 0 2.08cqw;font:700 max(7px,2.87cqw)/4.16cqw Georgia,serif;letter-spacing:.07em;color:#1f260c}
-.reader-mode .is-ending h1{margin:3.73cqw 0 0 2.08cqw;font-family:'Nanum Pen Script',cursive;font-size:13.87cqw;font-weight:400;line-height:13.78cqw;letter-spacing:.1em;color:#151a08}
+/* Ending card (the team's pinned paper design): real text and buttons over one decoration, the aged paper with its pin and carrot
+   drawing (public/media/ending-card.jpg cut to its outline by ending-card-mask.png), which never takes a click. Everything inside
+   scales with the card width (cqw: 1% of the width inside the padding, 2.192px on the 250px card). */
+.reader-mode .is-ending .hero-copy{width:250px;container-type:inline-size;padding:163px 15.8px 13.5px 15px;border:0;border-radius:0;text-align:center;backdrop-filter:none;background:none;box-shadow:none}
+.reader-mode .is-ending .hero-copy::before{content:'';position:absolute;inset:0;z-index:-1;background:url(/media/ending-card.jpg) 0 0/100% 100% no-repeat;-webkit-mask:url(/media/ending-card-mask.png) 0 0/100% 100% no-repeat;mask:url(/media/ending-card-mask.png) 0 0/100% 100% no-repeat;pointer-events:none}
+.reader-mode .is-ending h1{margin:0;font-family:'Pretendard Variable',Pretendard,'Noto Sans KR','Noto Sans SC',sans-serif;font-size:11.59cqw;font-weight:800;line-height:13.72cqw;letter-spacing:0;color:#24130a}
 .reader-mode .is-ending h1 br{display:inline}
-.reader-mode .is-ending .hero-description{margin:3.19cqw 0 0 2.08cqw;font:7.67cqw/8.32cqw 'Nanum Pen Script',cursive;letter-spacing:0;color:#0d0a05}
-.reader-mode .is-ending .hero-description+.hero-description{margin-top:4.79cqw}
-.cinematic-reader .is-ending .hand-underline{color:#d98327}
-.reader-mode .is-ending .hero-copy>.ending-link{display:flex;width:100%;min-height:11.05cqw;margin-top:5.46cqw;padding:0 3cqw;gap:1.76cqw;border-radius:2.45cqw;background:#a9613f;box-shadow:none;font:5.92cqw 'Nanum Pen Script',cursive;color:#fdf0e4;text-decoration:none}
-.reader-mode .is-ending .hero-copy>.ending-link:hover{background:#96533a}
-.reader-mode .is-ending .hero-copy>.ending-link svg{width:6.75cqw;height:6.75cqw;margin-left:0;transform:scaleY(.6);stroke-width:1.9}
-.reader-mode .is-ending .hero-copy>.ending-restart{display:flex;width:100%;min-height:11.23cqw;margin-top:1.48cqw;padding:0 3cqw;gap:2.45cqw;border:max(1px,.46cqw) solid #a5603d;border-radius:2.45cqw;background:transparent;font:5.73cqw 'Nanum Pen Script',cursive;color:#5a2a14}
-.reader-mode .is-ending .hero-copy>.ending-restart:hover{background:#a5603d1a}
-.reader-mode .is-ending .hero-copy>.ending-restart svg{width:5.92cqw;height:5.92cqw;transform:scaleX(-1);stroke-width:2.4}
+.reader-mode .is-ending .hero-description{margin:3.15cqw 0 0;font:500 6.52cqw/7.93cqw 'Pretendard Variable',Pretendard,'Noto Sans KR','Noto Sans SC',sans-serif;letter-spacing:0;color:#2f1c10}
+.reader-mode .is-ending .hero-copy>.ending-link{display:flex;width:100%;min-height:16.33cqw;margin-top:3.83cqw;padding:0 3cqw;gap:0;border-radius:1.64cqw;background:#ab541d;box-shadow:none;font:800 8.39cqw 'Pretendard Variable',Pretendard,'Noto Sans KR','Noto Sans SC',sans-serif;color:#f9edda;text-decoration:none}
+.reader-mode .is-ending .hero-copy>.ending-link:hover{background:#984818}
+.reader-mode .is-ending .hero-copy>.ending-link svg{width:9.53cqw;height:9.53cqw;margin-left:0;stroke-width:2.6}
+.reader-mode .is-ending .hero-copy>.ending-restart{display:flex;width:100%;min-height:13cqw;margin-top:2.6cqw;padding:0 3cqw;gap:2.28cqw;border:max(1px,.55cqw) solid #a5561f;border-radius:1.64cqw;background:transparent;font:800 6.98cqw 'Pretendard Variable',Pretendard,'Noto Sans KR','Noto Sans SC',sans-serif;color:#2f1a0e}
+.reader-mode .is-ending .hero-copy>.ending-restart:hover{background:#a5561f1a}
+.reader-mode .is-ending .hero-copy>.ending-restart svg{width:8.21cqw;height:8.21cqw;transform:scaleX(-1);stroke-width:2.8}
 @media(max-width:760px){
- .reader-mode .is-ending .hero-copy{left:auto;right:0;width:250px;max-width:100%}
+ /* On a phone the closing note comes up in the middle of the screen, over the book (which keeps its place). */
+ .reader-mode .is-ending .hero-copy{left:50%;right:auto;top:50%;bottom:auto;transform:translate(-50%,-50%);width:250px;max-width:calc(100% - 32px)}
 }
-.about-art img{height:40px;transform:none}.about-art span{font-family:var(--serif);color:#186049}
-.about-chapters{list-style:none;margin:14px 0 0;padding:0;font-size:12.5px;color:#5e5a4c;line-height:2}
-.about-chapters span{display:inline-block;width:28px;font:12px Georgia,serif;color:#d98327}
+
+
+
 @media(max-width:760px){
  .cinematic-reader .site-header .brand{gap:12px;font-size:13px}
  .brand-logo{height:22px}.brand-name{padding-left:12px}
 }
 @media(max-width:420px){.brand-name{display:none}}
-/* While a detail panel is open the page arrows move out from under it: beside the panel on wide screens, above the sheet on phones. */
-.cinematic-reader.has-detail .reader-next{position:fixed;top:calc(50% - 31px);right:22px}
-@media(max-width:760px){
- .cinematic-reader.has-detail .reader-arrow{position:fixed;top:calc(36svh - 64px)}
- .cinematic-reader.has-detail .reader-prev{left:4px}.cinematic-reader.has-detail .reader-next{right:4px}
-}
+/* While a detail panel is open the next arrow moves out from under it, beside the panel on wide screens. On phones the arrows keep their
+   place in the middle of the book, story open or not (the story covers them; moving them showed as a jump while it opened and closed). */
+@media(min-width:761px){.cinematic-reader.has-detail .reader-next{position:fixed;top:calc(50% - 31px);right:22px}}
 /* A story opened as a book (src/DetailBook.tsx): the spread rises from the pop-up book, pictures left, running text right. */
 .detail-book-backdrop{position:fixed;inset:0;z-index:30;display:grid;place-items:center;padding:24px;background:rgba(62,52,40,0);perspective:1600px;transition:background .42s ease-out}
 .detail-book-backdrop.is-open{background:rgba(62,52,40,.32)}
@@ -198,12 +192,12 @@ html,body{background:#1a110b}
 .desk-air{position:absolute;inset:0;z-index:4;pointer-events:none;
  background:radial-gradient(95% 85% at 50% 46%,transparent 48%,rgba(12,7,4,.55) 100%)}
 .cinematic-reader .brand-name{color:#f1e3c8;border-left-color:rgba(255,236,205,.22)}
-.cinematic-reader .nav-link{color:#e2d0b2}.cinematic-reader .nav-link:hover{color:#f5a25a}
+
 .cinematic-reader .reader-arrow{color:#ead8b8}.cinematic-reader .reader-arrow:hover:not(:disabled){background:transparent;color:#f5a25a}
-.cinematic-reader .narration-label{color:#cdb48c}
-.cinematic-reader .narration p{color:#efe1c6}
-.cinematic-reader .has-dialog .narration-label,.cinematic-reader .has-dialog p{color:#f3c995}
-.cinematic-reader .hero-copy .interaction-button{color:#efd9b4}.cinematic-reader .hero-copy .interaction-button:hover{color:#f5a25a}
+
+
+
+
 .cinematic-reader .audio-hint,.cinematic-reader .cover-intro p{color:#cdb894}
 .cinematic-reader .cover-intro>span{color:#d9a679}.cinematic-reader .cover-intro h1{color:#f6e9d0}
 .cinematic-reader .scene-loading{background:rgba(30,18,10,.6);color:#efe1c6;border-color:rgba(255,236,205,.2)}
@@ -249,6 +243,8 @@ html,body{background:#1a110b}
 .prologue-card{width:min(600px,100%);padding:36px 24px;display:flex;flex-direction:column;align-items:center;text-align:center;animation:prologue-rise .7s cubic-bezier(.2,.7,.2,1) both;
  background:radial-gradient(closest-side,rgba(10,6,3,.78) 55%,rgba(10,6,3,0) 100%)}
 .is-closing .prologue-card{animation:none}
+/* On wide screens the pool of dark behind the words is lighter, so more of the open book shows through (phones keep it deep, for contrast). */
+@media(min-width:761px){.prologue-card{background:radial-gradient(closest-side,rgba(10,6,3,.6) 55%,rgba(10,6,3,0) 100%)}}
 .prologue-kicker{font:600 11px 'Cormorant Garamond',Georgia,serif;letter-spacing:.3em;text-transform:uppercase;color:#d9a35f}
 .prologue h2{margin:14px 0 10px;font-family:var(--serif);font-size:clamp(30px,3.6vw,46px);font-weight:400;letter-spacing:-.02em;line-height:1.25;color:#f8ead1}
 .prologue-lead{font-family:var(--serif);font-size:16px;line-height:1.75;color:#e8cfa5}
@@ -285,21 +281,42 @@ html,body{background:#1a110b}
 }
 @media(prefers-reduced-motion:reduce){.prologue,.prologue.is-closing,.prologue-card{animation:none}}
 
-/* ───────── The language switch (src/LanguageMenu.tsx) at the top right, over everything but a story or dialog. */
-.lang-menu{position:relative}
-/* Its words as large as the contents button's beside it (.top-pill): the same font, size and spacing. */
-.lang-button{display:inline-flex;align-items:center;gap:5px;min-height:32px;padding:0 11px 0 10px;border:1px solid rgba(255,236,205,.22);border-radius:999px;background:rgba(26,17,11,.55);color:#e2d0b2;font-family:inherit;font-size:12px;font-weight:400;line-height:1;letter-spacing:.04em;transition:background .2s,color .2s}
-.lang-button:hover,.lang-button[aria-expanded=true]{background:rgba(46,30,18,.85);color:#f5a25a}
-.lang-list{position:absolute;right:0;top:calc(100% + 6px);min-width:136px;margin:0;padding:6px;list-style:none;background:#2b1b10;border:1px solid rgba(255,236,205,.18);border-radius:12px;box-shadow:0 14px 34px rgba(0,0,0,.45);animation:fade .15s ease-out}
-.lang-list button{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;padding:8px 10px;border-radius:8px;background:none;font-size:13px;color:#e2d0b2;text-align:left}
-.lang-list button:hover{background:rgba(255,236,205,.08)}
-.lang-list [aria-selected=true] button{color:#f5a25a}
-/* The contents button and the language switch sit together at the top right (src/App.tsx .top-actions), level with the brand. */
+/* ───────── The settings (src/SettingsMenu.tsx): a gear at the top right, beside the contents; language and the opening inside. */
+/* The contents button and the gear sit together at the top right (src/App.tsx .top-actions), level with the brand. */
 .top-actions{position:fixed;top:20px;right:max(18px,6.2%);z-index:9;display:flex;align-items:center;gap:8px}
-.top-actions .lang-menu{position:relative;top:auto;right:auto}
 .top-pill{display:inline-flex;align-items:center;min-height:32px;padding:0 14px;border:1px solid rgba(255,236,205,.22);border-radius:999px;background:rgba(26,17,11,.55);color:#e2d0b2;font-size:12px;letter-spacing:.04em;white-space:nowrap;animation:reader-arrive .45s ease-out both;transition:background .2s,color .2s}
 .top-pill:hover{background:rgba(46,30,18,.85);color:#f5a25a}
+.top-pill:focus-visible{outline:2px solid #d9a35f;outline-offset:2px}
 @media(max-width:760px){.top-actions{top:15px;right:18px;gap:6px}.top-pill{padding:0 12px}}
+.settings-menu{position:relative}
+.top-pill.settings-button{width:32px;padding:0;justify-content:center}
+.settings-button svg{transition:transform .3s ease}.settings-button[aria-expanded=true]{background:rgba(46,30,18,.85);color:#f5a25a}.settings-button[aria-expanded=true] svg{transform:rotate(60deg)}
+.settings-panel{position:absolute;right:0;top:calc(100% + 8px);width:268px;padding:16px 16px 14px;background:#20150d;border:1px solid rgba(255,236,205,.18);border-radius:16px;box-shadow:0 18px 40px rgba(0,0,0,.45);color:#e2d0b2;animation:fade .15s ease-out}
+.settings-title{margin:0 0 12px;font-size:13px;font-weight:600;letter-spacing:.02em;color:#f1e3c8}
+.settings-section+.settings-section{margin-top:14px;padding-top:14px;border-top:1px solid rgba(255,236,205,.1)}
+.settings-section h3{margin:0 0 8px;font-size:11px;font-weight:500;letter-spacing:.06em;color:#b99b74}
+.settings-langs{display:flex;gap:6px}
+.settings-langs button{flex:1;min-height:32px;padding:0 6px;border:1px solid rgba(255,236,205,.18);border-radius:999px;background:transparent;font-size:12px;color:#e2d0b2;transition:background .2s,color .2s,border-color .2s}
+.settings-langs button:hover{background:rgba(255,236,205,.06)}
+.settings-langs button.is-on{background:#c4531f;border-color:#c4531f;color:#fff6e6}
+.settings-switch{display:flex;align-items:center;justify-content:space-between;gap:12px;cursor:pointer}
+.settings-switch span{display:flex;flex-direction:column;gap:3px}.settings-switch strong{font-size:13px;font-weight:500;color:#f1e3c8}.settings-switch small{font-size:11px;color:#a88f6c}
+.settings-switch input{position:absolute;opacity:0;width:1px;height:1px}
+.settings-switch i{position:relative;flex-shrink:0;width:38px;height:22px;border-radius:999px;background:rgba(255,236,205,.18);transition:background .2s}
+.settings-switch i::after{content:'';position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#f1e3c8;transition:transform .2s}
+.settings-switch input:checked+i{background:#c4531f}.settings-switch input:checked+i::after{transform:translateX(16px)}
+.settings-switch input:focus-visible+i{outline:2px solid #d9a35f;outline-offset:2px}
+/* Skipping the opening (src/App.tsx): one pill like the top ones, over the film and the prologue, bottom right (bottom centre on a phone). */
+.opening-skip{position:fixed;z-index:9;right:max(18px,6.2%);bottom:24px;display:flex;align-items:center;gap:10px;min-height:36px;padding:3px 3px 3px 14px;border:1px solid rgba(255,236,205,.22);border-radius:999px;background:rgba(26,17,11,.62);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);font-size:12px;color:#e2d0b2;white-space:nowrap;animation:reader-arrive .45s ease-out both}
+.opening-remember{display:inline-flex;align-items:center;gap:7px;cursor:pointer}
+.opening-remember input{position:absolute;opacity:0;width:1px;height:1px}
+.opening-remember i{display:grid;place-items:center;width:16px;height:16px;border:1px solid rgba(255,236,205,.45);border-radius:5px;color:transparent;transition:background .15s,border-color .15s,color .15s}
+.opening-remember input:checked+i{background:#c4531f;border-color:#c4531f;color:#fff6e6}
+.opening-remember input:focus-visible+i{outline:2px solid #d9a35f;outline-offset:2px}
+.opening-skip-rule{width:1px;height:16px;background:rgba(255,236,205,.2)}
+.opening-skip-button{display:inline-flex;align-items:center;gap:3px;min-height:30px;padding:0 10px 0 13px;border:0;border-radius:999px;background:rgba(255,236,205,.1);font-size:12px;color:#f1e3c8;transition:background .2s,color .2s}
+.opening-skip-button:hover{background:rgba(196,83,31,.85);color:#fff6e6}
+@media(max-width:760px){.opening-skip{right:auto;left:50%;transform:translateX(-50%);bottom:max(16px,env(safe-area-inset-bottom))}}
 
 /* ───────── The reading guide (src/Guide.tsx): a spotlight on what to press, an arrow to it, a short bubble. Tap anywhere to go on. */
 .guide{position:fixed;inset:0;z-index:40;cursor:pointer;animation:guide-in .2s ease-out both;-webkit-tap-highlight-color:transparent}
@@ -315,6 +332,15 @@ html,body{background:#1a110b}
 .guide-bubble span{font-size:13px;color:#d9c4a0;word-break:keep-all}
 /* Which step: two small dots, the current one lit. */
 .guide-dots{display:flex;justify-content:center;gap:7px;margin-top:8px}
+
+/* The phone's step 2 (src/Guide.tsx): a fingertip sliding up a track over the book, as the page is swiped up to turn. Moved by transform only. */
+.guide-swipe{position:fixed;left:50%;width:64px;height:190px;margin-left:-32px;pointer-events:none}
+.guide-swipe-chevron{position:absolute;left:50%;top:0;width:26px;height:13px;margin-left:-13px;fill:none;stroke:#ffd27a;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;animation:guide-chevron 1.6s ease-in-out infinite}
+.guide-swipe-track{position:absolute;left:50%;top:22px;bottom:6px;width:2px;margin-left:-1px;border-radius:2px;background:linear-gradient(rgba(255,210,122,.85),rgba(255,210,122,0))}
+.guide-swipe-dot{position:absolute;left:50%;top:22px;width:46px;height:46px;margin-left:-23px;border-radius:50%;border:2px solid #ffd27a;background:rgba(255,210,122,.22);box-shadow:0 0 18px rgba(255,190,90,.55);animation:guide-swipe 1.6s cubic-bezier(.45,0,.2,1) infinite}
+@keyframes guide-swipe{0%{transform:translateY(118px);opacity:0}14%{opacity:1}72%{transform:translateY(0);opacity:1}100%{transform:translateY(-8px);opacity:0}}
+@keyframes guide-chevron{0%,40%{transform:translateY(4px);opacity:.45}70%{transform:translateY(-2px);opacity:1}100%{transform:translateY(4px);opacity:.45}}
+@media(prefers-reduced-motion:reduce){.guide-swipe-dot,.guide-swipe-chevron{animation:none}}
 .guide-dots i{width:7px;height:7px;border-radius:50%;background:rgba(255,226,173,.25)}
 .guide-dots i.is-on{background:#ffd27a}
 @keyframes guide-in{from{opacity:0}to{opacity:1}}
@@ -326,7 +352,7 @@ html,body{background:#1a110b}
 
 /* The shops' web-magazine pages (src/WebzineBook.tsx): a mockup-sized spread (the unit --u is 1/1672 of the book's width, so it scales as one
    picture), set in Pretendard; below 760px the two pages stack and the type keeps a readable size. */
-.webzine-book{position:relative;display:flex;flex-direction:column;align-items:center;gap:14px;width:min(1500px,95vw,calc((100svh - 118px)*1.608));transform-origin:50% 100%;transform:translateY(38vh) rotateX(62deg) scale(.82);opacity:0;transition:transform .42s cubic-bezier(.2,.75,.25,1),opacity .16s ease-out;font-family:'Pretendard Variable',Pretendard,'Noto Sans KR',system-ui,sans-serif;font-synthesis:none}
+.webzine-book{position:relative;display:flex;flex-direction:column;align-items:center;gap:14px;width:min(1500px,95vw,calc((100svh - 118px)*1.608));transform-origin:50% 100%;transform:translateY(38vh) rotateX(62deg) scale(.82);opacity:0;transition:transform .42s cubic-bezier(.2,.75,.25,1),opacity .16s ease-out;font-family:'Pretendard Variable',Pretendard,'Noto Sans KR','Noto Sans SC',system-ui,sans-serif;font-synthesis:none}
 .is-open>.webzine-book{transform:none;opacity:1}
 .wz-sheet{position:relative;width:100%;aspect-ratio:836/520;container-type:inline-size;border-radius:6px 6px 4px 4px;overflow:hidden;background:linear-gradient(rgba(255,251,240,.6),rgba(255,251,240,.6)),#f6edd9 url('/art-raster/intro-pages.webp') center/cover;box-shadow:0 30px 60px rgba(70,50,30,.3),0 2px 0 #c89b80,0 6px 0 #b9806a}
 .wz-inner{--u:calc(100cqw/1672);--title:calc(var(--u)*53.8);--sub:calc(var(--u)*34);--head:calc(var(--u)*27);--body:calc(var(--u)*22.7);--quote:calc(var(--u)*25.5);--gap:calc(var(--u)*22);--gap-quote:calc(var(--u)*36);
@@ -435,11 +461,22 @@ html,body{background:#1a110b}
 .wz-nav>button:disabled{opacity:.35;cursor:default}
 .wz-related{display:flex;flex-wrap:wrap;gap:6px}
 .wz-related button{border:1px solid rgba(255,250,240,.5);background:rgba(62,52,40,.55);border-radius:999px;padding:6px 12px;font:inherit;font-size:12px;color:#fbf3e3;cursor:pointer}
+/* On wider screens the page arrows stand either side of the sheet, level with its middle (the page count stays below it), and the book's
+   own arrows, dimmed under the backdrop, are hidden while a story is open. The sheet leaves room for them at the window's sides. */
+@media(min-width:761px){
+ .webzine-book{width:min(1500px,calc(100vw - 150px),calc((100svh - 118px)*1.608))}
+ .wz-nav>button{position:absolute;top:calc(50% - 16px);width:46px;height:46px;transform:translateY(-50%);box-shadow:0 2px 8px rgba(60,40,20,.25)}
+ .wz-nav>button:first-child{left:-64px}.wz-nav>button:last-child{right:-64px}
+ .wz-nav>button svg{width:22px;height:22px}
+ .wz-nav>button:hover:not(:disabled){background:#fffaf0;color:#a35c2d}
+ .cinematic-reader:has(.detail-book-backdrop) .reader-arrow{visibility:hidden}
+}
 @media(prefers-reduced-motion:reduce){.webzine-book{transition:none}.wz-spread{animation:none}}
 @media(max-width:760px){
  .detail-book-backdrop:has(.webzine-book){padding:8px}
  .webzine-book{width:100%;gap:10px;max-height:calc(100svh - 16px)}
- .wz-sheet{aspect-ratio:auto;container-type:normal;overflow:auto;overscroll-behavior:contain;max-height:calc(100svh - 76px);border-radius:6px}
+ /* A set height, not a cap: a shorter page (or one whose photos were still loading) made the sheet shorter and the page arrows below it rise. */
+ .wz-sheet{aspect-ratio:auto;container-type:normal;overflow:auto;overscroll-behavior:contain;height:calc(100svh - 76px);border-radius:6px}
  .wz-inner{--u:1px;--title:27px;--sub:21px;--head:17px;--body:15px;--quote:calc(17px + 2pt);--gap:16px;--gap-quote:24px;position:static;padding:18px 18px 30px}
  .wz-bar{height:auto;margin-bottom:16px;padding-right:44px}
  .wz-bar i,.wz-bar em{display:none}
@@ -471,8 +508,8 @@ html,body{background:#1a110b}
  .wz-side img{aspect-ratio:auto;height:auto;object-fit:contain}
  .wz-side figcaption{font-size:13px}
  .wz-page>.wz-cutout{flex:none;height:340px}
- .wz-end{display:flex;align-items:center;gap:10px;margin-top:22px;padding-top:16px;border-top:1px solid #cdb995;color:#7a6a55;font-size:var(--body)}
- .wz-end>span{margin-right:auto;font-weight:600;letter-spacing:.06em}
+ .wz-end{display:flex;align-items:center;justify-content:flex-end;gap:10px;margin-top:22px;padding-top:16px;border-top:1px solid #cdb995;color:#7a6a55;font-size:var(--body)}
+ .wz-end>span{display:none} /* the count is already in the bar under the sheet */
  .wz-end button{display:inline-flex;align-items:center;gap:4px;min-height:42px;padding:0 16px;border:1px solid #c9b48d;border-radius:999px;background:#fffaf0;color:#6b4a37;font:inherit;font-weight:600;cursor:pointer}
  .wz-end button.is-next{background:#6b4a37;border-color:#6b4a37;color:#fff9e9}
  .wz-close{top:6px;right:6px;width:34px;height:34px}
@@ -504,3 +541,12 @@ html,body{background:#1a110b}
 .contents-modal .modal-head .icon-button{margin-right:0}
 
 
+/* Korean breaks between words (keep-all) or anywhere for an even justified edge (break-all). English and Chinese do neither:
+   English breaks between words (and hyphenates), Chinese between any two characters. English is also set ragged right: justified in the
+   webzine's narrow columns it opened wide gaps between words. */
+html:not(:lang(ko)) :is(.detail-lead,.detail-book-text,.wz-lead p,.wz-p,.wz-quote p,.wz-menu p,.wz-captions p,.wz-captions.is-cards p,.wz-h1,.wz-h2,.wz-rows span,.prologue-text,.prologue-call,.prologue-chapters,.guide-bubble strong,.guide-bubble span,.contents-body strong,.contents-body em){word-break:normal;overflow-wrap:break-word}
+html:lang(en) :is(.detail-lead,.detail-book-text,.wz-lead p,.wz-p,.wz-quote p,.wz-menu p,.wz-captions p){hyphens:auto;text-align:left}
+/* A headline's lines are set for the Korean; in English they run on as one sentence and wrap where they fit (a translated first line can
+   be longer than the column, which left a word stranded on a line of its own). */
+html:lang(en) .wz-h1 span{display:inline}
+html:lang(en) .wz-h1 span+span::before{content:' '}

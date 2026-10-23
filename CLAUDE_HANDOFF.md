@@ -404,3 +404,60 @@ node scripts/render-intro.mjs
 **(2026-10-22) PC 책장 넘길 때 이전 페이지 카드가 뒤에서 보이던 것:**
 - 원인: 넘어가는 종이 위의 이전 장 카드가 진행 70%에야 다 접히고(종이가 서는 건 50%), 99.999%까지 보였으며, 새 장 카드는 35%부터 보여서 종이가 서 있는 동안 두 장의 카드가 함께 섰고 이전 카드는 뒤쪽에서 보였다.
 - 수정(`paperAttachments.ts` popupFoldAngle, `Storybook.tsx` PaperLayer): 이전 장 카드는 `FOLDED_BY` .42까지 납작하게 접히고, 종이 위 카드는 위를 향한 면에서만 보인다(이전 것은 `PAGE_UPRIGHT` .5 전까지, 새 것은 그 뒤). 새 장 카드는 종이가 선 뒤부터 일어선다. 휴대폰 넘김은 원래 이렇게 동작해 그대로.
+
+**(2026-10-23) 넘김 중 렉·잔렉:**
+- 원인: `cardHalo.ts` idle()이 requestIdleCallback timeout 600ms 때문에 바쁠 때도 결국 실행돼, 다음 장 후광 만들기(느린 CPU에서 개당 50~170ms)가 넘기는 도중에 끼어들었다(2→3: 3p 카드가 많음). 착지 직후엔 깜빡이는 후광 사이에 끼어 잔렉.
+- 수정: idle()은 책이 완전히 멈췄을 때(`bookStill`: 로딩·넘김·끌기·카드 일어섬이 아니고 gsap 애니메이션이 없을 때)만 진행, timeout 뒤에도 다시 확인. 텍스처 업로드(warmChapter)는 깜빡임 중에도 계속(빨리 넘기면 첫 프레임에 업로드가 몰리는 쪽이 더 티가 나서).
+- 측정(헤드리스, CPU 4배 느리게): 2→3 넘김 중 20ms 넘는 프레임 PC 19→7, 휴대폰 11→5; 빨리 넘길 때 1→2 시작 멈춤 PC 200→117ms, 휴대폰 67→33ms. 남은 시작 멈춤은 주로 아직 안 올라간 다음 장 텍스처 업로드(빨리 넘길 때만). 프로파일러: scratchpad turn-profile.mjs (WAIT 환경변수).
+
+**(2026-10-23) 요청 묶음:**
+- PC 2→3: 넘기는 종이가 이번 넘김의 그림(page-N)이 아직 안 왔을 때 지난 넘김 그림(1p 흙바닥)을 보여 주던 것 → 그림이 다 왔을 때만 보임(`Storybook.tsx` sheetReady).
+- PC 프롤로그 글자 뒤 어두운 원을 .78→.6(넓은 화면만, `cinematic.css`).
+- 휴대폰 이야기 첫 사진: 지금 장의 카드들이 여는 이야기의 첫 사진(웹진 첫 펼침·포스터와 사진·이야기 펼침·레시피 모집)을 착지 1.5초 뒤 한가할 때 낮은 우선순위로 미리 받음(`storyPrefetch.ts`, App).
+- 휴대폰 '세로로 눌린' 느낌: 화면 비율은 정상(캔버스·버퍼·카메라 0.4613). 34° 위에서 내려다봐서 똑바로 선 카드가 약 17% 낮아 보였음 → 서 있는 카드를 14° 뒤로 기울임(`CARD_LEAN`, 접히면 0이 되어 바닥에 평평).
+- 휴대폰 가이드 2단계: 화살표 대신 위로 미는 손짓(`.guide-swipe`), 화살표는 보조 문구.
+- 휴대폰 3p 나만의 레시피(recipe-share): 패널이 화면 아래로 열렸음 — 넓은 화면용 `.detail-panel.is-sheet{bottom:auto}`가 휴대폰 규칙보다 우선 → 휴대폰 규칙에 bottom:10px.
+- 건너뛰기: 영상·프롤로그 동안 오른쪽 아래(휴대폰은 가운데 아래) '다음부터 보지 않기' + '건너뛰기'. 체크는 바로 저장(localStorage `gujwa:skip-opening`), 저장돼 있으면 영상·프롤로그·가이드 없이 바로 읽기. 처음부터 다시 보기는 그래도 재생.
+- 3p 임시 Shorts → 구좌 당근 Shorts `DRb3IIKUJSY`(`posters.ts`). 후광은 모든 장 1p 주황(`HALO` 기본값 = 1p 값, 1p 개별 설정 삭제).
+
+**(2026-10-23) 설정·건너뛰기 디자인·휴대폰 3p 선명도:**
+- 설정: 오른쪽 위 톱니 버튼(`SettingsMenu.tsx`, 언어 버튼 자리; `LanguageMenu.tsx`·`.lang-*` 삭제) → 언어(한국어/English/中文)와 '시작 영상 보기' 스위치. 건너뛰기 설정은 `openingPref.ts` 한 곳(localStorage `gujwa:skip-opening`)에서 공유.
+- 건너뛰기 UI: 위쪽 알약 버튼과 같은 어두운 유리 알약 하나 안에 직접 그린 체크박스 + 구분선 + '건너뛰기 »'.
+- 휴대폰 3p가 흐린 것: 그림 해상도 문제 아님(모든 3p 텍스처가 화면 크기의 1.3~4.3배). 책을 최대 2배 해상도로 그려 아이폰(3배)에서 브라우저가 늘려 보여 작은 손글씨가 뭉개졌다 → 세로 휴대폰은 최대 3배로 그림(FramePacer가 느리면 낮춤). 냉장고 메모 자체도 화면에서 약 57px로 작음.
+
+**(2026-10-23) 정리:**
+- 안 쓰는 그림 31개 삭제(3.8MB, `public/art-raster`): 예전 1p(farm-field·lantern·trees·wall, char-pony), 예전 3p(dish-* 중 dish-soup 제외, kitchen-basket·kettle·pot·table-round, note-*-card, v3 note-gnocchi·gimbap·cheese-jeon·blank·roast·juice, prep-table, recipe-booklet), 예전 휴대폰 2p(*-phone, buggercarrot-front). `prepare-gpt-art.mjs`에서 그것들을 다시 만들던 항목도 삭제. 남긴 것: note-rape·soup·pickle·burger(SEO 레시피 그림, `seo.ts`), dish-soup(인트로 영상 일기장, `film.tsx`), intro-meta.json(영상 렌더러·테스트).
+- 코드: `LanguageMenu.tsx`(설정으로 옮김), `preloadScene`, 쓰지 않던 `openText`(글로 읽기 버튼 잔재)·`dialog`·안 쓰는 three 가져오기 삭제. `tsc --noUnusedLocals --noUnusedParameters` 깨끗.
+- CSS: 없어진 요소의 규칙 66개 삭제(narration, interaction-button, nav-link, hand-underline, ending-stamp, has-dialog, about-*; cinematic·reader·styles). 웹진의 is-wide 등은 실행 중에 만들어지므로 그대로.
+- 저장소 밖(무시되는) 폴더는 그대로: .sites-runtime 285MB, art-src 406MB(원본 그림), intro-cache 150MB, dist, _archive, qa. docs의 page-3-kitchen-v2·page-3-redesign은 예전 3p 설계 메모.
+
+**(2026-10-23) 첫 넘김 바닥·언어:**
+- PC 첫 1→2·2→3 넘김에서 오른쪽 바닥이 잠깐 사라짐: 넘김이 시작되면 오른쪽 페이지가 바로 다음 장 그림(page-N-right)을 쓰는데 첫 번째엔 아직 로딩 중이라 아무것도 안 그려졌다(넘기는 종이도 자기 그림이 올 때까지 숨김). 이제 그 장 그림이 올 때까지 지금 장 페이지를 그대로 둔다(`Storybook.tsx` leftChapter/rightChapter). 느린 네트워크(지연 900ms)에서 확인.
+- 설정에서 언어를 바꿀 때 움직이던 것: 패널 크기·위치는 그대로였고, `<html lang>`이 en/zh로 바뀌며 브라우저가 한국어 글자를 다른 언어 글꼴로 다시 그린 것. 책 내용은 아직 번역 전이라 페이지 언어는 항상 ko(`locale.ts`).
+- 기본 언어 한국어: 브라우저·접속 국가로 고르던 자동 선택(ipapi.co 조회, `api/geo.js`) 삭제. 설정에서 고르면 그 브라우저에 기억. 테스트도 그에 맞게(60개).
+
+**(2026-10-23) 한국어/영어/중국어 · phone 화살표 · 마지막 팝업:**
+- phone 웹진(세부 페이지): 시트 높이가 내용에 따라 줄면서 아래 화살표가 위로 올라오던 것 → `.wz-sheet`/`.pb-sheet` 높이를 화면 기준으로 고정(`calc(100svh - 76px)`).
+- phone 마지막 팝업(`is-ending .hero-copy`)은 화면 가운데(top/left 50% + translate).
+- 번역(`src/i18n.ts`): 한국어 원문이 그대로 키. `t('목차')`, 데이터는 `useLocalized(details)`(문자열만 바꿈, 경로·영문은 그대로). 사전 `src/i18n/en.ts`·`zh.ts`는 생성물(427개) — 고칠 땐 원문을 바꾸면 그 줄 번역이 빠져 한국어로 보이니 사전도 같이 고칠 것. 영/중을 고를 때만 사전 청크(각 ~60KB)를 받음. 프롤로그·마지막 팝업 문구는 강조 때문에 언어별 JSX(`Prologue.tsx` WORDS, `App.tsx` ENDING).
+- `<html lang>`이 다시 언어를 따름(ko/en/zh-Hans). 한국어가 아닐 땐 keep-all/break-all 대신 일반 줄바꿈(영어는 단어 단위+하이픈, `cinematic.css` 끝). 중국어를 고르면 Noto Sans SC·Noto Serif SC·Long Cang(손글씨, 마지막 팝업)을 그때 불러옴(`locale.ts`).
+- 번역 안 되는 것(그림 속 글자): 인트로 영상, 페이지 인쇄 그림, 냉장고 메모 손글씨, 글자가 들어간 웹진 이미지, `seo.ts`의 책 텍스트(검색용), 레시피 보내기 메일 본문.
+
+**(2026-10-23) 영어 웹진 넘침 · 화살표 · 유튜브 · 바깥 누르면 닫기:**
+- 영어 웹진(PC)은 한국어보다 길어 9쪽이 아래로 23~139px 잘렸다 → `src/i18n/en.ts`에서 그 쪽들의 문장을 줄임(farmer·harvest·cook-01·cook-02). 1024~1920 폭에서 넘침 0. 영어는 양쪽 정렬 대신 왼쪽 정렬(좁은 단에서 단어 사이가 벌어짐), 큰 제목 줄은 한 문장으로 이어 자연스럽게 줄바꿈(`cinematic.css` 끝). 영어 문장을 다시 늘리면 넘칠 수 있음.
+- phone: 이야기가 열려 있을 때 책 양옆 화살표를 위로 옮기던 규칙 삭제 → 항상 가운데(PC의 오른쪽 화살표 옮김만 남김).
+- 유튜브: "YouTube에서 보기" 링크의 noreferrer를 빼고 플레이어와 함께 referrerPolicy를 줌 → YouTube 스튜디오 트래픽 소스 "외부"(임베드는 "외부 웹사이트에 삽입됨")에 이 사이트 도메인으로 잡힘. 링크 클릭은 GA 이벤트 `shorts_open`(VITE_GA_ID 있을 때).
+- 바깥 누르면 닫기: 웹진·레시피·이야기 책은 페이지 바깥 아무 곳(`src/outsideTap.ts`), 마지막 팝업과 옆 패널은 그림 없는 책 부분을 누르면(`Storybook.tsx` closeOnMiss). 목차·설정은 원래 됨.
+
+**(2026-10-23) 영어 농부 이야기 · 설정 · 웹진 화살표 · 당근전 · 폴라로이드 글자:**
+- 웹진 쪽 검사에 "줄어든 칸"도 넣음: 글이 길면 사진 칸(figure)이 눌려 사진이 캡션·글 위로 겹친다(영어 farmer 1쪽). 영어 farmer·harvest·cook-01·cook-03, 중국어 farmer 1쪽의 문장을 줄여 en/zh 모두 1280~1920(125% 포함)에서 넘침·눌림 0.
+- 설정의 시작 영상 설명: 영어 "Opening film and guide", 중국어 "开场影片与阅读指引"(한 줄).
+- PC 웹진: 쪽 화살표를 시트 좌우 가운데로(아래엔 쪽 번호만), 웹진이 열려 있으면 뒤의 책 화살표는 숨김(`:has(.detail-book-backdrop)`). 시트 폭은 양옆 화살표 자리만큼 줄임(`100vw - 150px`).
+- phone 웹진: 본문 끝 "이전/다음 쪽" 옆의 1/2 숨김(아래 바에 있음).
+- 냉장고 메모 당근 치즈전 → 당근전(`art-raster/magnet-jeon.webp`, 원본 square-magnet-carrot-jeon.png, 카드 id `magnet-jeon`). 이름도 당근전으로. `prepare-gpt-art.mjs page-3 magnet-jeon`처럼 카드 하나만 다시 만들 수 있게 함.
+- 폴라로이드 아래 글: 한 줄 고정, 좁아지면 글자가 작아짐(`min(13px,9.4cqw)`). 영어 캡션은 "Our carrot gnocchi"처럼 짧게.
+
+**(2026-10-23) 은정 브랜치(089ef6b, e14f128)에서 디자인만 가져옴:**
+- 마지막 팝업: 압정 꽂힌 종이 + 당근 그림(`media/ending-card.jpg` + `ending-card-mask.png`, 예전 ending-paper 삭제), Pretendard 가운데 정렬, "기사 바로 읽기 →" / "↻ 처음으로". 손글씨 글꼴(Nanum Pen Script·Long Cang)은 더 안 쓰므로 불러오지 않음. 영어·중국어 문구도 새 카드에 맞춰 짧게(`App.tsx` ENDING).
+- 유지한 것: phone에서 마지막 팝업은 화면 가운데(은정 브랜치는 오른쪽 아래), 팝업 바깥을 누르면 닫힘.
+- 나만의 레시피 포스터: 새 그림(`media/recipe-share.webp`), 배경 없이 종이 그림자만, 링크 위치(인스타 DM 위, 이메일 아래)와 대체 텍스트. phone 위치 수정(bottom:10px)은 이미 같았음.
