@@ -107,10 +107,10 @@
    scales with the card width (cqw: 1% of the width inside the padding, 2.192px on the 250px card). */
 .reader-mode .is-ending .hero-copy{width:250px;container-type:inline-size;padding:163px 15.8px 13.5px 15px;border:0;border-radius:0;text-align:center;backdrop-filter:none;background:none;box-shadow:none}
 .reader-mode .is-ending .hero-copy::before{content:'';position:absolute;inset:0;z-index:-1;background:url(/media/ending-card.jpg) 0 0/100% 100% no-repeat;-webkit-mask:url(/media/ending-card-mask.png) 0 0/100% 100% no-repeat;mask:url(/media/ending-card-mask.png) 0 0/100% 100% no-repeat;pointer-events:none}
-/* Its words in the book's hand (as on the recipe posters): a handwritten title on an orange crayon highlight, handwritten lines, and
+/* Its words in the book's hand (as on the recipe posters): a handwritten title with its key words on an orange crayon highlight, handwritten lines, and
    buttons with hand-drawn edges in the posters' terracotta and dark brown. Yeon Sung (title, buttons) and Gamja Flower (the line below) come with the page's other web fonts (index.html). */
 .reader-mode .is-ending h1{margin:0;font-family:'Yeon Sung','Gowun Batang','Noto Sans SC',serif;font-size:13.6cqw;font-weight:400;line-height:15.4cqw;letter-spacing:0;color:#4f3a2b}
-.reader-mode .is-ending .ending-mark{padding:0 1.6cqw;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 40' preserveAspectRatio='none'%3E%3Cfilter id='r'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' seed='4'/%3E%3CfeDisplacementMap in='SourceGraphic' scale='3.2'/%3E%3C/filter%3E%3Cg filter='url%28%23r%29' fill='none' stroke='%23e8823a' stroke-linecap='round'%3E%3Cpath d='M4 25 C50 21 120 27 196 22' stroke-width='15' stroke-opacity='.5'/%3E%3Cpath d='M8 31 C70 28 140 33 192 29' stroke-width='9' stroke-opacity='.42'/%3E%3Cpath d='M6 19 C60 17 130 20 194 17' stroke-width='7' stroke-opacity='.35'/%3E%3C/g%3E%3C/svg%3E") 0 0/100% 100% no-repeat;-webkit-box-decoration-break:clone;box-decoration-break:clone}
+.reader-mode .is-ending .ending-mark{margin:0 -.8cqw;padding:0 .8cqw;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 40' preserveAspectRatio='none'%3E%3Cfilter id='r'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' seed='4'/%3E%3CfeDisplacementMap in='SourceGraphic' scale='3.2'/%3E%3C/filter%3E%3Cg filter='url%28%23r%29' fill='none' stroke='%23e8823a' stroke-linecap='round'%3E%3Cpath d='M4 25 C50 21 120 27 196 22' stroke-width='15' stroke-opacity='.5'/%3E%3Cpath d='M8 31 C70 28 140 33 192 29' stroke-width='9' stroke-opacity='.42'/%3E%3Cpath d='M6 19 C60 17 130 20 194 17' stroke-width='7' stroke-opacity='.35'/%3E%3C/g%3E%3C/svg%3E") 0 0/100% 100% no-repeat;-webkit-box-decoration-break:clone;box-decoration-break:clone}
 .reader-mode .is-ending h1 br{display:inline}
 /* Until its paper has loaded (App.tsx useEndingArt), so words and picture come up together. */
 .reader-mode .is-ending .hero-copy.is-waiting{visibility:hidden}
@@ -203,7 +203,7 @@
 html,body{background:#1a110b}
 .desk-air{position:absolute;inset:0;z-index:4;pointer-events:none;
  background:radial-gradient(95% 85% at 50% 46%,transparent 48%,rgba(12,7,4,.55) 100%)}
-.cinematic-reader .brand-name{color:#f1e3c8;border-left-color:rgba(255,236,205,.22)}
+.cinematic-reader .brand-name{font-weight:400;color:#f1e3c8;border-left-color:rgba(255,236,205,.22)}
 
 .cinematic-reader .reader-arrow{color:#ead8b8}.cinematic-reader .reader-arrow:hover:not(:disabled){background:transparent;color:#f5a25a}
 
@@ -252,21 +252,23 @@ html,body{background:#1a110b}
  background:radial-gradient(85% 75% at 50% 44%,rgba(16,9,4,.6) 0%,rgba(10,6,3,.84) 100%);animation:prologue-in .55s ease-out both}
 .prologue.is-closing{animation:prologue-out .5s ease-in both;pointer-events:none}
 /* The words sit in a pool of deeper dark, so the book behind reads as a backdrop and never competes with them. */
-.prologue-card{width:min(780px,100%);padding:36px 24px;display:flex;flex-direction:column;align-items:center;text-align:center;animation:prologue-rise .7s cubic-bezier(.2,.7,.2,1) both;
+.prologue-card{width:min(780px,100%);padding:56px 24px;display:flex;flex-direction:column;align-items:center;text-align:center;animation:prologue-rise .7s cubic-bezier(.2,.7,.2,1) both;
  background:radial-gradient(closest-side,rgba(10,6,3,.78) 55%,rgba(10,6,3,0) 100%)}
 .is-closing .prologue-card{animation:none}
 /* On wide screens the pool of dark behind the words is lighter, so more of the open book shows through (phones keep it deep, for contrast). */
 @media(min-width:761px){.prologue-card{background:radial-gradient(closest-side,rgba(10,6,3,.6) 55%,rgba(10,6,3,0) 100%)}}
 /* Set large and spaced, to be taken in at a glance: the title, the one line, the button. */
+/* The magazine's logo heads the prologue, then the title; the blocks spread out over more of the screen's height. */
+.prologue-logo{display:block;width:auto;height:clamp(40px,4vw,54px);margin:0 0 clamp(30px,4.5vh,48px)}
 .prologue h2{margin:0;font-family:var(--serif);font-size:clamp(40px,4.6vw,62px);font-weight:400;letter-spacing:-.02em;line-height:1.2;color:#f8ead1;word-break:keep-all}
-.prologue-text{margin-top:22px;max-width:640px;font-family:var(--serif);font-size:clamp(17px,1.5vw,21px);line-height:1.75;color:#ecd8b4;word-break:keep-all}
+.prologue-text{margin-top:clamp(24px,4vh,40px);max-width:640px;font-family:var(--serif);font-size:clamp(17px,1.5vw,21px);line-height:1.75;color:#ecd8b4;word-break:keep-all}
 /* Emphasis in the prologue's words (src/Prologue.tsx): the subject in the title coloured; the chapters' three themes marked with a soft
    highlighter band low on the line. */
 .prologue h2 em{font-style:normal;color:#f5a25a}
 .prologue-keep{white-space:nowrap} /* a narrow screen breaks the title after its comma */
-.prologue-text mark{padding:0 .14em;border-radius:2px;color:#f6e6c8;background:linear-gradient(transparent 58%,rgba(224,138,58,.45) 58%,rgba(224,138,58,.45) 92%,transparent 92%)}
+.prologue-text mark{white-space:nowrap;padding:0 .14em;border-radius:2px;color:#f6e6c8;background:linear-gradient(transparent 58%,rgba(224,138,58,.45) 58%,rgba(224,138,58,.45) 92%,transparent 92%)}
 /* The contents: the three chapters, one per line, large; numbers lined up (the list is as wide as its longest title, centred). */
-.cinematic-reader .prologue-start{margin-top:36px;min-width:260px;min-height:58px;gap:10px;font-size:18px;background:#c4531f;color:#fff6e6;box-shadow:0 10px 28px rgba(0,0,0,.35)}
+.cinematic-reader .prologue-start{margin-top:clamp(40px,7vh,72px);min-width:260px;min-height:58px;gap:10px;font-size:18px;background:#c4531f;color:#fff6e6;box-shadow:0 10px 28px rgba(0,0,0,.35)}
 .cinematic-reader .prologue-start:hover:not(:disabled){background:#d5602a}
 .cinematic-reader .prologue-start:disabled{opacity:.7;background:#5a3f2b;cursor:wait}
 .prologue-start svg:last-child{margin-left:0}
@@ -276,10 +278,12 @@ html,body{background:#1a110b}
 @media(max-width:760px){
  /* Centred top to bottom; auto margins (not grid centring) so a card taller than the screen still scrolls from its top. */
  .prologue{padding:18px;display:flex}
- .prologue-card{margin:auto;padding-top:24px}
- .prologue h2{font-size:34px}
- .prologue-text{margin-top:16px;font-size:15px}
- .cinematic-reader .prologue-start{margin-top:28px;min-width:236px;min-height:54px;font-size:17px}
+ .prologue-card{margin:auto;padding-top:32px;padding-bottom:40px}
+ .prologue-logo{height:40px;margin-bottom:clamp(28px,5.5vh,52px)}
+ .prologue h2{font-size:38px}
+ /* the set line break suits the desktop's width; on a phone the sentence wraps by itself, into two lines of even length */
+ .prologue-text{margin-top:clamp(22px,4.5vh,40px);font-size:16px;text-wrap:balance}.prologue-text br{display:none}
+ .cinematic-reader .prologue-start{margin-top:clamp(40px,9vh,80px);min-width:236px;min-height:54px;font-size:17px}
  
  
 }
