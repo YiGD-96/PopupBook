@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 /**
  * Whether the opening (the intro film, the prologue and the reading guide) is skipped on each visit: set by "다음부터 보지 않기" next to
- * 건너뛰기 during the opening, and by "시작 영상 보기" in the settings (src/SettingsMenu.tsx), which turns it back on. Kept in this browser.
+ * 건너뛰기 during the opening, and by "시작 영상 보기" in the settings (src/TopControls.tsx), which turns it back on. Kept in this browser.
  */
 const KEY='gujwa:skip-opening';
 function saved(){try{return localStorage.getItem(KEY)==='1';}catch{return false;}}

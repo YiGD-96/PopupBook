@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 /**
- * The reader's language: Korean, English or Chinese, chosen in the settings (behind the gear at the top right, src/SettingsMenu.tsx).
+ * The reader's language: Korean, English or Chinese, chosen in the settings (the language pill at the top right, src/TopControls.tsx).
  * Korean until the reader chooses another; a choice is kept in this browser (localStorage). The words follow it (src/i18n.ts), and so does
  * the page's language (<html lang>: Chinese glyph forms, English line breaking, a screen reader's voice).
  * The Korean fonts carry no simplified Chinese, so choosing Chinese also brings its fonts (named after the Korean ones in every stack;

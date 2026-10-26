@@ -481,3 +481,21 @@ node scripts/render-intro.mjs
 - og:image가 경로만(`/media/og-image.jpg`) 들어가 카카오톡·페이스북 미리보기에 사진이 안 나온다는 안내: 웹진에 올린 빌드가 `VITE_SITE_URL` 없이 만들어졌기 때문. → `.env.production`(커밋함, 비밀 없음)에 `VITE_SITE_URL=https://lxwebzine.hankyung.com/2026-1/team5`. 그냥 `npm run build`해도 og:image·og:url·canonical·JSON-LD·sitemap이 전체 주소. GitHub Pages 워크플로처럼 빌드 환경에서 주면 그쪽이 우선.
 - 500KB 넘는 사진: `book-materials/cover.webp` 680KB → 품질 88로 444KB(눈으로 차이 없음, `book-materials.mjs` QUALITY.cover). 빌드 결과에 500KB 넘는 그림 없음.
 - 웹진에 다시 올린 뒤, 카카오톡은 예전 미리보기를 기억하므로 카카오 공유 디버거에서 캐시 초기화 필요.
+
+**(2026-10-26) 넘기는 소리 교체(둘 다 CC0, freesound):**
+- 한 장 넘김 `media/page-turn.mp3`: esperri "Book Turn Page 3.wav"(freesound.org/s/119128), 모노, -23 LUFS. 예전 클립(opengameart BookFlip9)은 4kHz 위 에너지가 26.5%로 날카로웠음 → 새 것 9%.
+- 인트로 여러 장 넘김 `media/page-riffle.mp3`: lexjharold "Quick Page Flipping"(freesound.org/s/732601)의 1.65초, 모노, -27 LUFS. 페이지가 펼쳐지기 시작할 때(INTRO_PAGES_START) 한 번, 영상이 멈출 때까지 재생하고 페이드(`Intro.tsx` riffle, `story.ts` playSound('riffle', 초)). 예전엔 한 장 소리의 끝부분을 1초에 3번 틀었음.
+- 후보는 freesound CC0 검색 결과를 브라우저에서 미리듣기 파일로 측정(4kHz/8kHz 위 비율, 5ms 최대 에너지)해서 골랐고, 사용자가 들어보고 선택.
+- 설정에 "소리 · 효과음" 스위치(기본 켬, 이 브라우저에 기억: localStorage `gujwa:sound-off`, `src/soundPref.ts`). 끄면 playSound가 아무 소리도 안 내고 "소리는 화면을 터치하면…" 안내도 숨김. 인트로 영상은 원래 무음.
+
+**(2026-10-26) 인트로 소리 · 프롤로그 · 상단 버튼 · 화살표 · phone 세로 전용:**
+- 인트로 여러 장 소리가 안 들리던 것: 브라우저는 첫 터치/클릭 전엔 소리를 막는데, 리플은 페이지가 펼쳐지는 순간(영상 약 1초 시점) 한 번만 틀었다. → 그 사이 터치하면 그 지점부터 이어서 재생(`Intro.tsx` riffle, `story.ts` riffleReady·playSound의 from), 막 터치한 직후 아직 디코드 전이면 합성음 대신 기다렸다가 재생. 리플 음량 -27 → 약 -23 LUFS(리미터). 첫 방문에 아무 터치도 없으면 여전히 무음(브라우저 정책).
+- 프롤로그: 제목 "구좌 당근, 몬딱 담았수다"(몬딱 담았수다는 줄바꿈 안 함), 한 줄 "구좌 당근이 자라는 이야기부터 색다른 먹거리, 함께 만들어가는 오늘의 한 상까지", "책장 속으로" 버튼만. 크게(PC 제목 40~62px). 인트로 영상 첫 페이지의 "오늘 한 끼, 구좌 당근"(SITE.filmTitle)은 그대로 — 바꾸려면 영상 다시 렌더.
+- 설정 톱니 대신 상단에 바로: 언어 알약(한국어·English·中文, phone은 KO·EN·中), 효과음(스피커 아이콘), 시작 영상(카메라 아이콘) — `src/TopControls.tsx`(SettingsMenu.tsx 삭제). analytics 영역 이름 'settings'는 유지.
+- PC 로고 30px, 옆 이름 17px. 화살표는 모두 같은 둥근 버튼(46px). 웹진 마지막 쪽에서 오른쪽 화살표는 X(닫기). 웹진 인용문은 브랜드 이름 글꼴(Gowun Batang 굵게, 기울임 없음). 한국어 본문 단어 간격 -0.08em.
+- phone(세로): 양옆 화살표·옆으로 끌기 없음, 책 아래 둥근 ↓ 버튼 하나(다음 장/마지막엔 마무리), 위로 밀기는 그대로. 가이드 문구도 "아래 화살표로도". 웹진은 모든 펼침면을 한 스크롤로, 끝에 "이야기 닫기"만.
+- (같은 날 이어서) 언어는 버튼 하나: 누를 때마다 한국어 → English → 中文(phone은 KO·EN·中, `TopControls.tsx`). phone 화살표: 책 아래 ↑(이전)·↓(다음) 한 쌍, 동그라미 없이 아이콘만, 첫 장엔 ↑·마지막 장엔 ↓를 숨기되 자리는 그대로(visibility). 예전 아래 화살표는 reader.css의 hover `translateY(-2px)`가 가운데 정렬용 transform을 덮어써서 마우스를 올리면 옆으로 움직였음 → transform 없이 배치.
+- phone 웹진: 두 번째 펼침면부터는 제목(h1)·부제(sub)를 숨김(농부 이야기의 "당근 한 뿌리가 식탁에 오르기까지" 반복). 줄은 섹션 제목(h2, EPILOGUE 같은 eyebrow) 위에만, 모두 같은 간격(--section 26px; 측정상 위 26~31px·아래 28px). 블록 사이 rule, 캡션 카드 줄(캐럿버거/캐럿프라이즈), 쪽·펼침면 경계선은 phone에서 없앰. 하베스트 표(rows)의 줄은 표 모양이라 유지.
+- phone 인트로: 영상을 처음엔 가운데(닫힌 책이 화면 중앙)에 두고, 책이 내려오기 시작하는 1.0초부터 0.9초 동안 STANDING_DROP(60px)만큼 아래로 transform으로 내림(`Intro.tsx` drop, `.intro-screen.is-standing.is-dropped`). 영상 안에서 닫힌 책은 원래 프레임 중앙(48.9%)이었고, 낮아 보였던 건 전체에 준 60px 때문. 넘겨줄 때는 예전과 같은 +60px라 실제 책과 그대로 맞음. 영상 재렌더 없음.
+- phone 가이드: 말풍선이 아래쪽 건너뛰기 바와 겹치던 것(실제 폰은 브라우저 바 때문에 화면이 짧음) → 가이드가 건너뛰기 바 윗선을 화면 바닥으로 보고, 자리가 없으면 카드 위에 말풍선(`Guide.tsx` floor, 말풍선 실제 높이 측정). 393×660·360×640·390×700·412×760·393×852에서 겹침 0.
+- 인트로 리플 소리: 브라우저는 첫 터치 전에는 소리를 막아서 첫 방문엔 대부분 무음. "터치로 시작" 같은 방법을 제안했지만 사용자 결정으로 지금처럼 자동 시작 유지(터치한 뒤나 "처음으로"에서는 소리 남).

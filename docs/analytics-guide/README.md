@@ -77,7 +77,19 @@
 
 ## 4. 무엇이 기록되나 (이벤트 목록)
 
-모든 이벤트에는 **어느 장에서**(`book_chapter`: farmer · cooks · recipes), **어느 언어로**(`book_lang`: ko · en · zh), **휴대폰인지**(`book_layout`: phone · desktop)가 함께 붙어요.
+모든 이벤트에는 **어느 장에서**(`book_chapter`: farmer · cooks · recipes), **어느 언어로**(`book_lang`: ko · en · zh), **휴대폰인지**(`book_layout`: phone · desktop), **어느 사이트에서**(`book_env`: main · test, `book_host`: 사이트 주소)가 함께 붙어요.
+
+### 메인과 테스트 사이트 구분
+
+| 사이트 | `book_env` | `book_host` |
+|---|---|---|
+| https://lxwebzine.hankyung.com/2026-1/team5/ (메인) | `main` | `lxwebzine.hankyung.com` |
+| https://yigd-96.github.io/PopupBook/ (테스트) | `test` | `yigd-96.github.io` |
+| Vercel 등 다른 곳, 내 컴퓨터 미리보기 (테스트) | `test` | 그 주소 |
+
+GTM 코드가 모든 빌드에 같이 들어 있어서 **테스트 사이트도 같은 GA4에 기록돼요.** 보고서에서 나눠 보려면:
+- GA4 보고서 위 **비교 추가 → `book_env` = `main`** (맞춤 측정기준 등록 후) — 또는 기본 제공 **호스트 이름**(Hostname)으로 나눠 봐도 돼요.
+- 테스트를 아예 다른 GA4로 보내고 싶으면 GTM 트리거에 조건 `DLV - book_env` 같음 `test`를 넣어 태그를 나누면 돼요.
 
 | 이벤트 | 언제 | 함께 오는 정보 |
 |---|---|---|
@@ -112,7 +124,7 @@
 가져오면 생기는 것 (GA4 두 곳에 똑같이 보내요):
 - 태그 `Google 태그 - GA4 1 (G-4CS8825LHN)`, `Google 태그 - GA4 2 (G-RM4BJ9MT1R)` — 모든 페이지에서 각 GA4 연결 (자동 페이지뷰는 꺼 둠: 책이 장마다 직접 보내요)
 - 태그 `GA4 이벤트 - 팝업북 전부 → 1`, `… → 2` — 위 표의 이벤트를 **이름 그대로** 각 GA4로, 함께 오는 정보도 전부 붙여서
-- 트리거 `팝업북 이벤트 (전부)`, 변수 `GA4 측정 ID 1·2`, `DLV - …` 36개
+- 트리거 `팝업북 이벤트 (전부)`, 변수 `GA4 측정 ID 1·2`, `DLV - …` 38개
 
 > 가져오기가 실패하면 아래 "직접 만들기"대로 하면 같은 결과예요.
 
@@ -133,6 +145,7 @@ GA4 → 관리 → **맞춤 정의 → 맞춤 측정기준 만들기** (범위: 
 | `ui_label`, `ui_area` | 무슨 버튼을, 화면 어디서 눌렀는지 |
 | `content_id` | 어떤 이야기·레시피였는지 |
 | `book_chapter`, `book_lang`, `book_layout` | 어느 장, 어느 언어, 휴대폰인지 |
+| `book_env`, `book_host` | 메인(lxwebzine)인지 테스트 사이트인지, 어느 주소인지 |
 | `video_title`, `video_percent` | 어떤 쇼츠를 몇 %까지 봤는지 |
 | `method`, `source` | 책장을 어떻게 넘겼는지, 이야기를 어떻게 열었는지 |
 

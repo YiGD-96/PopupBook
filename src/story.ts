@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { url } from './base.ts';
+import { useSoundPref } from './soundPref.ts';
 /** PROLOGUE: the book lies open with its cards folded flat under the prologue (src/Prologue.tsx), until the reader starts reading. */
 export type Phase = 'INIT'|'COVER'|'LOADING_PAGE'|'PROLOGUE'|'OPENING_POPUP'|'EXPLORING'|'DRAGGING_PAGE'|'TURNING_PAGE'|'ENDING'|'ERROR';
 /** A pop-up card. `detail` makes it clickable: it opens that entry of src/details.ts in the side panel. `phone` places it in the
@@ -81,9 +82,12 @@ export function unlockAudio(){
   audioContext??=new AudioCtx();
   audioContext.onstatechange=()=>useStory.getState().set({audioReady:audioContext?.state==='running'});
   audioUnlock=audioContext.resume().then(()=>{useStory.getState().set({audioReady:audioContext?.state==='running'});}).catch(()=>{}).finally(()=>{audioUnlock=null;});
-  void loadPageTurn(audioContext);
+  void loadClips(audioContext);
  }catch{ /* Audio is optional on browsers without Web Audio. */ }
 }
+/** Whether the intro's riffle can play now: sound is on (browsers keep it off until the reader first touches, clicks or presses a key,
+ *  unlockAudio) and its recording has been decoded (just after that first touch it may not be yet). */
+export function riffleReady(){return audioContext?.state==='running'&&!!clips.riffle;}
 /** Pink noise (Paul Kellet's filter), made once per audio context: the raw material of every paper sound. */
 let paperNoise:AudioBuffer|null=null;
 function noiseFor(ctx:BaseAudioContext){
@@ -119,26 +123,36 @@ export function paperTurn(ctx:BaseAudioContext,length:number,level:number){
  land.connect(low).connect(pat).connect(out);nodes.push(low,pat);
  window.setTimeout(()=>nodes.forEach(node=>{try{node.disconnect();}catch{ /* already gone */ }}),(length+.4)*1000);
 }
-/** A real book page turning: a soft rustle as the sheet lifts, then a crisp flick as it lands (Voltiment555, "Book Flip Sounds",
- *  BookFlip9, CC0, opengameart.org/content/book-flip-sounds; trimmed and normalized to 14 KB). Fetched and decoded off the main thread
- *  once audio is unlocked; until then the synthesized turn above stands in. */
-const PAGE_TURN_FLICK=.55;
-let pageTurn:AudioBuffer|null=null,pageTurnLoad:Promise<void>|null=null;
-function loadPageTurn(ctx:BaseAudioContext){
- pageTurnLoad??=fetch(url('/media/page-turn.mp3')).then(response=>response.arrayBuffer()).then(data=>ctx.decodeAudioData(data)).then(buffer=>{pageTurn=buffer;}).catch(()=>{pageTurnLoad=null;});
- return pageTurnLoad;
+/** Recorded paper, both CC0 from freesound.org, chosen for a soft sound with little of the hiss above 4 kHz (the earlier clip, a crisp
+ *  flick, was over a quarter treble and sounded sharp):
+ *  - page-turn.mp3, one page of a book turning: esperri, "Book Turn Page 3.wav" (freesound.org/s/119128), mono, levelled to -23 LUFS;
+ *  - page-riffle.mp3, many pages riffled at once, for the intro film's fanned pages: lexjharold, "Quick Page Flipping"
+ *    (freesound.org/s/732601), its 1.65 s of flutter, mono, levelled to about -23 LUFS (limited; at -27 it was hard to hear).
+ *  Fetched and decoded off the main thread once audio is unlocked; until then the synthesized turn above stands in. */
+const clips:{page:AudioBuffer|null;riffle:AudioBuffer|null}={page:null,riffle:null};
+let clipsLoad:Promise<void>|null=null;
+function loadClips(ctx:BaseAudioContext){
+ const load=(file:string)=>fetch(url(file)).then(response=>response.arrayBuffer()).then(data=>ctx.decodeAudioData(data));
+ clipsLoad??=Promise.all([load('/media/page-turn.mp3'),load('/media/page-riffle.mp3')]).then(([page,riffle])=>{clips.page=page;clips.riffle=riffle;}).catch(()=>{clipsLoad=null;});
+ return clipsLoad;
 }
-function playClip(ctx:BaseAudioContext,buffer:AudioBuffer,offset:number,level:number,rate:number,duration?:number){
- const source=ctx.createBufferSource(),gain=ctx.createGain();source.buffer=buffer;source.playbackRate.value=rate;gain.gain.value=level;
- source.connect(gain).connect(ctx.destination);source.start(ctx.currentTime+.005,offset,duration);source.onended=()=>{source.disconnect();gain.disconnect();};
+/** `duration`: cut the clip short there, fading out over its last FADE seconds instead of stopping on a sound. */
+const FADE=.18;
+/** `offset`: start this far into the clip (seconds of clip). */
+function playClip(ctx:BaseAudioContext,buffer:AudioBuffer,level:number,rate:number,duration?:number,offset=0){
+ const source=ctx.createBufferSource(),gain=ctx.createGain(),at=ctx.currentTime+.005;source.buffer=buffer;source.playbackRate.value=rate;gain.gain.setValueAtTime(level,at);
+ if(duration!==undefined&&duration*rate<buffer.duration){const end=at+duration;gain.gain.setValueAtTime(level,Math.max(at,end-FADE));gain.gain.linearRampToValueAtTime(0,end);}
+ source.connect(gain).connect(ctx.destination);source.start(at,offset,duration!==undefined?duration*rate:undefined);source.onended=()=>{source.disconnect();gain.disconnect();};
 }
-/** 'page': a page turn; 'flip': one of the intro film's quick fanned pages (the flick alone); 'hello': a soft chime when a story opens. */
-export function playSound(kind:'page'|'flip'|'hello') {
+/** 'page': a page turn; 'riffle': the intro film's fanned pages, lasting `seconds` (cut short with a fade) from `from` seconds into the
+ *  riffle; 'hello': a soft chime when a story opens. */
+export function playSound(kind:'page'|'riffle'|'hello',seconds?:number,from=0) {
+ if(!useSoundPref.getState().on)return;
  const emit=()=>{const ctx=audioContext;if(!ctx||ctx.state!=='running')return;
   try {
    // A touch of speed variation keeps repeated turns from sounding identical.
-   if(kind==='page'){if(pageTurn)playClip(ctx,pageTurn,0,1.4,.97+Math.random()*.06);else paperTurn(ctx,1.1,3);return;}
-   if(kind==='flip'){if(pageTurn)playClip(ctx,pageTurn,PAGE_TURN_FLICK,.7,1.02+Math.random()*.1,.5);else paperTurn(ctx,.42,2);return;}
+   if(kind==='page'){if(clips.page)playClip(ctx,clips.page,1,.97+Math.random()*.06);else paperTurn(ctx,1.1,3);return;}
+   if(kind==='riffle'){if(clips.riffle){if(from<clips.riffle.duration-.1)playClip(ctx,clips.riffle,1,1,seconds,from);}else paperTurn(ctx,Math.min(seconds??1,1.2),2);return;}
    const gain=ctx.createGain();gain.connect(ctx.destination);gain.gain.setValueAtTime(.035,ctx.currentTime);gain.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+.4);const osc=ctx.createOscillator();osc.type='sine';osc.frequency.setValueAtTime(523,ctx.currentTime);osc.frequency.exponentialRampToValueAtTime(784,ctx.currentTime+.3);osc.connect(gain);osc.start();osc.stop(ctx.currentTime+.4);osc.onended=()=>{osc.disconnect();gain.disconnect();};
   }catch{ /* Keep the book usable if audio is interrupted. */ }
  };

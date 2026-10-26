@@ -2,7 +2,8 @@
  * The recipe posters of the third spread (art-src/gpt/page-3/new/poster → public/media/posters, WebP): one per dish and language. The
  * source names are Korean, with " en" / " ch" for the English and Chinese versions; the poster book (src/PosterBook.tsx) uses the short
  * names below, e.g. gnocchi-zh.webp. Also the real photo of each dish (art-src/gpt/page-3/new/new2/…_실사.png → photo-<dish>.webp), shown on
- * the poster book's left page.
+ * the poster book's left page. And the recipe call (gujwa-recipe-call-poster-transparent.png → public/media/recipe-share.webp), shown when the
+ * "나만의 레시피" book is pressed (details.ts recipe-share `sheet`; its buttons' boxes are measured on this picture).
  *   node scripts/prepare-posters.mjs
  * Environment: CODEX_NODE_MODULES (sharp), as scripts/prepare-gpt-art.mjs.
  */
@@ -28,4 +29,10 @@ for(const [name,file] of Object.entries(photos)){
  await fs.writeFile(path.join(to,`photo-${name}.webp`),out);
  const meta=await sharp(out).metadata();
  console.log(`photo-${name}: ${meta.width}×${meta.height}, ${(out.length/1024).toFixed(0)} KiB`);
+}
+{
+ const out=await sharp(path.join(project,'art-src/gpt/page-3/new/new2/gujwa-recipe-call-poster-transparent.png')).resize({width:1086,withoutEnlargement:true}).webp({quality:84,alphaQuality:90,effort:5}).toBuffer();
+ await fs.writeFile(path.join(project,'public/media/recipe-share.webp'),out);
+ const meta=await sharp(out).metadata();
+ console.log(`recipe-share: ${meta.width}×${meta.height}, ${(out.length/1024).toFixed(0)} KiB`);
 }

@@ -19,7 +19,8 @@
  *  video_start / video_progress / video_complete / video_pause   a YouTube Short in a recipe poster book (src/PosterBook.tsx): video_title,
  *                     video_url, video_provider 'youtube', video_percent (25 | 50 | 75 | 100), video_current_time, video_duration, content_id
  *  shorts_play / shorts_open   the Short's play button pressed / "open on YouTube" followed
- * Every event also carries book_chapter (farmer | cooks | recipes), book_lang (ko | en | zh) and book_layout (phone | desktop).
+ * Every event also carries book_chapter (farmer | cooks | recipes), book_lang (ko | en | zh), book_layout (phone | desktop), and which copy
+ * of the site sent it: book_env (main = lxwebzine.hankyung.com | test = anywhere else) and book_host.
  *
  * The URL hash follows what is on screen (history.replaceState, so the back button is not filled with page turns), and a link with a
  * hash opens that spread or story after the intro (src/App.tsx). Turn off GA4 Enhanced measurement › "Page changes based on browser
@@ -36,10 +37,14 @@ type Params = Record<string, string | number | boolean | undefined>;
 // Every parameter name pushed so far: each push sets the ones it does not carry back to undefined, because GTM's data model keeps the
 // last value of every key, and an event would otherwise pick up, say, the content_id of an earlier one.
 const pushedKeys = new Set<string>();
+// The book's real home; every other copy (GitHub Pages, Vercel, a local preview) is a test, measured in the same GA4 but told apart by
+// book_env, so test visits can be filtered out of the reports (or sent elsewhere in GTM).
+const MAIN_HOST = 'lxwebzine.hankyung.com';
 function context(): Params {
  const chapter = scenes[useStory.getState().chapter];
  const phone = typeof matchMedia === 'function' && matchMedia('(max-width: 760px) and (orientation: portrait)').matches;
- return { book_chapter: chapter?.id, book_lang: useLocale.getState().lang, book_layout: phone ? 'phone' : 'desktop' };
+ return { book_chapter: chapter?.id, book_lang: useLocale.getState().lang, book_layout: phone ? 'phone' : 'desktop',
+  book_env: location.hostname === MAIN_HOST ? 'main' : 'test', book_host: location.hostname };
 }
 export function track(name: string, params: Params = {}) {
  if (typeof window === 'undefined') return;
@@ -52,7 +57,7 @@ export function track(name: string, params: Params = {}) {
 }
 
 /** Where on the page a control sits, from the nearest known part of the interface. */
-const AREAS: [string, string][] = [['.settings-menu', 'settings'], ['.contents-modal', 'contents'], ['.prologue', 'prologue'], ['.guide', 'guide'],
+const AREAS: [string, string][] = [['.lang-switch,.icon-toggle', 'settings'], ['.contents-modal', 'contents'], ['.prologue', 'prologue'], ['.guide', 'guide'],
  ['.poster-book', 'poster_book'], ['.webzine-book', 'webzine'], ['.detail-book', 'story_book'], ['.detail-panel', 'story_panel'], ['.is-ending', 'ending'],
  ['.modal-backdrop,[role="dialog"]', 'modal'], ['.site-header,.top-actions', 'header'], ['.cover-intro,.intro', 'intro']];
 function areaOf(element: Element) { for (const [selector, area] of AREAS) if (element.closest(selector)) return area; return 'page'; }

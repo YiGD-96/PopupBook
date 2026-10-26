@@ -19,7 +19,11 @@
 .intro-screen.is-leaving{opacity:0;pointer-events:none}
 .intro-media{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:var(--book-media-width,100%);height:var(--book-media-height,100%);object-fit:contain;display:block;max-width:none}
 /* The phone film is sized for the standing book's camera (src/standingMedia.ts). */
-.intro-screen.is-standing .intro-media{width:var(--standing-media-width,100%);height:var(--standing-media-height,100%);left:calc(50% - var(--standing-media-width,100%)/2);top:calc(50% - var(--standing-media-height,100%)/2 + var(--standing-drop,0px));transform:none}
+.intro-screen.is-standing .intro-media{width:var(--standing-media-width,100%);height:var(--standing-media-height,100%);left:calc(50% - var(--standing-media-width,100%)/2);top:calc(50% - var(--standing-media-height,100%)/2);transform:none;transition:transform .9s cubic-bezier(.45,0,.25,1)}
+/* Centred at first, the closed book in the middle of the screen; moved down to the standing book's place (STANDING_DROP) as it lowers and
+   opens (src/Intro.tsx), by a transform so the move costs no layout. */
+.intro-screen.is-standing.is-dropped .intro-media{transform:translateY(var(--standing-drop,0px))}
+@media(prefers-reduced-motion:reduce){.intro-screen.is-standing .intro-media{transition:none}}
 .intro-cover[hidden]{display:none}
 .intro-video.is-waiting{opacity:0}
 /* Shown only when the browser would not start the film by itself (src/Intro.tsx): a touch starts it. */
@@ -89,30 +93,33 @@
 @media(max-width:760px){
  .detail-panel{top:auto;left:10px;right:10px;bottom:10px;width:auto;max-height:64svh;border-radius:20px;animation-name:detail-up}
  .detail-body{padding:26px 20px 22px}
- /* bottom again: the wide-screen .is-sheet rule (bottom:auto) is more specific than the phone's .detail-panel, and with top and bottom both
-    auto the recipe call opened below the screen. */
- .detail-panel.is-sheet{bottom:10px;width:min(calc(100% - 20px),calc((100svh - 90px) * .75));max-height:none;margin:0 auto;border-radius:6px}
+ /* The recipe call poster sits in the middle of the screen: pinned top and bottom with its own height and auto margins (the wide-screen
+    .is-sheet rule's bottom:auto is more specific than the phone's .detail-panel, so both are set here). */
+ .detail-panel.is-sheet{top:0;bottom:0;height:fit-content;width:min(calc(100% - 20px),calc((100svh - 90px) * .75));max-height:none;margin:auto;border-radius:6px}
  @keyframes detail-up{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:none}}
 }
 /* Magazine brand (gujwa-carrot.vercel.app): logo, then the name after a thin rule. */
-.cinematic-reader .site-header .brand{gap:16px;font-size:15px;font-weight:600;letter-spacing:-.02em;color:#186049}
-.brand-logo{display:block;height:26px;width:auto}
+.cinematic-reader .site-header .brand{gap:18px;font-size:17px;font-weight:600;letter-spacing:-.02em;color:#186049}
+.brand-logo{display:block;height:30px;width:auto}
 .brand-name{padding-left:16px;border-left:1px solid #d8d2bd;white-space:nowrap}
 /* Ending card (the team's pinned paper design): real text and buttons over one decoration, the aged paper with its pin and carrot
    drawing (public/media/ending-card.jpg cut to its outline by ending-card-mask.png), which never takes a click. Everything inside
    scales with the card width (cqw: 1% of the width inside the padding, 2.192px on the 250px card). */
 .reader-mode .is-ending .hero-copy{width:250px;container-type:inline-size;padding:163px 15.8px 13.5px 15px;border:0;border-radius:0;text-align:center;backdrop-filter:none;background:none;box-shadow:none}
 .reader-mode .is-ending .hero-copy::before{content:'';position:absolute;inset:0;z-index:-1;background:url(/media/ending-card.jpg) 0 0/100% 100% no-repeat;-webkit-mask:url(/media/ending-card-mask.png) 0 0/100% 100% no-repeat;mask:url(/media/ending-card-mask.png) 0 0/100% 100% no-repeat;pointer-events:none}
-.reader-mode .is-ending h1{margin:0;font-family:'Pretendard Variable',Pretendard,'Noto Sans KR','Noto Sans SC',sans-serif;font-size:11.59cqw;font-weight:800;line-height:13.72cqw;letter-spacing:0;color:#24130a}
+/* Its words in the book's hand (as on the recipe posters): a handwritten title on an orange crayon highlight, handwritten lines, and
+   buttons with hand-drawn edges in the posters' terracotta and dark brown. Yeon Sung (title, buttons) and Gamja Flower (the line below) come with the page's other web fonts (index.html). */
+.reader-mode .is-ending h1{margin:0;font-family:'Yeon Sung','Gowun Batang','Noto Sans SC',serif;font-size:13.6cqw;font-weight:400;line-height:15.4cqw;letter-spacing:0;color:#4f3a2b}
+.reader-mode .is-ending .ending-mark{padding:0 1.6cqw;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 40' preserveAspectRatio='none'%3E%3Cfilter id='r'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' seed='4'/%3E%3CfeDisplacementMap in='SourceGraphic' scale='3.2'/%3E%3C/filter%3E%3Cg filter='url%28%23r%29' fill='none' stroke='%23e8823a' stroke-linecap='round'%3E%3Cpath d='M4 25 C50 21 120 27 196 22' stroke-width='15' stroke-opacity='.5'/%3E%3Cpath d='M8 31 C70 28 140 33 192 29' stroke-width='9' stroke-opacity='.42'/%3E%3Cpath d='M6 19 C60 17 130 20 194 17' stroke-width='7' stroke-opacity='.35'/%3E%3C/g%3E%3C/svg%3E") 0 0/100% 100% no-repeat;-webkit-box-decoration-break:clone;box-decoration-break:clone}
 .reader-mode .is-ending h1 br{display:inline}
 /* Until its paper has loaded (App.tsx useEndingArt), so words and picture come up together. */
 .reader-mode .is-ending .hero-copy.is-waiting{visibility:hidden}
-.reader-mode .is-ending .hero-description{margin:3.15cqw 0 0;font:500 6.52cqw/7.93cqw 'Pretendard Variable',Pretendard,'Noto Sans KR','Noto Sans SC',sans-serif;letter-spacing:0;color:#2f1c10}
-.reader-mode .is-ending .hero-copy>.ending-link{display:flex;width:100%;min-height:16.33cqw;margin-top:3.83cqw;padding:0 3cqw;gap:0;border-radius:1.64cqw;background:#ab541d;box-shadow:none;font:800 8.39cqw 'Pretendard Variable',Pretendard,'Noto Sans KR','Noto Sans SC',sans-serif;color:#f9edda;text-decoration:none}
-.reader-mode .is-ending .hero-copy>.ending-link:hover{background:#984818}
+.reader-mode .is-ending .hero-description{margin:3.4cqw 0 0;font:400 8.6cqw/9.8cqw 'Gamja Flower','Gowun Batang','Noto Sans SC',serif;letter-spacing:0;color:#5e3a1c}
+.reader-mode .is-ending .hero-copy>.ending-link{display:flex;width:100%;min-height:16.33cqw;margin-top:4cqw;padding:0 3cqw;gap:1cqw;border-radius:3cqw 1.4cqw 3.4cqw 1.6cqw/1.8cqw 3cqw 1.4cqw 2.8cqw;background:#b9563a;box-shadow:inset 0 0 0 .6cqw #a4472e,inset 0 -1.2cqw 2cqw #8e3c2426;font:400 10.4cqw 'Yeon Sung','Gowun Batang','Noto Sans SC',serif;color:#fbefdc;text-decoration:none}
+.reader-mode .is-ending .hero-copy>.ending-link:hover{background:#a84b31}
 .reader-mode .is-ending .hero-copy>.ending-link svg{width:9.53cqw;height:9.53cqw;margin-left:0;stroke-width:2.6}
-.reader-mode .is-ending .hero-copy>.ending-restart{display:flex;width:100%;min-height:16.33cqw;margin-top:2.6cqw;padding:0 3cqw;gap:2.28cqw;border:max(1px,.55cqw) solid #a5561f;border-radius:1.64cqw;background:transparent;font:800 8.39cqw 'Pretendard Variable',Pretendard,'Noto Sans KR','Noto Sans SC',sans-serif;color:#2f1a0e}
-.reader-mode .is-ending .hero-copy>.ending-restart:hover{background:#a5561f1a}
+.reader-mode .is-ending .hero-copy>.ending-restart{display:flex;width:100%;min-height:16.33cqw;margin-top:2.8cqw;padding:0 3cqw;gap:2.28cqw;border:max(1.5px,.8cqw) solid #4f3a2b;border-radius:1.6cqw 3.2cqw 1.4cqw 3cqw/2.8cqw 1.4cqw 3cqw 1.8cqw;background:#f7ecd7;font:400 10.4cqw 'Yeon Sung','Gowun Batang','Noto Sans SC',serif;color:#4f3a2b}
+.reader-mode .is-ending .hero-copy>.ending-restart:hover{background:#efe0c4}
 .reader-mode .is-ending .hero-copy>.ending-restart svg{width:9.53cqw;height:9.53cqw;transform:scaleX(-1);stroke-width:2.8}
 @media(max-width:760px){
  /* On a phone the closing note comes up in the middle of the screen, over the book (which keeps its place). */
@@ -245,26 +252,21 @@ html,body{background:#1a110b}
  background:radial-gradient(85% 75% at 50% 44%,rgba(16,9,4,.6) 0%,rgba(10,6,3,.84) 100%);animation:prologue-in .55s ease-out both}
 .prologue.is-closing{animation:prologue-out .5s ease-in both;pointer-events:none}
 /* The words sit in a pool of deeper dark, so the book behind reads as a backdrop and never competes with them. */
-.prologue-card{width:min(600px,100%);padding:36px 24px;display:flex;flex-direction:column;align-items:center;text-align:center;animation:prologue-rise .7s cubic-bezier(.2,.7,.2,1) both;
+.prologue-card{width:min(780px,100%);padding:36px 24px;display:flex;flex-direction:column;align-items:center;text-align:center;animation:prologue-rise .7s cubic-bezier(.2,.7,.2,1) both;
  background:radial-gradient(closest-side,rgba(10,6,3,.78) 55%,rgba(10,6,3,0) 100%)}
 .is-closing .prologue-card{animation:none}
 /* On wide screens the pool of dark behind the words is lighter, so more of the open book shows through (phones keep it deep, for contrast). */
 @media(min-width:761px){.prologue-card{background:radial-gradient(closest-side,rgba(10,6,3,.6) 55%,rgba(10,6,3,0) 100%)}}
-.prologue-kicker{font:600 11px 'Cormorant Garamond',Georgia,serif;letter-spacing:.3em;text-transform:uppercase;color:#d9a35f}
-.prologue h2{margin:14px 0 10px;font-family:var(--serif);font-size:clamp(30px,3.6vw,46px);font-weight:400;letter-spacing:-.02em;line-height:1.25;color:#f8ead1}
-.prologue-lead{font-family:var(--serif);font-size:16px;line-height:1.75;color:#e8cfa5}
-.prologue-lead em{font-style:normal;color:#f5a25a}
-.prologue-text{margin-top:14px;max-width:460px;font-size:14px;line-height:1.8;color:#dcc6a0;word-break:keep-all}
-/* Emphasis in the prologue's words (src/Prologue.tsx): the subject in the title coloured like the promises; the chapters' three themes
-   marked with a soft highlighter band low on the line; the closing call a touch larger, its destination in warm gold. */
+/* Set large and spaced, to be taken in at a glance: the title, the one line, the button. */
+.prologue h2{margin:0;font-family:var(--serif);font-size:clamp(40px,4.6vw,62px);font-weight:400;letter-spacing:-.02em;line-height:1.2;color:#f8ead1;word-break:keep-all}
+.prologue-text{margin-top:22px;max-width:640px;font-family:var(--serif);font-size:clamp(17px,1.5vw,21px);line-height:1.75;color:#ecd8b4;word-break:keep-all}
+/* Emphasis in the prologue's words (src/Prologue.tsx): the subject in the title coloured; the chapters' three themes marked with a soft
+   highlighter band low on the line. */
 .prologue h2 em{font-style:normal;color:#f5a25a}
+.prologue-keep{white-space:nowrap} /* a narrow screen breaks the title after its comma */
 .prologue-text mark{padding:0 .14em;border-radius:2px;color:#f6e6c8;background:linear-gradient(transparent 58%,rgba(224,138,58,.45) 58%,rgba(224,138,58,.45) 92%,transparent 92%)}
-.prologue-call{margin-top:16px;font-family:var(--serif);font-size:15px;line-height:1.7;color:#e8cfa5;word-break:keep-all}
-.prologue-call strong{font-weight:400;color:#ffd27a}
 /* The contents: the three chapters, one per line, large; numbers lined up (the list is as wide as its longest title, centred). */
-.prologue-chapters{display:flex;flex-direction:column;align-items:flex-start;gap:10px;width:max-content;max-width:100%;margin:24px auto 0;padding:0;list-style:none;font-family:var(--serif);font-size:20px;line-height:1.35;color:#ecdcbc;word-break:keep-all}
-.prologue-chapters span{display:inline-block;min-width:2.1em;margin-right:10px;font:17px Georgia,serif;color:#e08a3a}
-.cinematic-reader .prologue-start{margin-top:26px;min-width:228px;min-height:50px;gap:10px;background:#c4531f;color:#fff6e6;box-shadow:0 10px 28px rgba(0,0,0,.35)}
+.cinematic-reader .prologue-start{margin-top:36px;min-width:260px;min-height:58px;gap:10px;font-size:18px;background:#c4531f;color:#fff6e6;box-shadow:0 10px 28px rgba(0,0,0,.35)}
 .cinematic-reader .prologue-start:hover:not(:disabled){background:#d5602a}
 .cinematic-reader .prologue-start:disabled{opacity:.7;background:#5a3f2b;cursor:wait}
 .prologue-start svg:last-child{margin-left:0}
@@ -275,42 +277,27 @@ html,body{background:#1a110b}
  /* Centred top to bottom; auto margins (not grid centring) so a card taller than the screen still scrolls from its top. */
  .prologue{padding:18px;display:flex}
  .prologue-card{margin:auto;padding-top:24px}
- .prologue h2{font-size:28px}
- .prologue-lead{font-size:14px}
- .prologue-text{font-size:12px}
- .prologue-call{font-size:13px;margin-top:12px}
- .prologue-chapters{gap:8px;font-size:17px}
- .prologue-chapters span{font-size:15px;margin-right:8px}
+ .prologue h2{font-size:34px}
+ .prologue-text{margin-top:16px;font-size:15px}
+ .cinematic-reader .prologue-start{margin-top:28px;min-width:236px;min-height:54px;font-size:17px}
  
  
 }
 @media(prefers-reduced-motion:reduce){.prologue,.prologue.is-closing,.prologue-card{animation:none}}
 
-/* ───────── The settings (src/SettingsMenu.tsx): a gear at the top right, beside the contents; language and the opening inside. */
-/* The contents button and the gear sit together at the top right (src/App.tsx .top-actions), level with the brand. */
+/* ───────── The settings at the top right (src/TopControls.tsx), beside the contents and level with the brand: the language as one
+   pill that steps to the next language, then the sound and the opening as round icon toggles (dimmed when off). */
 .top-actions{position:fixed;top:20px;right:max(18px,6.2%);z-index:9;display:flex;align-items:center;gap:8px}
 .top-pill{display:inline-flex;align-items:center;min-height:32px;padding:0 14px;border:1px solid rgba(255,236,205,.22);border-radius:999px;background:rgba(26,17,11,.55);color:#e2d0b2;font-size:12px;letter-spacing:.04em;white-space:nowrap;animation:reader-arrive .45s ease-out both;transition:background .2s,color .2s}
 .top-pill:hover{background:rgba(46,30,18,.85);color:#f5a25a}
 .top-pill:focus-visible{outline:2px solid #d9a35f;outline-offset:2px}
 @media(max-width:760px){.top-actions{top:15px;right:18px;gap:6px}.top-pill{padding:0 12px}}
-.settings-menu{position:relative}
-.top-pill.settings-button{width:32px;padding:0;justify-content:center}
-.settings-button svg{transition:transform .3s ease}.settings-button[aria-expanded=true]{background:rgba(46,30,18,.85);color:#f5a25a}.settings-button[aria-expanded=true] svg{transform:rotate(60deg)}
-.settings-panel{position:absolute;right:0;top:calc(100% + 8px);width:268px;padding:16px 16px 14px;background:#20150d;border:1px solid rgba(255,236,205,.18);border-radius:16px;box-shadow:0 18px 40px rgba(0,0,0,.45);color:#e2d0b2;animation:fade .15s ease-out}
-.settings-title{margin:0 0 12px;font-size:13px;font-weight:600;letter-spacing:.02em;color:#f1e3c8}
-.settings-section+.settings-section{margin-top:14px;padding-top:14px;border-top:1px solid rgba(255,236,205,.1)}
-.settings-section h3{margin:0 0 8px;font-size:11px;font-weight:500;letter-spacing:.06em;color:#b99b74}
-.settings-langs{display:flex;gap:6px}
-.settings-langs button{flex:1;min-height:32px;padding:0 6px;border:1px solid rgba(255,236,205,.18);border-radius:999px;background:transparent;font-size:12px;color:#e2d0b2;transition:background .2s,color .2s,border-color .2s}
-.settings-langs button:hover{background:rgba(255,236,205,.06)}
-.settings-langs button.is-on{background:#c4531f;border-color:#c4531f;color:#fff6e6}
-.settings-switch{display:flex;align-items:center;justify-content:space-between;gap:12px;cursor:pointer}
-.settings-switch span{display:flex;flex-direction:column;gap:3px}.settings-switch strong{font-size:13px;font-weight:500;color:#f1e3c8}.settings-switch small{font-size:11px;color:#a88f6c}
-.settings-switch input{position:absolute;opacity:0;width:1px;height:1px}
-.settings-switch i{position:relative;flex-shrink:0;width:38px;height:22px;border-radius:999px;background:rgba(255,236,205,.18);transition:background .2s}
-.settings-switch i::after{content:'';position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#f1e3c8;transition:transform .2s}
-.settings-switch input:checked+i{background:#c4531f}.settings-switch input:checked+i::after{transform:translateX(16px)}
-.settings-switch input:focus-visible+i{outline:2px solid #d9a35f;outline-offset:2px}
+.lang-switch{gap:6px;padding:0 12px 0 10px;font-size:12px}
+.lang-switch svg{flex-shrink:0;opacity:.8}
+.lang-short{display:none}
+.top-pill.icon-toggle{width:32px;padding:0;justify-content:center}
+.top-pill.icon-toggle[aria-pressed=false]{color:#8f7b62}
+@media(max-width:760px){.lang-full{display:none}.lang-short{display:inline}.lang-switch{padding:0 10px 0 8px}}
 /* Skipping the opening (src/App.tsx): one pill like the top ones, over the film and the prologue, bottom right (bottom centre on a phone). */
 .opening-skip{position:fixed;z-index:41;right:max(18px,6.2%);bottom:24px;display:flex;align-items:center;gap:10px;min-height:36px;padding:3px 3px 3px 14px;border:1px solid rgba(255,236,205,.22);border-radius:999px;background:rgba(26,17,11,.62);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);font-size:12px;color:#e2d0b2;white-space:nowrap;animation:reader-arrive .45s ease-out both}
 .opening-remember{display:inline-flex;align-items:center;gap:7px;cursor:pointer}
@@ -480,15 +467,26 @@ html,body{background:#1a110b}
 @media(max-width:760px){
  .detail-book-backdrop:has(.webzine-book){padding:8px}
  .webzine-book{width:100%;gap:10px;max-height:calc(100svh - 16px)}
- /* A set height, not a cap: a shorter page (or one whose photos were still loading) made the sheet shorter and the page arrows below it rise. */
- .wz-sheet{aspect-ratio:auto;container-type:normal;overflow:auto;overscroll-behavior:contain;height:calc(100svh - 76px);border-radius:6px}
- .wz-inner{--u:1px;--title:27px;--sub:21px;--head:17px;--body:15px;--quote:calc(17px + 2pt);--gap:16px;--gap-quote:24px;position:static;padding:18px 18px 30px}
+ /* The whole story in one scroll (src/WebzineBook.tsx, no page arrows on a phone): the sheet takes the screen, its spreads one after another. */
+ .wz-sheet{aspect-ratio:auto;container-type:normal;overflow:auto;overscroll-behavior:contain;height:calc(100svh - 16px);border-radius:6px}
+ /* Lines only between sections, all alike: one above each numbered heading (or above the eyebrow, EPILOGUE, that leads one), with the
+    same space either side. The desktop's other lines (rules between blocks, the caption cards' dividers, the border between the two
+    pages and between spreads) go. */
+ .wz-spread+.wz-spread{margin-top:0;padding-top:0;border-top:0}
+ .wz-rule{display:none}
+ .wz-captions>div,.wz-captions>div+div,.wz-captions.is-cards>div,.wz-captions.is-cards>div+div{border:0;padding-top:0;padding-left:0}
+ .wz-h2,.wz-eyebrow{margin-top:var(--section);padding-top:var(--section);border-top:1px solid #cdb995}
+ .wz-eyebrow+.wz-h2{margin-top:0;padding-top:0;border-top:0}
+ /* Nothing trails what comes before a section (a paragraph's, a page's own bottom margin), so the space above each line is the line's own. */
+ .wz-page>:last-child,.wz-page>:has(+.wz-h2,+.wz-eyebrow,+.wz-side>div>.wz-h2:first-child,+.wz-rule+.wz-h2,+.wz-rule+.wz-eyebrow,+.wz-rule+.wz-side>div>.wz-h2:first-child){margin-bottom:0}
+ .wz-page>:is(:last-child,:has(+.wz-h2,+.wz-eyebrow,+.wz-side,+.wz-rule)) :is(p,figure,blockquote,div):last-child{margin-bottom:0;padding-bottom:0}
+ .wz-inner{--u:1px;--title:27px;--sub:21px;--head:17px;--body:15px;--quote:calc(17px + 2pt);--gap:16px;--gap-quote:24px;--section:26px;position:static;padding:18px 18px 30px}
  .wz-bar{height:auto;margin-bottom:16px;padding-right:44px}
  .wz-bar i,.wz-bar em{display:none}
- .wz-spread{grid-template-columns:1fr;gap:26px}
+ .wz-spread{grid-template-columns:1fr;gap:0} /* the space between its pages is the next section's own */
  .wz-page{overflow:visible}
  .wz-page.is-left{padding-right:0}
- .wz-page.is-right{padding-left:0;border-left:0;border-top:1px solid #cdb995;padding-top:22px}
+ .wz-page.is-right{padding-left:0;border-left:0}
  .wz-page.is-right::after{display:none}
  .wz-lead{padding-top:12px}.wz-lead::before{width:40px}
  .wz-p{line-height:1.7}.wz-quote{padding-left:20px}.wz-quote::before{top:-8px;font-size:38px}
@@ -500,7 +498,7 @@ html,body{background:#1a110b}
  .wz-menu.is-flip>img{order:0}
  .wz-menus{grid-template-columns:1fr;gap:14px}
 .wz-menu.is-tall{grid-template-columns:42% 1fr;gap:14px}
- .wz-captions{grid-template-columns:1fr;gap:12px}.wz-captions>div+div{border-left:0;padding-left:0;border-top:1px solid #cdb995;padding-top:12px}
+ .wz-captions{grid-template-columns:1fr;gap:12px}.wz-captions>div+div{border-left:0;padding-left:0;border-top:0;padding-top:0}
  .wz-captions.is-cards{grid-template-columns:1fr 1fr}
  .wz-rows>div{gap:10px;padding:10px 0;align-items:start}.wz-rows b{width:24px}.wz-rows strong{min-width:110px}
  .wz-rows.is-pairs>div{gap:12px}
@@ -549,9 +547,30 @@ html,body{background:#1a110b}
 /* Korean breaks between words (keep-all) or anywhere for an even justified edge (break-all). English and Chinese do neither:
    English breaks between words (and hyphenates), Chinese between any two characters. English is also set ragged right: justified in the
    webzine's narrow columns it opened wide gaps between words. */
-html:not(:lang(ko)) :is(.detail-lead,.detail-book-text,.wz-lead p,.wz-p,.wz-quote p,.wz-menu p,.wz-captions p,.wz-captions.is-cards p,.wz-h1,.wz-h2,.wz-rows span,.prologue-text,.prologue-call,.prologue-chapters,.guide-bubble strong,.guide-bubble span,.contents-body strong,.contents-body em){word-break:normal;overflow-wrap:break-word}
+html:not(:lang(ko)) :is(.detail-lead,.detail-book-text,.wz-lead p,.wz-p,.wz-quote p,.wz-menu p,.wz-captions p,.wz-captions.is-cards p,.wz-h1,.wz-h2,.wz-rows span,.prologue-text,.guide-bubble strong,.guide-bubble span,.contents-body strong,.contents-body em){word-break:normal;overflow-wrap:break-word}
 html:lang(en) :is(.detail-lead,.detail-book-text,.wz-lead p,.wz-p,.wz-quote p,.wz-menu p,.wz-captions p){hyphens:auto;text-align:left}
 /* A headline's lines are set for the Korean; in English they run on as one sentence and wrap where they fit (a translated first line can
    be longer than the column, which left a word stranded on a line of its own). */
 html:lang(en) .wz-h1 span{display:inline}
 html:lang(en) .wz-h1 span+span::before{content:' '}
+/* Every page arrow is the same round button: the book's either side of it, and the web magazine's either side of its sheet. */
+.cinematic-reader .reader-arrow,.cinematic-reader .book-stage .reader-arrow{width:46px;height:46px;border-radius:50%;border:0;background:rgba(255,250,240,.92);color:#6b5a48;box-shadow:0 2px 8px rgba(60,40,20,.25)}
+.cinematic-reader .reader-arrow svg{width:22px;height:22px;stroke-width:2;filter:none}
+.cinematic-reader .reader-arrow:hover:not(:disabled){background:#fffaf0;color:#a35c2d}
+.cinematic-reader .reader-arrow:disabled{opacity:.35}
+.cinematic-reader .reader-arrow:hover:not(:disabled){transform:none}
+.cinematic-reader .reader-vnav{display:none}
+/* The phone's upright book: no side arrows (and no sideways drag, src/useBookGestures.ts); below the book, the previous page's arrow and
+   the next's side by side, plain arrows with a soft shadow over the painting (laid out with no transform, so hover never moves them). */
+@media(max-width:760px) and (orientation:portrait){
+ .cinematic-reader .reader-prev,.cinematic-reader .reader-next{display:none}
+ .cinematic-reader .reader-vnav{display:flex;position:fixed;left:0;right:0;bottom:max(76px,calc(env(safe-area-inset-bottom) + 64px));z-index:5;justify-content:center;gap:36px;pointer-events:none}
+ .cinematic-reader .book-stage .reader-vnav .reader-arrow{position:static;pointer-events:auto;width:48px;height:48px;border-radius:0;background:none;box-shadow:none;color:#fff3dc}
+ .cinematic-reader .book-stage .reader-vnav .reader-arrow svg{width:30px;height:30px;stroke-width:2.2;filter:drop-shadow(0 1px 2px rgba(20,10,4,.8)) drop-shadow(0 0 6px rgba(20,10,4,.5))}
+ .cinematic-reader .book-stage .reader-vnav .reader-arrow:hover:not(:disabled){background:none;color:#f5a25a}
+ .cinematic-reader .book-stage .reader-vnav .reader-arrow.is-none{visibility:hidden}
+}
+/* The web magazine's quotes in the brand's own letters (the "구좌 당근을 만나는 사람들" beside the logo): Gowun Batang, bold, upright. */
+.wz-quote p{font-family:var(--serif);font-weight:700;font-style:normal;letter-spacing:-.01em}
+/* Korean set justified opened wide gaps between words: the spaces a little narrower. */
+html:lang(ko) :is(.wz-p,.wz-lead p,.wz-quote p,.wz-menu p,.wz-captions p,.detail-lead,.detail-book-text){word-spacing:-.08em}
