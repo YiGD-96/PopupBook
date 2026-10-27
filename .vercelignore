@@ -8,3 +8,5 @@ dist/
 qa/
 .env
 .env.*
+# The main site's address (no secrets), so this copy names lxwebzine.hankyung.com in canonical, og and JSON-LD
+!.env.production
