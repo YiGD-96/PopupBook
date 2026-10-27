@@ -21,7 +21,7 @@ const text=Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="${W}" hei
  <text x="60" y="398" font-family="Gowun Batang,Batang,Malgun Gothic,serif" font-size="64" font-weight="700" fill="#f6e9d0">구좌</text>
  <text x="64" y="462" font-family="Malgun Gothic,Noto Sans KR,sans-serif" font-size="24" fill="#e7d4b4">어디서나 곁들임이던 채소가,</text>
  <text x="64" y="498" font-family="Malgun Gothic,Noto Sans KR,sans-serif" font-size="24" fill="#e7d4b4">구좌를 찾아오는 이유가 된다.</text>
- <text x="64" y="572" font-family="Malgun Gothic,Noto Sans KR,sans-serif" font-size="18" fill="#bba383">구좌 당근을 만나는 사람들 · 팝업북</text>
+ <text x="64" y="572" font-family="Malgun Gothic,Noto Sans KR,sans-serif" font-size="18" fill="#bba383">구좌 당근, 몬딱 담았수다 · 팝업북</text>
 </svg>`);
 await sharp({create:{width:W,height:H,channels:3,background:bg}})
  .composite([{input:book,left:W-bw+40,top:0},{input:Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}"><defs><linearGradient id="f" x1="0" x2="1"><stop offset="${(W-bw+40)/W}" stop-color="${bg}"/><stop offset="${(W-bw+200)/W}" stop-color="${bg}" stop-opacity="0"/></linearGradient></defs><rect width="${W}" height="${H}" fill="url(#f)"/></svg>`),left:0,top:0},{input:text,left:0,top:0}])

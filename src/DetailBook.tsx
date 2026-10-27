@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { ArrowUpRight, X } from 'lucide-react';
+import { X } from 'lucide-react';
 import { details } from './details';
 import { useLocalized, useT } from './i18n';
 import { tappedOutside } from './outsideTap';
@@ -35,7 +35,6 @@ export default function DetailBook({id,onClose,onOpen}:{id:string;onClose:()=>vo
      {detail.quote&&<blockquote>“{detail.quote}”</blockquote>}
     </div>
     <footer>
-     <a className="detail-book-link" href={detail.link.href} target="_blank" rel="noopener noreferrer">{detail.link.label}<ArrowUpRight size={15}/></a>
      {detail.related&&<nav aria-label={t('함께 보면 좋은 이야기')}>{detail.related.filter(r=>details[r]).map(r=><button key={r} onClick={()=>onOpen(r)}>{t(details[r].title)}</button>)}</nav>}
     </footer>
     <span className="detail-book-folio">{spread.folio[1]}</span>

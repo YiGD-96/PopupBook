@@ -29,8 +29,9 @@ jobs:
       - run: npm ci
       - run: npm run build
         env:
-          # Absolute addresses for search engines and link previews (canonical, og:image, sitemap).
-          VITE_SITE_URL: https://yigd-96.github.io/PopupBook
+          # The main site's address, not this copy's: canonical, og:url, JSON-LD and the sitemap all name lxwebzine.hankyung.com, so search
+          # engines index the main site and treat this GitHub Pages copy as a duplicate of it.
+          VITE_SITE_URL: https://lxwebzine.hankyung.com/2026-1/team5
           # Optional: set a repository variable VITE_GA_ID to turn on Google Analytics.
           VITE_GA_ID: ${{ vars.VITE_GA_ID }}
       - uses: actions/upload-pages-artifact@v3
