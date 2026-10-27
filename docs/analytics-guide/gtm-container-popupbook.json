@@ -186,6 +186,21 @@
          {
           "type": "TEMPLATE",
           "key": "parameter",
+          "value": "scroll_percent"
+         },
+         {
+          "type": "TEMPLATE",
+          "key": "parameterValue",
+          "value": "{{DLV - scroll_percent}}"
+         }
+        ]
+       },
+       {
+        "type": "MAP",
+        "map": [
+         {
+          "type": "TEMPLATE",
+          "key": "parameter",
           "value": "from_chapter"
          },
          {
@@ -357,6 +372,21 @@
           "type": "TEMPLATE",
           "key": "parameterValue",
           "value": "{{DLV - ui_label}}"
+         }
+        ]
+       },
+       {
+        "type": "MAP",
+        "map": [
+         {
+          "type": "TEMPLATE",
+          "key": "parameter",
+          "value": "ui_id"
+         },
+         {
+          "type": "TEMPLATE",
+          "key": "parameterValue",
+          "value": "{{DLV - ui_id}}"
          }
         ]
        },
@@ -673,7 +703,7 @@
        {
         "type": "TEMPLATE",
         "key": "arg1",
-        "value": "^(about_open|guide_done|guide_start|intro_complete|intro_skip|language_change|page_turn|page_view|prologue_start|restart|select_content|shorts_open|shorts_play|story_close|story_complete|story_link_click|ui_click|video_complete|video_pause|video_progress|video_start)$"
+        "value": "^(about_open|guide_done|guide_start|intro_complete|intro_skip|language_change|page_turn|page_view|prologue_start|restart|select_content|shorts_open|shorts_play|story_close|story_complete|story_link_click|story_scroll|ui_click|video_complete|video_pause|video_progress|video_start)$"
        }
       ]
      }
@@ -919,6 +949,30 @@
       "type": "TEMPLATE",
       "key": "name",
       "value": "open_seconds"
+     }
+    ]
+   },
+   {
+    "accountId": "0",
+    "containerId": "0",
+    "variableId": "905",
+    "name": "DLV - scroll_percent",
+    "type": "v",
+    "parameter": [
+     {
+      "type": "INTEGER",
+      "key": "dataLayerVersion",
+      "value": "2"
+     },
+     {
+      "type": "BOOLEAN",
+      "key": "setDefaultValue",
+      "value": "false"
+     },
+     {
+      "type": "TEMPLATE",
+      "key": "name",
+      "value": "scroll_percent"
      }
     ]
    },
@@ -1207,6 +1261,30 @@
       "type": "TEMPLATE",
       "key": "name",
       "value": "ui_label"
+     }
+    ]
+   },
+   {
+    "accountId": "0",
+    "containerId": "0",
+    "variableId": "904",
+    "name": "DLV - ui_id",
+    "type": "v",
+    "parameter": [
+     {
+      "type": "INTEGER",
+      "key": "dataLayerVersion",
+      "value": "2"
+     },
+     {
+      "type": "BOOLEAN",
+      "key": "setDefaultValue",
+      "value": "false"
+     },
+     {
+      "type": "TEMPLATE",
+      "key": "name",
+      "value": "ui_id"
      }
     ]
    },

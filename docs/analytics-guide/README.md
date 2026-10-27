@@ -104,8 +104,9 @@ GTM 코드는 모든 빌드에 같이 들어 있지만, **GTM이 주소를 보�
 | `guide_start` · `guide_done` | 사용법 안내가 시작·끝났을 때 | |
 | `page_turn` | 책장을 넘겼을 때 | 어느 장 → 어느 장, 다음/이전, 방법(화살표·키·드래그·휠·링크) |
 | `select_content` | 그림을 눌러 이야기(가게·메모 등)를 열었을 때 | 이야기 ID, 어디서 열었는지 |
-| `story_close` | 이야기를 닫았을 때 | 이야기 ID, 열어 둔 시간(초) |
-| **`ui_click`** | **어떤 버튼·링크든 눌렀을 때** | 버튼 글자(`ui_label`), 종류, **화면 위치**(`ui_area`: header · settings · contents · prologue · guide · poster_book · webzine · story_book · story_panel · ending …), 누르기 전 상태(열림/닫힘·선택됨) |
+| `story_close` | 이야기를 닫았을 때 (이야기를 연 채 창을 닫거나 떠날 때도) | 이야기 ID, 열어 둔 시간(초), **어디까지 내렸는지**(`scroll_percent`, 가장 많이 내린 %) |
+| **`story_scroll`** | **이야기를 25·50·75·100%까지 내렸을 때** (휴대폰에서 웹진·포스터 북은 한 장의 긴 페이지) | 이야기 ID, 도달한 % |
+| **`ui_click`** | **어떤 버튼·링크든 눌렀을 때** | 버튼 글자(`ui_label`, 영어·중국어 화면에서도 한국어로), **버튼 고유 이름**(`ui_id`: reader-next · lang-switch · pb-shorts-cover … 언어와 상관없이 같음), 종류, **화면 위치**(`ui_area`: header · settings · contents · prologue · guide · poster_book · webzine · story_book · story_panel · ending …), 누르기 전 상태(열림/닫힘·선택됨) |
 | `story_link_click` | 바깥 링크를 눌렀을 때 | 링크 주소, 글자, 위치 |
 | `language_change` | 언어를 바꿨을 때 | 새 언어, 이전 언어 |
 | `shorts_play` · `shorts_open` | 쇼츠 재생 버튼 / "YouTube에서 보기"를 눌렀을 때 | 레시피 ID |
@@ -129,7 +130,7 @@ GTM 코드는 모든 빌드에 같이 들어 있지만, **GTM이 주소를 보�
 - 태그 `Google 태그 - GA4 주소별 본편 테스트` — 모든 페이지에서 GA4 연결 (자동 페이지뷰는 꺼 둠: 책이 장마다 직접 보내요)
 - 태그 `GA4 이벤트 - 팝업북 전부 주소별 본편 테스트` — 위 표의 이벤트를 **이름 그대로**, 함께 오는 정보도 전부 붙여서
 - 변수 `GA4 측정 ID` (조회 테이블: `Page Hostname`이 `lxwebzine.hankyung.com`이면 본편, 아니면 테스트), `GA4 측정 ID - 본편`, `GA4 측정 ID - 테스트`
-- 트리거 `팝업북 이벤트 전부`, 변수 `DLV - …` 38개
+- 트리거 `팝업북 이벤트 전부`, 변수 `DLV - …` 40개
 
 > 가져오기가 실패하면 아래 "직접 만들기"대로 하면 같은 결과예요.
 
@@ -147,7 +148,7 @@ GA4 → 관리 → **맞춤 정의 → 맞춤 측정기준 만들기** (범위: 
 
 | 등록 추천 | 의미 |
 |---|---|
-| `ui_label`, `ui_area` | 무슨 버튼을, 화면 어디서 눌렀는지 |
+| `ui_id`, `ui_label`, `ui_area` | 어느 버튼을(언어와 상관없는 고유 이름), 무슨 글자의 버튼을, 화면 어디서 눌렀는지 |
 | `content_id` | 어떤 이야기·레시피였는지 |
 | `book_chapter`, `book_lang`, `book_layout` | 어느 장, 어느 언어, 휴대폰인지 |
 | `book_env`, `book_host` | 메인(lxwebzine)인지 테스트 사이트인지, 어느 주소인지 |

@@ -1,6 +1,6 @@
 import { useEffect, useMemo } from 'react';
 import { create } from 'zustand';
-import { useLocale, type Lang } from './locale';
+import { useLocale, type Lang } from './locale.ts';
 /**
  * The book's words in the reader's language (src/locale.ts). Korean is the source: every Korean string a reader sees is also the key of
  * its English and Chinese versions (src/i18n/en.ts, zh.ts), so the data (chapters, stories, the webzine) keeps one structure and simply
@@ -19,6 +19,14 @@ export function loadDictionary(lang:Lang){
 }
 const HANGUL=/[가-힣]/;
 export function translate(text:string,lang:Lang){return lang==='ko'||!HANGUL.test(text)?text:dictionaries[lang]?.[text]??text;}
+const reversed:Partial<Record<Lang,Map<string,string>>>={};
+/** The Korean source of words shown in the reader's language, so a control is measured under one name in every language (src/analytics.ts).
+ * A label put together from parts ("Language: English") is turned back part by part; words with no entry pass unchanged. */
+export function toKorean(text:string,lang:Lang){
+ const dict=dictionaries[lang];if(lang==='ko'||!dict)return text;
+ const map=reversed[lang]??=new Map(Object.entries(dict).map(([korean,shown])=>[shown,korean]));
+ return map.get(text)??text.split(/(: | — | → )/).map(part=>map.get(part)??part).join('');
+}
 /** Every string in a piece of data (a story, a webzine) in the reader's language; image paths and other Latin text pass unchanged. */
 export function localize<T>(data:T,lang:Lang):T{
  if(lang==='ko')return data;

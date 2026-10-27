@@ -7,12 +7,15 @@
  * What is measured (GA4 event → parameters):
  *  page_view          a spread, the ending or a story shown: page_location carries the hash (#farmer, #cooks/cook-02, #ending)
  *  select_content     a story opened: content_type 'story', content_id, chapter_id, source (object | button | related | link)
- *  story_close        a story closed: content_id, open_seconds
+ *  story_close        a story closed, or the page left with one open: content_id, open_seconds, scroll_percent (the furthest it was scrolled)
+ *  story_scroll       a story scrolled down to 25 / 50 / 75 / 100 % (on phones the webzine and the poster book are one long page):
+ *                     content_id, scroll_percent
  *  page_turn          a page turned: from_chapter, to_chapter, direction (next | previous), method (arrow | key | drag | wheel | link)
  *  story_link_click   a link followed: link_url, link_text, link_location (story | ending | header | about), content_id, outbound
  *  intro_complete     the intro film ended: layout (open | standing), dropped_frames
  *  story_complete     the ending reached; restart: the reader starts over from the cover; about_open: the about box opened
- *  ui_click           any button or link pressed anywhere: ui_label, ui_type (button | link | radio | …), ui_area (header | settings |
+ *  ui_click           any button or link pressed anywhere: ui_label (in Korean whatever the reader's language), ui_id (the control's own
+ *                     class, e.g. reader-next, lang-switch, pb-shorts-cover), ui_type (button | link | radio | …), ui_area (header | settings |
  *                     contents | prologue | guide | poster_book | webzine | story_book | story_panel | ending | modal | intro | page),
  *                     ui_state (the control's aria-expanded / aria-checked / aria-pressed before the press), link_url, content_id
  *  language_change    the reader chose a language: language, previous_language
@@ -29,6 +32,7 @@
 import { scenes, useStory } from './story.ts';
 import { details } from './details.ts';
 import { useLocale } from './locale.ts';
+import { toKorean } from './i18n.ts';
 
 declare global { interface Window { dataLayer?: unknown[]; gtag?: (...args: unknown[]) => void } }
 const GA_ID = (import.meta as { env?: Record<string, string | undefined> }).env?.VITE_GA_ID;
@@ -59,9 +63,18 @@ export function track(name: string, params: Params = {}) {
 /** Where on the page a control sits, from the nearest known part of the interface. */
 const AREAS: [string, string][] = [['.lang-switch,.icon-toggle', 'settings'], ['.contents-modal', 'contents'], ['.prologue', 'prologue'], ['.guide', 'guide'],
  ['.poster-book', 'poster_book'], ['.webzine-book', 'webzine'], ['.detail-book', 'story_book'], ['.detail-panel', 'story_panel'], ['.is-ending', 'ending'],
- ['.modal-backdrop,[role="dialog"]', 'modal'], ['.site-header,.top-actions', 'header'], ['.cover-intro,.intro', 'intro']];
+ ['.modal-backdrop,[role="dialog"]', 'modal'], ['.site-header,.top-actions', 'header'], ['.cover-intro,.intro,.opening-skip', 'intro']];
 function areaOf(element: Element) { for (const [selector, area] of AREAS) if (element.closest(selector)) return area; return 'page'; }
-const CONTROLS = 'button,a[href],[role="button"],[role="radio"],[role="tab"],[role="menuitem"],[role="switch"],summary,input[type="checkbox"],input[type="radio"],select';
+/** A name for a control that is the same in every language: its most particular class (the last one that is not a state like is-current:
+ * reader-next rather than reader-arrow), or, for a bare button, its nearest named container and its tag (the label tells those apart). */
+function idOf(control: Element) {
+ const own = (element: Element) => element.id || [...element.classList].filter(name => !name.startsWith('is-')).pop();
+ if (own(control)) return own(control);
+ for (let parent = control.parentElement; parent; parent = parent.parentElement) if (own(parent)) return `${own(parent)} ${control.tagName.toLowerCase()}`;
+ return control.tagName.toLowerCase();
+}
+const STORY_VIEWS = '.webzine-book,.poster-book,.detail-book,.detail-panel';
+const CONTROLS ='button,a[href],[role="button"],[role="radio"],[role="tab"],[role="menuitem"],[role="switch"],summary,input[type="checkbox"],input[type="radio"],select';
 
 /** Readable ids in the URL: the chapter's own id, a story's id after a slash, 'ending' for the closing page. */
 export function locationHash(chapter: number, detail: string | null, ending: boolean) {
@@ -105,7 +118,13 @@ export function initAnalytics() {
  }
  track('page_view', { page_location: location.href, page_title: document.title });
 
- let shown = '', opened: { id: string; at: number } | null = null, lastChapter = useStory.getState().chapter, introDone = false;
+ let shown = '', opened: { id: string; at: number; deepest: number | null; marks: Set<number> } | null = null, seen = new Set<string>(), lastChapter = useStory.getState().chapter, introDone = false;
+ // scroll_percent: the furthest the reader scrolled (left out when the story never had anything to scroll).
+ function closeStory() {
+  if (!opened) return;
+  track('story_close', { content_id: opened.id, open_seconds: Math.round((performance.now() - opened.at) / 1000), scroll_percent: opened.deepest ?? undefined });
+  opened = null;
+ }
  useStory.subscribe((state, previous) => {
   const reading = state.phase === 'EXPLORING' || state.phase === 'ENDING';
   if (!introDone && reading) {
@@ -113,6 +132,7 @@ export function initAnalytics() {
    const idle = (window as unknown as { requestIdleCallback?: (f: () => void) => void }).requestIdleCallback;
    idle ? idle(loadGtag) : window.setTimeout(loadGtag, 1200);
   }
+  if (state.phase === 'INIT' && previous.phase !== 'INIT') seen.clear(); // the reader starts over
   if (!reading) return;
   const ending = state.phase === 'ENDING';
   // A page turn completes when the chapter changes while reading.
@@ -121,14 +141,14 @@ export function initAnalytics() {
    turnMethod = 'arrow'; lastChapter = state.chapter;
   }
   if (state.detail !== previous.detail) {
-   if (opened) { track('story_close', { content_id: opened.id, open_seconds: Math.round((performance.now() - opened.at) / 1000) }); opened = null; }
+   closeStory();
    if (state.detail) {
-    opened = { id: state.detail, at: performance.now() };
+    opened = { id: state.detail, at: performance.now(), deepest: null, marks: new Set() }; seen.add(state.detail);
     track('select_content', { content_type: 'story', content_id: state.detail, chapter_id: scenes[state.chapter].id, source: detailSource });
     detailSource = 'object';
    }
   }
-  if (ending && previous.phase !== 'ENDING') track('story_complete', { stories_opened: state.visited.length });
+  if (ending && previous.phase !== 'ENDING') track('story_complete', { stories_opened: seen.size });
   const hash = locationHash(state.chapter, ending ? null : state.detail, ending);
   if (hash !== shown) {
    shown = hash;
@@ -136,12 +156,32 @@ export function initAnalytics() {
    track('page_view', { page_location: location.href, page_title: pageTitle(state.chapter, ending ? null : state.detail, ending) });
   }
  });
+ // A reader who closes the tab or leaves with a story still open: its time is counted as well.
+ window.addEventListener('pagehide', closeStory);
+
+ // How far down a story the reader went. On phones a story is one long page (the webzine, the poster book), elsewhere a panel or a book
+ // page may scroll: story_scroll at 25, 50, 75 and 100 % (once each per opening), and the furthest point on story_close. Read once a frame
+ // at most, and only while a story is open.
+ let pending: Element | null = null;
+ document.addEventListener('scroll', event => {
+  const box = event.target;
+  if (!opened || !(box instanceof Element) || !box.closest(STORY_VIEWS) || pending) return;
+  pending = box;
+  requestAnimationFrame(() => {
+   const room = box.scrollHeight - box.clientHeight;
+   pending = null;
+   if (!opened || room < 40) return;
+   const percent = Math.min(100, Math.round(box.scrollTop / room * 100));
+   opened.deepest = Math.max(opened.deepest ?? 0, percent);
+   for (const mark of [25, 50, 75, 100]) if (percent >= mark && !opened.marks.has(mark)) { opened.marks.add(mark); track('story_scroll', { content_id: opened.id, scroll_percent: mark }); }
+  });
+ }, { capture: true, passive: true });
 
  // Every link the reader follows, with where it was and which story was open.
  document.addEventListener('click', event => {
   const link = (event.target as Element | null)?.closest?.('a[href]') as HTMLAnchorElement | null;
   if (!link || link.getAttribute('href')?.startsWith('#')) return;
-  const where = link.closest('.detail-panel,.detail-book,.webzine-book') ? 'story' : link.closest('.is-ending') ? 'ending' : link.closest('.site-header') ? 'header' : link.closest('[role="dialog"]') ? 'about' : 'page';
+  const where = link.closest(STORY_VIEWS) ? 'story' : link.closest('.is-ending') ? 'ending' : link.closest('.site-header') ? 'header' : link.closest('[role="dialog"]') ? 'about' : 'page';
   track('story_link_click', { link_url: link.href, link_text: link.textContent?.trim().slice(0, 100), link_location: where, content_id: useStory.getState().detail ?? undefined, outbound: link.host !== location.host });
  }, true);
 
@@ -151,11 +191,15 @@ export function initAnalytics() {
  document.addEventListener('click', event => {
   const control = (event.target as Element | null)?.closest?.(CONTROLS);
   if (!control) return;
-  const label = (control.getAttribute('aria-label') || control.textContent || control.getAttribute('title') || '').replace(/\s+/g, ' ').trim().slice(0, 80);
+  // The page arrows turn without saying so: name the cause here (this listener runs first), so a key press or a drag that turned
+  // nothing is not credited with the arrow's turn.
+  if (control.matches('.reader-arrow')) noteTurn('arrow');
+  const shown = (control.getAttribute('aria-label') || control.textContent || control.getAttribute('title') || '').replace(/\s+/g, ' ').trim();
+  const label = toKorean(shown, useLocale.getState().lang).slice(0, 80);
   const type = control.getAttribute('role') || (control.tagName === 'A' ? 'link' : control.tagName === 'INPUT' ? (control as HTMLInputElement).type : control.tagName.toLowerCase());
   const state = control.getAttribute('aria-expanded') ?? control.getAttribute('aria-checked') ?? control.getAttribute('aria-pressed') ?? undefined;
   const href = control.tagName === 'A' ? (control as HTMLAnchorElement).href : undefined;
-  track('ui_click', { ui_label: label || undefined, ui_type: type, ui_area: areaOf(control), ui_state: state, link_url: href, content_id: useStory.getState().detail ?? undefined });
+  track('ui_click', { ui_label: label || undefined, ui_id: idOf(control), ui_type: type, ui_area: areaOf(control), ui_state: state, link_url: href, content_id: useStory.getState().detail ?? undefined });
  }, true);
 
  // The language the reader picks (not the default they started with).
