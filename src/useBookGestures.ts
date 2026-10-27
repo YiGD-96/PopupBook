@@ -13,7 +13,10 @@ export function useBookGestures(surface:RefObject<HTMLDivElement|null>,api:RefOb
  const move=(e:PointerEvent)=>{if(!gesture||gesture.pointer!==e.pointerId)return;if(Math.abs(element.clientWidth-gesture.width)>1){resize();return;}const dx=e.clientX-gesture.x,dy=e.clientY-gesture.y;
   if(!gesture.direction){
    const vertical=Math.abs(dy)>Math.abs(dx)*1.2;
-   if(vertical&&Math.abs(dy)>12&&!matchMedia(STANDING_QUERY).matches){gesture=null;return;}
+   // The open book turns sideways only; the phone's upright book up and down only (it has no side arrows, and a sideways drag there is
+   // usually a slip of the thumb).
+   const upright=matchMedia(STANDING_QUERY).matches;
+   if(vertical!==upright&&Math.max(Math.abs(dx),Math.abs(dy))>=10){gesture=null;return;}
    if(Math.max(Math.abs(dx),Math.abs(dy))<10)return;
    gesture.axis=vertical?'y':'x';gesture.last=vertical?gesture.y:gesture.x;const direction=(vertical?dy:dx)<0?1:-1;const chapter=useStory.getState().chapter;if(direction===1&&chapter===2){gesture=null;finishBook('drag');return;}if(chapter+direction<0||chapter+direction>2){gesture=null;return;}if(!api.current?.previewTurn(direction,0)){gesture=null;return;}gesture.direction=direction;element.setPointerCapture(e.pointerId);setDragging(true);}
   // Up and down count as far as sideways (the book's width): measured against the phone's height, a slow swipe had to travel almost twice

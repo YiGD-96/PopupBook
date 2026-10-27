@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type RefObject } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
-import { BackSide, Color, DoubleSide, Float32BufferAttribute, Fog, FrontSide, Mesh, MeshBasicMaterial, PerspectiveCamera, PlaneGeometry, RepeatWrapping, Scene, type Camera, type Texture, type WebGLRenderer } from 'three';
+import { BackSide, Color, DoubleSide, Float32BufferAttribute, Fog, FrontSide, Mesh, MeshBasicMaterial, PerspectiveCamera, PlaneGeometry, RepeatWrapping, Scene, Vector3, type Camera, type Texture, type WebGLRenderer } from 'three';
 import { BOOK_BOARD, BOOK_PAGES } from './bookStructure';
 import { createBoardGeometry, createPaperBlockGeometry, createRibbonGeometry, createSpineGeometry, lightShade } from './bookGeometry';
 import { createPageSkirt, createPaperGeometry, updatePaperGeometry } from './paperGeometry';
@@ -11,7 +11,7 @@ import type { PaperPiece } from './paperAttachments';
 /** Shared by the live book and the offline intro film, so the movie's last frame is the live book. */
 export type BookMaterials=Record<string,Texture|undefined>;
 /** Binding textures the open book needs; the printed cover is only filmed, never loaded live. The book casts no shadows. */
-export const OPEN_BOOK_MATERIALS=['inside','cloth-side','paper-edge','endpaper','desk'] as const;
+export const OPEN_BOOK_MATERIALS=['inside','cloth-side','paper-edge','endpaper','desk','floor','wall'] as const;
 
 // Static shapes are built once per page load and reused by every mesh.
 const once=<T,>(make:()=>T)=>{let value:T|undefined;return()=>value??=make();};
@@ -78,46 +78,75 @@ export function OpenCase({materials}:{materials:BookMaterials}){
  </>;
 }
 
-/**
- * The walnut desk the book lies on (texture: scripts/book-materials.mjs). One plane under the board, reaching behind the camera and far
- * into the distance; the lamp's warm pool around the book is baked into its vertex colours, and fog (DeskFog) fades the far desk into the
- * room's dark, the page colour around the canvas, so the canvas and the films have no visible edge.
- */
+/** The surface the book lies on: its height (just under the board), the size of one texture tile, and the fog the live book's scene uses
+ *  (src/bookParts.tsx ROOM is the room around it; `color` is the dark the walnut desk used to fade into, DeskFog's default). */
 export const DESK={y:BOOK_BOARD.y-BOOK_BOARD.thickness/2-.004,tile:3,color:'#1a110b',fog:[16,38] as [number,number]};
-const deskGeometry=once(()=>{
- const width=170,depth=170,front=14,g=new PlaneGeometry(width,depth,96,96);
- g.rotateX(-Math.PI/2);g.translate(0,DESK.y,front-depth/2);
- const position=g.getAttribute('position'),uv=g.getAttribute('uv'),colors:number[]=[];
- for(let i=0;i<position.count;i++){
-  const x=position.getX(i),z=position.getZ(i);
-  uv.setXY(i,x/DESK.tile,-z/DESK.tile);
-  // Lamp light: a warm pool centred a little behind the book, the rest of the desk in soft shadow.
-  const pool=Math.exp(-(x*x)/(2*4.6*4.6)-((z+.4)*(z+.4))/(2*3.9*3.9)),light=.3+1.12*pool;
-  colors.push(light*(1+.12*pool),light*(.97+.02*pool),light*(.86-.06*pool));
- }
- g.setAttribute('color',new Float32BufferAttribute(colors,3));
- return g;
-});
 function useDeskTexture(map:Texture|undefined){
  const {gl}=useThree();
  useMemo(()=>{if(!map)return;map.wrapS=map.wrapT=RepeatWrapping;map.anisotropy=Math.min(8,gl.capabilities.getMaxAnisotropy());map.needsUpdate=true;},[map,gl]);
 }
 const deskMaterial=(map:Texture|undefined)=>new MeshBasicMaterial({map:map??null,color:map?'#ffffff':'#3e2a1c',vertexColors:true});
-/** The desk drawn every frame, for the intro films (src/film.tsx, src/standingFilm.tsx). The live book uses DeskBackdrop. */
-export function Desk({materials}:{materials:BookMaterials}){
- const map=materials.desk;useDeskTexture(map);
- return <mesh geometry={deskGeometry()} renderOrder={-3}><meshBasicMaterial map={map} color={map?'#ffffff':'#3e2a1c'} vertexColors/></mesh>;
-}
 /**
- * The live book's desk. The desk and the camera stand still while reading, so the desk is drawn once (again only when the canvas size or
+ * The live book's room (textures: scripts/room-textures.mjs): a wooden tabletop the book lies on and a beige plaster wall a little behind
+ * it, after the team's reference, lighter than the dark walnut desk the intro films still show. The tabletop runs right up to the wall
+ * (tableBack: a gap there, and a lit edge, read as a grey line), and the far room, where they meet, is softened as if out of focus
+ * (DeskBackdrop). ROOM.wall is also the page's colour around the canvas (src/cinematic.css), so the canvas has no edge.
+ */
+export const ROOM={wall:'#e2d2b5',wallZ:-5.5,tableBack:-5.5,wallTile:4};
+const roomFloorGeometry=once(()=>{
+ const width=170,front=14,depth=front-ROOM.tableBack,g=new PlaneGeometry(width,depth,96,96);
+ g.rotateX(-Math.PI/2);g.translate(0,DESK.y,front-depth/2);
+ const position=g.getAttribute('position'),uv=g.getAttribute('uv'),colors:number[]=[];
+ for(let i=0;i<position.count;i++){
+  const x=position.getX(i),z=position.getZ(i);
+  uv.setXY(i,x/DESK.tile,-z/DESK.tile);
+  // Daylight rather than a lamp: a gentle brighter pool round the book.
+  const pool=Math.exp(-(x*x)/(2*7*7)-((z+.4)*(z+.4))/(2*6*6)),light=.78+.3*pool;
+  colors.push(light*1.02,light,light*.96);
+ }
+ g.setAttribute('color',new Float32BufferAttribute(colors,3));
+ return g;
+});
+const wallGeometry=once(()=>{
+ // From well below the tabletop (seen in the gap between the table's edge and the wall) up past any camera's view.
+ const width=170,height=64,below=4,g=new PlaneGeometry(width,height,96,64);g.translate(0,DESK.y-below+height/2,ROOM.wallZ);
+ const position=g.getAttribute('position'),uv=g.getAttribute('uv'),colors:number[]=[];
+ for(let i=0;i<position.count;i++){
+  const x=position.getX(i),up=position.getY(i)-DESK.y;
+  uv.setXY(i,x/ROOM.wallTile,up/ROOM.wallTile);
+  // Brightest behind the book, softly darker toward the sides; no shadow where it meets the table (tried, and better without).
+  const pool=Math.exp(-(x*x)/(2*9*9)),light=.88+.14*pool;
+  colors.push(light,light,light*.98);
+ }
+ g.setAttribute('color',new Float32BufferAttribute(colors,3));
+ return g;
+});
+/** The room drawn every frame, for the intro films (src/film.tsx, src/standingFilm.tsx): the live book's floor and wall (ROOM), with
+ *  the wall's colour as the clear colour and no fog, so the films end in the room the live book shows. */
+export function FilmRoom({materials}:{materials:BookMaterials}){
+ const {scene}=useThree(),map=materials.floor??materials.desk,wall=materials.wall;useDeskTexture(map);useDeskTexture(wall);
+ useEffect(()=>{scene.background=new Color(ROOM.wall);scene.fog=null;},[scene]);
+ return <><mesh geometry={roomFloorGeometry()} renderOrder={-3}><meshBasicMaterial map={map??null} color={map?'#ffffff':'#3e2a1c'} vertexColors/></mesh>
+  <mesh geometry={wallGeometry()} renderOrder={-3}><meshBasicMaterial map={wall??null} color={wall?'#ffffff':ROOM.wall} vertexColors/></mesh></>;
+}
+/** Whether this browser's 2D canvas can blur (Safari before 18 cannot: the room is then drawn sharp). */
+let blurs:boolean|null=null;
+const canBlur=()=>{if(blurs===null){const probe=document.createElement('canvas').getContext('2d');if(probe)probe.filter='blur(1px)';blurs=probe?.filter==='blur(1px)';}return blurs;};
+/** One scratch canvas for the blurred copy, resized as needed. */
+let soft:HTMLCanvasElement|null=null;
+const softCanvas=(w:number,h:number)=>{soft??=document.createElement('canvas');if(soft.width!==w||soft.height!==h){soft.width=w;soft.height=h;}return soft;};
+/**
+ * The live book's room, around the desk's place. The room and the camera stand still while reading, so it is drawn once (again only when the canvas size or
  * the camera changes) and copied into a plain 2D canvas right behind the WebGL canvas; each frame then draws only the book. The page
  * composites the transparent book canvas over it, which blends exactly as drawing the book over the desk did (edges included), and saves
  * the desk's whole-screen texture filtering and fog every frame (~3 ms of an integrated GPU's 16.7 ms at 1920×1080).
  */
 export function DeskBackdrop({materials}:{materials:BookMaterials}){
- const {gl,camera,scene}=useThree(),map=materials.desk;useDeskTexture(map);
- const desk=useMemo(()=>{const room=new Scene();room.add(new Mesh(deskGeometry(),deskMaterial(map)));return room;},[map]);
- useEffect(()=>()=>{(desk.children[0] as Mesh<PlaneGeometry,MeshBasicMaterial>).material.dispose();},[desk]);
+ const {gl,camera}=useThree(),map=materials.floor??materials.desk,wall=materials.wall;useDeskTexture(map);useDeskTexture(wall);
+ const desk=useMemo(()=>{const room=new Scene();room.add(new Mesh(roomFloorGeometry(),deskMaterial(map)));
+  room.add(new Mesh(wallGeometry(),new MeshBasicMaterial({map:wall??null,color:wall?'#ffffff':ROOM.wall,vertexColors:true})));
+  return room;},[map,wall]);
+ useEffect(()=>()=>{for(const mesh of desk.children as Mesh<PlaneGeometry,MeshBasicMaterial>[])mesh.material.dispose();},[desk]);
  const backdrop=useMemo(()=>{const c=document.createElement('canvas');c.className='desk-backdrop';c.setAttribute('aria-hidden','true');
   Object.assign(c.style,{position:'absolute',inset:'0',width:'100%',height:'100%',pointerEvents:'none'});return c;},[]);
  // Behind the WebGL canvas (both positioned, so document order stacks them), inside R3F's sized container.
@@ -125,17 +154,28 @@ export function DeskBackdrop({materials}:{materials:BookMaterials}){
  const drawn=useRef('');
  useFrame(()=>{
   const cam=camera as PerspectiveCamera,canvas=gl.domElement;
-  const key=`${canvas.width}x${canvas.height} ${cam.fov} ${cam.aspect} ${cam.view?.offsetY??0} ${cam.position.toArray()} ${cam.quaternion.toArray()} ${scene.fog?1:0} ${map?.uuid}`;
+  const key=`${canvas.width}x${canvas.height} ${cam.fov} ${cam.aspect} ${cam.view?.offsetY??0} ${cam.position.toArray()} ${cam.quaternion.toArray()} ${map?.uuid} ${wall?.uuid}`;
   if(key===drawn.current)return;drawn.current=key;
-  desk.fog=scene.fog;backdrop.width=canvas.width;backdrop.height=canvas.height;
-  gl.render(desk,camera);backdrop.getContext('2d')!.drawImage(canvas,0,0);
+  backdrop.width=canvas.width;backdrop.height=canvas.height;
+  gl.render(desk,camera);const context=backdrop.getContext('2d')!;context.drawImage(canvas,0,0);
+  // As if focused on the book: the far room, the wall and the table's far edge, a little blurred, sharpening toward the reader. A
+  // blurred copy laid over the top of the picture and faded out below the table's edge (where the 2D canvas can blur; else left sharp).
+  if(canBlur()){
+   const edgeY=(1-new Vector3(0,DESK.y,ROOM.tableBack).project(cam).y)/2*backdrop.height,h=backdrop.height;
+   const soft=softCanvas(backdrop.width,h),c=soft.getContext('2d')!;
+   c.globalCompositeOperation='source-over';c.clearRect(0,0,backdrop.width,h);c.filter=`blur(${Math.max(1,h*.002).toFixed(1)}px)`;c.drawImage(canvas,0,0);c.filter='none';
+   // Full on the wall high up, about half at the table's edge (which keeps its highlight), gone well before the book.
+   const top=Math.max(0,edgeY-h*.12),bottom=Math.min(h,edgeY+h*.22),fade=c.createLinearGradient(0,top,0,bottom);
+   fade.addColorStop(0,'rgba(0,0,0,.85)');fade.addColorStop(Math.min(1,(edgeY-top)/Math.max(1,bottom-top)),'rgba(0,0,0,.35)');fade.addColorStop(1,'rgba(0,0,0,0)');
+   c.globalCompositeOperation='destination-in';c.fillStyle=fade;c.fillRect(0,0,backdrop.width,h);context.drawImage(soft,0,0);
+  }
  });
  return null;
 }
-/** The room's dark: fog over the far desk; the films also clear to it (`background`). */
-export function DeskFog({background=false}:{background?:boolean}){
+/** The room's dark: fog over the far desk; the films also clear to it (`background`). The live book's lighter room fades to `color`. */
+export function DeskFog({background=false,color=DESK.color}:{background?:boolean;color?:string}){
  const {scene}=useThree();
- useEffect(()=>{scene.fog=new Fog(DESK.color,...DESK.fog);if(background)scene.background=new Color(DESK.color);return()=>{scene.fog=null;};},[scene,background]);
+ useEffect(()=>{scene.fog=new Fog(color,...DESK.fog);if(background)scene.background=new Color(color);return()=>{scene.fog=null;};},[scene,background,color]);
  return null;
 }
 

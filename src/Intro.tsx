@@ -1,6 +1,6 @@
 import {useCallback,useEffect,useRef,useState} from 'react';
-import {INTRO_COVER_HOLD,INTRO_UI_AT,STANDING_INTRO_UI_AT} from './introPlayback';
-import {playSound} from './story';
+import {INTRO_COVER_HOLD,INTRO_PAGES_START,INTRO_UI_AT,STANDING_INTRO_UI_AT} from './introPlayback';
+import {playSound,riffleReady} from './story';
 import {SITE} from './site';
 import {STANDING_QUERY} from './standingMedia';
 import { url } from './base.ts';
@@ -48,7 +48,18 @@ export default function Intro({onFinished,onUnfolding,onBuffered,onNearEnd,leavi
  useEffect(()=>{let live=true;void filmSource(standing).then(source=>{if(live)setSrc(source);});return()=>{live=false;};},[standing]);
  const started=useRef(false);
  const notified=useRef(false);
- const soundPage=useRef(-1);
+ // The pages fanning out (from INTRO_PAGES_START until the film stops) sound as one riffle of paper, started once as they begin. Sound
+ // only plays after the reader's first touch (the browser's rule), so on a first visit it is often still off then: if the touch comes
+ // while the pages are fanning, the riffle starts from that point.
+ const riffled=useRef(false);
+ // The phone film starts with the closed book in the middle of the screen and slides down to the standing book's place (STANDING_DROP,
+ // room for the chapter title above it) while the book lowers and opens, so its last frame still meets the live book exactly.
+ const [dropped,setDropped]=useState(false);const droppedRef=useRef(false);
+ const drop=useCallback((time:number)=>{if(droppedRef.current||time<INTRO_COVER_HOLD)return;droppedRef.current=true;setDropped(true);},[]);
+ const riffle=useCallback((time:number)=>{
+  if(riffled.current||time<INTRO_PAGES_START-.03||time>=uiAt||!riffleReady())return;
+  riffled.current=true;playSound('riffle',uiAt-time+.12,Math.max(0,time-INTRO_PAGES_START));
+ },[uiAt]);
  const shownAt=useRef<number|null>(null);
  const actualHold=useRef(0);
  const unfolded=useRef(false);
@@ -105,10 +116,10 @@ export default function Intro({onFinished,onUnfolding,onBuffered,onNearEnd,leavi
   const element=video.current;if(!element)return;
   void element.play().then(()=>{
    // Frame-accurate where the browser reports presented frames; onTimeUpdate (a few times a second) stands in elsewhere.
-   const watch=(_:number,frame:{mediaTime:number})=>{if(unfolded.current)return;if(frame.mediaTime>=uiAt-HOLD_BEFORE)hold(element,frame.mediaTime);else element.requestVideoFrameCallback(watch);};
+   const watch=(_:number,frame:{mediaTime:number})=>{if(unfolded.current)return;riffle(frame.mediaTime);drop(frame.mediaTime);if(frame.mediaTime>=uiAt-HOLD_BEFORE)hold(element,frame.mediaTime);else element.requestVideoFrameCallback(watch);};
    if('requestVideoFrameCallback' in element)element.requestVideoFrameCallback(watch);
   }).catch(()=>{if(attempts.current<2){attempts.current++;window.setTimeout(()=>replay.current(),350);}else if(!touchTried.current){touchTried.current=true;waitForTouch();}else setFailed(true);});
- },[hold,uiAt,waitForTouch]);
+ },[hold,uiAt,waitForTouch,riffle,drop]);
  replay.current=play;
  useEffect(()=>{if(!skip)return;video.current?.pause();finish();},[skip,finish]);
  useEffect(()=>{
@@ -117,11 +128,11 @@ export default function Intro({onFinished,onUnfolding,onBuffered,onNearEnd,leavi
   if(started.current)return;
   started.current=true;play();
  },[holdFinished,src,failed,finish,play]);
- return <div className={'intro-screen'+(standing?' is-standing':'')+(leaving?' is-leaving':'')} data-stage={stage} data-cover-hold-ms={holdDuration} aria-label={t(SITE.title)+' — '+t('책을 펼치는 중')}>
+ return <div className={'intro-screen'+(standing?' is-standing':'')+(dropped||failed||stage==='ready'?' is-dropped':'')+(leaving?' is-leaving':'')} data-stage={stage} data-cover-hold-ms={holdDuration} aria-label={t(SITE.title)+' — '+t('책을 펼치는 중')}>
   <img className="intro-cover intro-media" src={url(`/media/book-cover${media}.webp`)} alt={t(SITE.title)+' — '+t(SITE.coverAlt)} onLoad={()=>setCoverReady(true)} onError={e=>{if(!e.currentTarget.src.endsWith('/art-raster/cover.webp'))e.currentTarget.src=url('/art-raster/cover.webp');else setCoverReady(true);}} hidden={stage!=='cover'}/>
   <video className={'intro-media intro-video'+(stage==='cover'?' is-waiting':'')} ref={video} src={src??undefined} muted playsInline preload="auto" tabIndex={-1} aria-hidden="true"
    onPlaying={()=>{actualHold.current||=Math.round(performance.now()-(shownAt.current??performance.now()));setHoldDuration(actualHold.current);setStage('opening');}}
-   onTimeUpdate={e=>{buffered(e);const element=e.currentTarget,time=element.currentTime;if(!nearEnd.current&&bufferedOnce.current&&time>=uiAt-MOUNT_LEAD){nearEnd.current=true;onNearEnd?.();}if(time>=uiAt-HOLD_BEFORE&&!unfolded.current){hold(element,time);return;}if(time<INTRO_COVER_HOLD)return;const page=Math.floor((time-INTRO_COVER_HOLD)*3);if(page!==soundPage.current){soundPage.current=page;playSound('flip');}}}
+   onTimeUpdate={e=>{buffered(e);const element=e.currentTarget,time=element.currentTime;if(!nearEnd.current&&bufferedOnce.current&&time>=uiAt-MOUNT_LEAD){nearEnd.current=true;onNearEnd?.();}if(time>=uiAt-HOLD_BEFORE&&!unfolded.current){hold(element,time);return;}riffle(time);drop(time);}}
    onProgress={buffered} onCanPlayThrough={buffered} onEnded={finish} onError={()=>{setFailed(true);if(!bufferedOnce.current){bufferedOnce.current=true;onBuffered?.();}}}/>
   {waiting&&<p className="intro-touch" role="status">{t('화면을 누르면 시작해요')}</p>}
   {failed&&stage==='ready'&&<img className="intro-media" src={url(`/media/book-open${media}.webp`)} alt={t(SITE.title)+' — '+t('펼쳐진 그림책')}/>}

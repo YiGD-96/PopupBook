@@ -1,5 +1,5 @@
 import { Component, lazy, Suspense, useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
-import { ArrowRight, ArrowLeft, X, RotateCcw, MousePointer2, Check, LoaderCircle, ChevronsRight } from 'lucide-react';
+import { ArrowRight, ArrowLeft, X, RotateCcw, MousePointer2, Check, LoaderCircle, ChevronsRight, ChevronDown, ChevronUp } from 'lucide-react';
 import {SITE} from './site';
 import { type Director, scenes, useStory, playSound, unlockAudio } from './story';
 import { useBookGestures } from './useBookGestures';
@@ -17,7 +17,7 @@ import PosterBook from './PosterBook';
 import { posters } from './posters';
 import Prologue from './Prologue';
 import Guide from './Guide';
-import SettingsMenu from './SettingsMenu';
+import TopControls from './TopControls';
 import { useT } from './i18n';
 import type { Lang } from './locale';
 import { useOpeningPref } from './openingPref';
@@ -25,6 +25,7 @@ import { details } from './details';
 import { noteStory, noteTurn, parseHash, track } from './analytics';
 import { url } from './base.ts';
 import { prefetchFirstSpread } from './artFetch';
+import { useSoundPref } from './soundPref';
 const Storybook = lazy(() => import('./Storybook'));
 // Once the intro film has downloaded past its stopping point, the book's code (three.js) and the first spread's pictures start
 // downloading (src/artFetch.ts, no three.js), and the code then prepares them (src/Storybook.tsx preloadBook). Not before: on a slow
@@ -87,11 +88,13 @@ function Modal({title,children,onClose,className=''}:{title:string;children:Reac
     </div>
   </div>;
 }
-/** The closing note's words, whole per language (their line breaks and order differ). */
-const ENDING:Record<Lang,{title:ReactNode;from:ReactNode;go:string;restart:string}>={
- ko:{title:<>구좌 당근 이야기를<br/>기사로 만나보세요.</>,from:<>밭에서 식탁까지,<br/>그 이야기를 이어 읽어요.</>,go:'기사 바로 읽기',restart:'처음으로'},
- en:{title:<>Read the story<br/>as an article.</>,from:<>From field to table,<br/>the story reads on.</>,go:'Read the article',restart:'Start over'},
- zh:{title:<>旧左胡萝卜的故事<br/>请在报道中阅读。</>,from:<>从田间到餐桌，<br/>故事仍在继续。</>,go:'立即阅读报道',restart:'回到开头'},
+/** The closing note's words, whole per language (their line breaks and order differ); the key words carry the crayon highlight. */
+// Each line says something of its own (the title invites, the line below says what the article holds, the button only goes): "article"
+// and "read" appear once. `goLabel` is the button's full name for screen readers, since the visible word alone (바로 가기) says less.
+const ENDING:Record<Lang,{title:ReactNode;from:ReactNode;go:string;goLabel:string;restart:string}>={
+ ko:{title:<><span className="ending-mark">구좌 당근</span> 이야기를<br/><span className="ending-mark">기사</span>로 만나보세요.</>,from:<>밭에서 식탁까지,<br/>한 편에 담았어요.</>,go:'바로 가기',goLabel:'기사 바로 가기',restart:'처음으로'},
+ en:{title:<>Read the story<br/>as an <span className="ending-mark">article</span>.</>,from:<>From field to table,<br/>all in one piece.</>,go:'Go now',goLabel:'Go to the article',restart:'Start over'},
+ zh:{title:<><span className="ending-mark">旧左胡萝卜</span>的故事<br/>请在<span className="ending-mark">报道</span>中阅读。</>,from:<>从田间到餐桌，<br/>都写在这一篇里。</>,go:'立即前往',goLabel:'前往报道',restart:'回到开头'},
 };
 /** The ending card's paper and its cut-out mask (src/cinematic.css), fetched and decoded once the last chapter is reached, so the card
  *  comes up whole: before, its words could show a moment before the picture behind them. True once both are ready (or have failed). */
@@ -125,6 +128,7 @@ export default function App() {
   const [prologue,setPrologue]=useState<'none'|'open'|'closing'>('none');
   // Skipping the opening (film, prologue and guide): now with 건너뛰기, or every visit once "다음부터 보지 않기" is ticked (src/openingPref.ts:
   // saved at once in this browser; "시작 영상 보기" in the settings turns it back on). A restart (처음부터 다시 보기) still plays it.
+  const soundOn=useSoundPref(s=>s.on);
   const [skipOpening,setSkipOpening]=useState(()=>useOpeningPref.getState().skip);const rememberSkip=useOpeningPref(s=>s.skip),setRememberSkip=useOpeningPref(s=>s.setSkip);
   const skipOpeningRef=useRef(skipOpening);skipOpeningRef.current=skipOpening;
   // The two-step reading guide (src/Guide.tsx): 0 closed, 1 the glowing cards, 2 the page arrow. It follows every "책장 속으로".
@@ -310,7 +314,7 @@ export default function App() {
     {/* Top right, side by side: the contents (once the reader's header shows) and the language switch, as two matching pills. */}
     <div className="top-actions">
       {chromeVisible&&<nav aria-label={t('메인 메뉴')}><button className="top-pill" onClick={()=>{setModal('about');track('about_open');}}>{t('목차')}</button></nav>}
-      <SettingsMenu/>
+      <TopControls/>
     </div>
     {chromeVisible&&<header className="site-header">
       <a href={url("/")} className="brand" aria-label={t(SITE.name)+' — '+t('홈으로')}><img className="brand-logo" src={url("/media/logo.webp")} alt="carrot" width={87} height={26}/><span className="brand-name">{t(SITE.name)}</span></a>
@@ -320,7 +324,7 @@ export default function App() {
     <main id="main"><section className={'hero '+(intro?'is-cover':'is-open')+(ending?' is-ending':'')} aria-label={t(SITE.title)+' — '+t('팝업북')}>
       {chromeVisible&&<div className={'hero-copy'+(ending&&!endingArt?' is-waiting':'')}>
         {coverMode?<div className="cover-intro"><span>{SITE.label}</span><h1>{SITE.title}</h1><p role="status"><LoaderCircle size={14} className="spin"/>{introText}</p></div>:
-        ending?<><h1>{ENDING[lang].title}</h1><p className="hero-description">{ENDING[lang].from}</p><a className="primary-button ending-link" href={SITE.article} target="_blank" rel="noreferrer">{ENDING[lang].go}<span className="sr-only"> {t('(새 창에서 열림)')}</span><ArrowRight size={21}/></a><button className="secondary-button ending-restart" onClick={beginIntro}><RotateCcw size={18}/>{ENDING[lang].restart}</button></>:
+        ending?<><h1>{ENDING[lang].title}</h1><p className="hero-description">{ENDING[lang].from}</p><a className="primary-button ending-link" href={SITE.article} target="_blank" rel="noreferrer" aria-label={`${ENDING[lang].goLabel} ${t('(새 창에서 열림)')}`}>{ENDING[lang].go}<ArrowRight size={21}/></a><button className="secondary-button ending-restart" onClick={beginIntro}><RotateCcw size={18}/>{ENDING[lang].restart}</button></>:
         <><h1 className="sr-only" aria-label={t(scene.title)} ref={storyRef} tabIndex={-1}>{t(scene.title)}</h1>
 
         </>}
@@ -331,12 +335,19 @@ export default function App() {
           <DeskAir/>
           {introVisible&&<Intro key={introRun} onFinished={finishIntro} onUnfolding={showChrome} onBuffered={preloadBook} onNearEnd={mountEarly} leaving={introLeaving} skip={skipOpening}/>}
         </div>
-        {!introVisible&&!audioReady&&intro&&<p className="audio-hint">{t('소리는 화면을 터치하면 함께 시작돼요')}</p>}
+        {!introVisible&&!audioReady&&intro&&soundOn&&<p className="audio-hint">{t('소리는 화면을 터치하면 함께 시작돼요')}</p>}
         {/* No indicator while a page turns (it made turns feel slower); only a next spread still loading after a while says so. */}
         {slowLoad&&prologue==='none'&&guide===0&&<div className="scene-loading" role="status"><LoaderCircle size={16} className="spin"/>{t('다음 풍경을 준비해요')}</div>}
         {chromeVisible&&!coverMode&&<>
           <button className="reader-arrow reader-prev" aria-label={t('이전 책장')} title={t('이전 책장')} disabled={busy||introVisible||chapter===0} onClick={()=>api.current?.go(chapter-1)}><ArrowLeft size={24}/></button>
           {!ending&&<button className="reader-arrow reader-next" aria-label={t(chapter===2?'여행 마무리':'다음 책장')} title={t(chapter===2?'여행 마무리':'다음 책장')} disabled={busy||introVisible} onClick={()=>chapter===2?api.current?.finish():api.current?.go(chapter+1)}><ArrowRight size={24}/></button>}
+          {/* The phone's upright book (no side arrows there, src/cinematic.css): swiping, or this pair below it, the previous page above the
+              next (on the last page it brings up the closing card); the previous one only past the first page, the next one hidden while the
+              closing card shows, each keeping its place when the other is hidden. */}
+          <div className="reader-vnav">
+            {<button className={'reader-arrow reader-up'+(chapter>0?'':' is-none')} aria-hidden={chapter===0||undefined} tabIndex={chapter>0?undefined:-1} aria-label={t('이전 책장')} title={t('이전 책장')} disabled={busy||introVisible||chapter===0} onClick={()=>{noteTurn('arrow');api.current?.go(chapter-1);}}><ChevronUp size={30}/></button>}
+            {<button className={'reader-arrow reader-down'+(ending?' is-none':'')} aria-hidden={ending||undefined} tabIndex={ending?-1:undefined} aria-label={t(chapter===2?'여행 마무리':'다음 책장')} title={t(chapter===2?'여행 마무리':'다음 책장')} disabled={busy||introVisible||ending} onClick={()=>{noteTurn('arrow');if(chapter===2)api.current?.finish();else api.current?.go(chapter+1);}}><ChevronDown size={30}/></button>}
+          </div>
 
         </>}
         {phase==='ERROR'&&<div className="scene-error" role="alert"><p>{state.error&&t(state.error)}</p><button className="secondary-button" onClick={()=>api.current?.retry()}><RotateCcw size={16}/> {t('다시 시도')}</button></div>}

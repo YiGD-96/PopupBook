@@ -13,7 +13,7 @@ import { flatLift, gluedParent, riseOrder, stackRanks } from './popupStack';
 import { SITE } from './site';
 import { BOOK_BOARD, BOOK_PAGES, BOOK_SPINE } from './bookStructure';
 import { BOOK_HINGE_Y, createBoardGeometry, createPaperBlockGeometry } from './bookGeometry';
-import { BLOCK_X, BindingDetails, Board, DESK, Desk, DeskFog, PaperBlock, PrintedPage, Surface, createCardGeometry, useDisposable, type BookMaterials } from './bookParts';
+import { BLOCK_X, BindingDetails, Board, FilmRoom, PaperBlock, ROOM, PrintedPage, Surface, createCardGeometry, useDisposable, type BookMaterials } from './bookParts';
 import { INTRO_COVER_HOLD, INTRO_PAGES_START, INTRO_PAGE_TURN, STANDING_INTRO_DURATION, STANDING_INTRO_PAGE_COUNT, STANDING_INTRO_PAGE_STAGGER, STANDING_INTRO_UI_AT } from './introPlayback';
 import { cropBackdrop, createStandingPage, createStandingSheetGeometry, createStandingSkirt, createStandingSpine, poseStandingSheet, thinStack } from './standingBook';
 import { UPRIGHT_LEAN, UPRIGHT_SCALE, isBackdrop, standingPlacement, surfaceY } from './standingLayout';
@@ -131,7 +131,7 @@ export function StandingFilm({materials,assets,t,width,height}:{materials:BookMa
  const cards=scenes[0].layers.filter(layer=>!isBackdrop(layer)&&!layer.phoneHidden);
  // The first spread's own printed floor (src/story.ts `stage`), as the live book's flat page shows it, once its sheet has lifted off.
  const stageName=(scenes[0] as {stage?:string}).stage,floor=stageName&&started>0&&assets.chapters[started-1]===0?assets.scenery[stageName]:undefined;
- return <><StandingFilmCamera width={width} height={height} zoom={f.zoom}/><DeskFog background/><Desk materials={materials}/>
+ return <><StandingFilmCamera width={width} height={height} zoom={f.zoom}/><FilmRoom materials={materials}/>
   <group position={pivot} quaternion={turn} scale={scale}><group position={[0,-BOOK_HINGE_Y,-BOOK_BOARD.x]}><group rotation={[0,-Math.PI/2,0]}>
    <Board materials={materials} x={BOOK_BOARD.x}/><PaperBlock materials={materials} x={BLOCK_X}/>
    {materials.endpaper&&<PrintedPage texture={floor??materials.endpaper} edge={materials['paper-edge']} swell={f.swell} tint={floor?undefined:paperOf(started-1)}/>}
@@ -146,5 +146,5 @@ export function StandingFilm({materials,assets,t,width,height}:{materials:BookMa
 export function standingFilmMeta(width:number,height:number){
  return {mode:'standing',width,height,aspect:STANDING_FILM_ASPECT,duration:STANDING_INTRO_DURATION,coverHold:INTRO_COVER_HOLD,uiRevealAt:STANDING_INTRO_UI_AT,sceneryStartsAt:STANDING_INTRO_UI_AT,
   pageCount:STANDING_INTRO_PAGE_COUNT,camera:[...STANDING_CAMERA_POSITION],target:[...STANDING_TARGET],fov:standingFov(width,height),projection:'perspective',renderer:'three.js (src/standingFilm.tsx)',
-  background:DESK.color,board:BOOK_BOARD,pages:BOOK_PAGES,spine:BOOK_SPINE,shadows:false,bakedShadows:false};
+  background:ROOM.wall,board:BOOK_BOARD,pages:BOOK_PAGES,spine:BOOK_SPINE,shadows:false,bakedShadows:false};
 }

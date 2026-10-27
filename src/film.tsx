@@ -14,7 +14,7 @@ import { artSource } from './artSource';
 import { BOOK_CAMERA_POSITION, BOOK_FRAME_HEIGHT, BOOK_FRAME_WIDTH, BOOK_TARGET_Y, FILM_SPAN, filmFov } from './bookView';
 import { BOOK_BOARD, BOOK_PAGES, BOOK_SPINE } from './bookStructure';
 import { INTRO_COVER_HOLD, INTRO_DURATION, INTRO_PAGE_COUNT, INTRO_PAGES_START, INTRO_PAGE_STAGGER, INTRO_PAGE_TURN, INTRO_UI_AT } from './introPlayback';
-import { BLOCK_X, BindingDetails, Board, DESK, Desk, DeskFog, OPEN_BOOK_MATERIALS, PaperBlock, PrintedPage, TurningPage, createCardGeometry, useDisposable, type BookMaterials } from './bookParts';
+import { BLOCK_X, BindingDetails, Board, DESK, FilmRoom, OPEN_BOOK_MATERIALS, ROOM, PaperBlock, PrintedPage, TurningPage, createCardGeometry, useDisposable, type BookMaterials } from './bookParts';
 import { BOOK_HINGE_Y, createBoardGeometry, createPaperBlockGeometry, createSpineGeometry } from './bookGeometry';
 import { splitPaperArt, type PaperPiece } from './paperAttachments';
 import type { Layer } from './story';
@@ -39,12 +39,16 @@ function sinking(tilt:number,lift:number,scale:number){
  const lowest=-.08+lift+scale*((foot+.08)*Math.cos(tilt)-BOOK_BOARD.depth/2*Math.sin(tilt));
  return Math.max(0,desk-lowest);
 }
+/** How much nearer the reader the closed book stands (world units), so it shows in the middle of the frame (it stood about 3% of the
+ *  frame above it; lowering it instead only set it on the table, which it already touches). The lowering takes it back by the time the
+ *  book lies open, so the open book still meets the live one exactly. Starting a little smaller keeps its size as it was. */
+const CLOSED_FORWARD=.45;
 function timeline(t:number){
  const moving=t-INTRO_COVER_HOLD,lowering=ease(moving/1.4),open=ease((moving-.12)/1.43);
- const tilt=1.04*(1-lowering),scale=.88+.12*lowering,lift=(BOOK_TARGET_Y+.08)*(1-lowering);
+ const tilt=1.04*(1-lowering),scale=.82+.18*lowering,lift=(BOOK_TARGET_Y+.08)*(1-lowering);
  // Pressed-flat sheets relax into their open swell as the first half lifts away.
  return {lowering,open,rootX:-BOOK_BOARD.x*(1-open),left:smooth((open-.5)/.5),swell:smooth(open/.55),
-  tilt,yaw:-.19*(1-lowering),lift:lift+sinking(tilt,lift,scale),scale,
+  tilt,yaw:-.19*(1-lowering),lift:lift+sinking(tilt,lift,scale),scale,forward:CLOSED_FORWARD*(1-lowering),
   pages:Array.from({length:INTRO_PAGE_COUNT},(_,i)=>smooth((t-INTRO_PAGES_START-i*INTRO_PAGE_STAGGER)/INTRO_PAGE_TURN)),
   scenery:t>=INTRO_UI_AT?t-INTRO_UI_AT:-1};
 }
@@ -138,8 +142,8 @@ function Film({assets,t,onCommit}:{assets:Assets;t:number;onCommit:(t:number)=>v
  const back=(i:number)=>i===last?paper['page-0-left']:journal[(i*2+1)%JOURNAL.length];
  const started=f.pages.filter(p=>p>0).length,landed=f.pages.filter(p=>p>=1).length;
  const rightPage=front(started),leftPage=landed?back(landed-1):journal[JOURNAL.length];
- return <><FilmCamera/><DeskFog background/><Desk materials={materials}/>
-  <group position={[f.rootX+BOOK_BOARD.x,-.08+f.lift,0]} rotation={new Euler(f.tilt,f.yaw,0,'YXZ')} scale={f.scale}><group position={[-BOOK_BOARD.x,.08,0]}>
+ return <><FilmCamera/><FilmRoom materials={materials}/>
+  <group position={[f.rootX+BOOK_BOARD.x,-.08+f.lift,f.forward]} rotation={new Euler(f.tilt,f.yaw,0,'YXZ')} scale={f.scale}><group position={[-BOOK_BOARD.x,.08,0]}>
    <Board materials={materials} x={BOOK_BOARD.x}/><PaperBlock materials={materials} x={BLOCK_X}/>
    <FoldingSpine materials={materials} fold={f.open}/>
    <PrintedPage texture={rightPage} edge={materials['paper-edge']} swell={f.swell}/>
@@ -159,7 +163,7 @@ function StandingRoll({assets,standing,t,onCommit}:{assets:Assets;standing:Stand
 /** Everything the renderer records next to the movie, read from the same modules the live book uses. */
 const FILM_META=STANDING?standingFilmMeta(FILM_WIDTH,FILM_HEIGHT):{width:FILM_WIDTH,height:FILM_HEIGHT,duration:INTRO_DURATION,coverHold:INTRO_COVER_HOLD,uiRevealAt:INTRO_UI_AT,sceneryStartsAt:INTRO_UI_AT,pageCount:INTRO_PAGE_COUNT,
  worldWidth:BOOK_FRAME_WIDTH,worldHeight:BOOK_FRAME_HEIGHT,targetY:BOOK_TARGET_Y,camera:[...BOOK_CAMERA_POSITION],fov:filmFov(),span:FILM_SPAN,projection:'perspective',renderer:'three.js (src/film.tsx)',
- background:DESK.color,board:BOOK_BOARD,pages:BOOK_PAGES,spine:BOOK_SPINE,shadows:false,bakedShadows:false};
+ background:ROOM.wall,board:BOOK_BOARD,pages:BOOK_PAGES,spine:BOOK_SPINE,shadows:false,bakedShadows:false};
 /** The magazine's moving cover: one finished cover texture per film frame, written by render-intro.mjs from the frames
  *  scripts/capture-site-cover.mjs records. Without them the cover keeps its still texture. */
 const COVER_FRAMES='/intro-cache/cover-texture/';
