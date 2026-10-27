@@ -1,5 +1,5 @@
 /**
- * Measuring the book. Every event goes to Google Tag Manager's dataLayer (GTM-TKZ7BMMZ in index.html) as { event: name, ...params }, with
+ * Measuring the book. Every event goes to Google Tag Manager's dataLayer (GTM-PBC63TW6 in index.html) as { event: name, ...params }, with
  * the reader's chapter, language and layout added, so GTM can forward any of them to GA4 or elsewhere (docs/analytics-guide). GA4 can also
  * be wired directly without GTM: gtag.js then loads only when VITE_GA_ID is set, after the intro, so it never competes with the first paint
  * or the intro film. Use one of the two for a given GA4 property, not both, or each event is counted twice.
@@ -37,8 +37,8 @@ type Params = Record<string, string | number | boolean | undefined>;
 // Every parameter name pushed so far: each push sets the ones it does not carry back to undefined, because GTM's data model keeps the
 // last value of every key, and an event would otherwise pick up, say, the content_id of an earlier one.
 const pushedKeys = new Set<string>();
-// The book's real home; every other copy (GitHub Pages, Vercel, a local preview) is a test, measured in the same GA4 but told apart by
-// book_env, so test visits can be filtered out of the reports (or sent elsewhere in GTM).
+// The book's real home; every other copy (GitHub Pages, Vercel, a local preview) is a test. GTM sends each host to its own GA4 (a lookup on
+// Page Hostname, docs/analytics-guide); book_env marks the same split on every event.
 const MAIN_HOST = 'lxwebzine.hankyung.com';
 function context(): Params {
  const chapter = scenes[useStory.getState().chapter];
