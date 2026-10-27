@@ -21,7 +21,7 @@
   },
   "projection": "perspective",
   "renderer": "three.js (src/film.tsx)",
-  "background": "#1a110b",
+  "background": "#e2d2b5",
   "board": {
     "width": 3.42,
     "depth": 5.02,

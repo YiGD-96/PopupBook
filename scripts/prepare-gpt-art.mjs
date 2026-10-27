@@ -55,12 +55,12 @@ const art=[
  // The kitchen (v4, art-src/gpt/page-3/new/new2): a Jeju kitchen wall with a window on the sea, an old fridge on the left page with four
  // magnet notes on its door, and a low table on the right with "나만의 레시피" lying on it. The notes, fridge and table carry their own edges
  // (no die-cut border); the recipe book is a die-cut card like the other clickable things.
- // The wall (jeju-kitchen-dish-shelf, 1445×1088): the open book shows 40–700 px — the painting slid up a little (the user's choice), so the
+ // The wall (jeju-kitchen-dish-shelf, 1445×1088): the open book shows 90–700 px — only a short stub of the lamp's cord, about as tall as the other spreads' walls; the
  // tip of the pot's lid (669 px down) reaches the wall's foot, where the table in front hides it; taller than about 3 units at this width,
  // the wall would leave the frame while a page turns and reach the chapter heading. The phone's upright page (1.91:1) shows all of it, top to bottom, so it looks as little zoomed as possible: the painting is
  // widened to that shape with its own plain plaster (550 px of the left side mirrored, behind the fridge; the 46 px right of the window
  // mirrored back and forth).
- {dir:'page-3',name:'kitchen-back',src:'new/new2/jeju-kitchen-dish-shelf-high-resolution',width:1440,backdrop:{top:40,bottom:700}},
+ {dir:'page-3',name:'kitchen-back',src:'new/new2/jeju-kitchen-dish-shelf-high-resolution',width:1440,backdrop:{top:90,bottom:700}},
  {dir:'page-3',name:'kitchen-back-phone',src:'new/new2/jeju-kitchen-dish-shelf-high-resolution',width:1440,backdrop:{top:0,bottom:1088,widen:{left:550,right:83,edge:46}}},
  // The phone's flat page: the honey-oak floorboards (scripts/kitchen-floor.mjs), for the flat page's UVs and the turning sheet's.
  {dir:'page-3',name:'kitchen-floor-stage',floor:'kitchen',stage:'page'},

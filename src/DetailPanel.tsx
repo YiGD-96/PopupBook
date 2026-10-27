@@ -5,16 +5,17 @@ import { useLocalized, useT } from './i18n';
 
 /** The story behind a clicked pop-up object: a panel beside the book on wide screens, a sheet from the bottom on phones. */
 export default function DetailPanel({id,onClose,onOpen}:{id:string;onClose:()=>void;onOpen:(id:string)=>void}){
- const {t}=useT(),detail=useLocalized(details[id]);const heading=useRef<HTMLHeadingElement>(null);const body=useRef<HTMLDivElement>(null);
+ const {t,lang}=useT(),detail=useLocalized(details[id]);const heading=useRef<HTMLHeadingElement>(null);const body=useRef<HTMLDivElement>(null);
  useEffect(()=>{heading.current?.focus({preventScroll:true});body.current?.scrollTo({top:0});},[id]);
  useEffect(()=>{const key=(e:KeyboardEvent)=>{if(e.key==='Escape'){e.stopPropagation();onClose();}};window.addEventListener('keydown',key);return()=>window.removeEventListener('keydown',key);},[onClose]);
  if(!detail)return null;
- // A story drawn as one picture (details.ts `sheet`): the picture fills the panel and its buttons are real links laid over it.
- if(detail.sheet){const sheet=detail.sheet;return <aside className="detail-panel is-sheet" aria-labelledby="detail-title" key={id}>
+ // A story drawn as one picture (details.ts `sheet`): the picture fills the panel and its buttons are real links laid over it; an
+ // English or Chinese reader gets that language's picture and its own button boxes (`byLang`).
+ if(detail.sheet){const sheet=detail.sheet,drawn=lang==='ko'?undefined:sheet.byLang?.[lang];return <aside className="detail-panel is-sheet" aria-labelledby="detail-title" key={id}>
   <button className="detail-close" onClick={onClose} aria-label={t('이야기 닫기')}><X size={20}/></button>
   <h2 id="detail-title" className="sr-only" ref={heading} tabIndex={-1}>{detail.title}</h2>
-  <figure className="detail-sheet"><img src={sheet.src} alt={sheet.alt} width={sheet.width} height={sheet.height} decoding="async" draggable={false}/>
-   {sheet.links.map(link=>{const action=detail.actions?.find(a=>a.label===link.label);return action&&<a key={link.label} className="detail-sheet-link" href={action.href} target={action.href.startsWith('http')?'_blank':undefined} rel="noopener noreferrer" aria-label={link.label} style={{left:link.box[0]+'%',top:link.box[1]+'%',width:link.box[2]+'%',height:link.box[3]+'%'}}/>;})}
+  <figure className="detail-sheet"><img src={drawn?.src??sheet.src} alt={sheet.alt} width={sheet.width} height={sheet.height} decoding="async" draggable={false}/>
+   {sheet.links.map((link,i)=>{const action=detail.actions?.find(a=>a.label===link.label),box=drawn?.boxes[i]??link.box;return action&&<a key={link.label} className="detail-sheet-link" href={action.href} target={action.href.startsWith('http')?'_blank':undefined} rel="noopener noreferrer" aria-label={link.label} style={{left:box[0]+'%',top:box[1]+'%',width:box[2]+'%',height:box[3]+'%'}}/>;})}
   </figure>
  </aside>;}
  return <aside className="detail-panel" aria-labelledby="detail-title" key={id}>

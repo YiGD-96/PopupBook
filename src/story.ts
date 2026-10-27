@@ -58,7 +58,7 @@ export const scenes = [
   // it, widened with its own plaster so it is barely zoomed. The floor is honey-oak boards printed on the page (scripts/kitchen-floor.mjs: both
   // pages in the open book, lighter under the printed words as on chapters 1–2; the `stage` floor on the phone). The fridge stands at the front of the left page, its feet just behind the
   // printed title, as tall as the open book allows (its top just below the chapter heading, and inside the frame while a page turns).
-  {id:'back',src:'kitchen-back',phoneSrc:'kitchen-back-phone',position:[0,.24,-1.7],size:[6.45,2.952]},
+  {id:'back',src:'kitchen-back',phoneSrc:'kitchen-back-phone',position:[0,.24,-1.7],size:[6.45,2.732]},
   {id:'fridge',src:'kitchen-fridge',position:[-1.65,.144,1.55],size:[1.706,3.693],phone:{x:-1.05,z:2.2,size:[1.809,3.915]}},
   // The notes run down the door in a loose zigzag (left, right, left, further right), large, the first two overlapping at a corner; each
   // later one stands a hair in front so overlaps stack in reading order.

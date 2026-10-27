@@ -89,10 +89,12 @@ function Modal({title,children,onClose,className=''}:{title:string;children:Reac
   </div>;
 }
 /** The closing note's words, whole per language (their line breaks and order differ); the key words carry the crayon highlight. */
-const ENDING:Record<Lang,{title:ReactNode;from:ReactNode;go:string;restart:string}>={
- ko:{title:<><span className="ending-mark">구좌 당근</span> 이야기를<br/><span className="ending-mark">기사</span>로 만나보세요.</>,from:<>밭에서 식탁까지,<br/>그 이야기를 이어 읽어요.</>,go:'기사 바로 읽기',restart:'처음으로'},
- en:{title:<>Read the story<br/>as an <span className="ending-mark">article</span>.</>,from:<>From field to table,<br/>the story reads on.</>,go:'Read the article',restart:'Start over'},
- zh:{title:<><span className="ending-mark">旧左胡萝卜</span>的故事<br/>请在<span className="ending-mark">报道</span>中阅读。</>,from:<>从田间到餐桌，<br/>故事仍在继续。</>,go:'立即阅读报道',restart:'回到开头'},
+// Each line says something of its own (the title invites, the line below says what the article holds, the button only goes): "article"
+// and "read" appear once. `goLabel` is the button's full name for screen readers, since the visible word alone (바로 가기) says less.
+const ENDING:Record<Lang,{title:ReactNode;from:ReactNode;go:string;goLabel:string;restart:string}>={
+ ko:{title:<><span className="ending-mark">구좌 당근</span> 이야기를<br/><span className="ending-mark">기사</span>로 만나보세요.</>,from:<>밭에서 식탁까지,<br/>한 편에 담았어요.</>,go:'바로 가기',goLabel:'기사 바로 가기',restart:'처음으로'},
+ en:{title:<>Read the story<br/>as an <span className="ending-mark">article</span>.</>,from:<>From field to table,<br/>all in one piece.</>,go:'Go now',goLabel:'Go to the article',restart:'Start over'},
+ zh:{title:<><span className="ending-mark">旧左胡萝卜</span>的故事<br/>请在<span className="ending-mark">报道</span>中阅读。</>,from:<>从田间到餐桌，<br/>都写在这一篇里。</>,go:'立即前往',goLabel:'前往报道',restart:'回到开头'},
 };
 /** The ending card's paper and its cut-out mask (src/cinematic.css), fetched and decoded once the last chapter is reached, so the card
  *  comes up whole: before, its words could show a moment before the picture behind them. True once both are ready (or have failed). */
@@ -322,7 +324,7 @@ export default function App() {
     <main id="main"><section className={'hero '+(intro?'is-cover':'is-open')+(ending?' is-ending':'')} aria-label={t(SITE.title)+' — '+t('팝업북')}>
       {chromeVisible&&<div className={'hero-copy'+(ending&&!endingArt?' is-waiting':'')}>
         {coverMode?<div className="cover-intro"><span>{SITE.label}</span><h1>{SITE.title}</h1><p role="status"><LoaderCircle size={14} className="spin"/>{introText}</p></div>:
-        ending?<><h1>{ENDING[lang].title}</h1><p className="hero-description">{ENDING[lang].from}</p><a className="primary-button ending-link" href={SITE.article} target="_blank" rel="noreferrer">{ENDING[lang].go}<span className="sr-only"> {t('(새 창에서 열림)')}</span><ArrowRight size={21}/></a><button className="secondary-button ending-restart" onClick={beginIntro}><RotateCcw size={18}/>{ENDING[lang].restart}</button></>:
+        ending?<><h1>{ENDING[lang].title}</h1><p className="hero-description">{ENDING[lang].from}</p><a className="primary-button ending-link" href={SITE.article} target="_blank" rel="noreferrer" aria-label={`${ENDING[lang].goLabel} ${t('(새 창에서 열림)')}`}>{ENDING[lang].go}<ArrowRight size={21}/></a><button className="secondary-button ending-restart" onClick={beginIntro}><RotateCcw size={18}/>{ENDING[lang].restart}</button></>:
         <><h1 className="sr-only" aria-label={t(scene.title)} ref={storyRef} tabIndex={-1}>{t(scene.title)}</h1>
 
         </>}

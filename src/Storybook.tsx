@@ -15,7 +15,7 @@ import { StandingCase, StandingGluedCard, StandingLayer } from './standingBook';
 import { isBackdrop, standingPlacement } from './standingLayout';
 import { STANDING_CAMERA_POSITION, STANDING_QUERY, STANDING_TARGET, standingFov } from './standingView';
 import { STANDING_DROP } from './standingMedia';
-import { CardHalo, DeskBackdrop, DeskFog, OPEN_BOOK_MATERIALS, OpenCase, cardMaterial, sheetMaterials, warmMaterials, PrintedPage, TurningPage, createCardGeometry, useDisposable, type BookMaterials } from './bookParts';
+import { CardHalo, DeskBackdrop, DeskFog, OPEN_BOOK_MATERIALS, ROOM, OpenCase, cardMaterial, sheetMaterials, warmMaterials, PrintedPage, TurningPage, createCardGeometry, useDisposable, type BookMaterials } from './bookParts';
 type Turn={from:number;to:number;direction:1|-1;incoming:Record<string,Texture>;restoreDialog:boolean};
 /** Phones held upright show the standing book (src/standingBook.tsx); the story director below is the same for both. */
 function useStanding(){
@@ -290,7 +290,7 @@ function Book({onReady,onFailure}:{onReady:(director:Director)=>void;onFailure:(
   const stagesOf=(floorChapter:number,sheetChapter:number|undefined)=>({floor:stageOf(floorChapter),sheetFloor:stageOf(sheetChapter),sheetFace:stageOf(sheetChapter,'-sheet')});
   const upright=moving&&turn.direction===-1?backdropOf(turn.to,turn.incoming)??backdropOf(chapter,textures):backdropOf(chapter,textures);
   const sheet=moving?(turn.direction===1?backdropOf(turn.to,turn.incoming):backdropOf(chapter,textures)):undefined;
-  return <><Camera standing/><DeskFog/><DeskBackdrop materials={materials}/>
+  return <><Camera standing/><DeskFog color={ROOM.wall}/><DeskBackdrop materials={materials}/>
    <StandingCase materials={materials} backdrop={upright} turnBackdrop={sheet} turning={moving?turn.direction:0} progress={progress} stand={stand}
     floor={paperOf(moving&&turn.direction===1?turn.to:chapter)} sheetFloor={moving?paperOf(turn.direction===1?turn.from:turn.to):undefined} stages={stagesOf(moving&&turn.direction===1?turn.to:chapter,moving?(turn.direction===1?turn.from:turn.to):undefined)}/>
    {/* One group, keyed by chapter: when a turn ends the incoming cards stay mounted and become the spread's own (no rebuild). */}
@@ -298,7 +298,7 @@ function Book({onReady,onFailure}:{onReady:(director:Director)=>void;onFailure:(
    {turn&&turn.to!==chapter?standingCards(turn.to,turn.incoming,{hinges,onClick:interact,turn,progress},true):staged&&staged.to!==chapter?standingCards(staged.to,staged.art,{hinges,onClick:interact,turn:null,progress},true):null}</group>
    <ContextMonitor onFailure={onFailure}/></>;
  }
- return <><Camera/><DeskFog/><DeskBackdrop materials={materials}/><group>
+ return <><Camera/><DeskFog color={ROOM.wall}/><DeskBackdrop materials={materials}/><group>
  <OpenCase materials={materials}/>
  {paper[`page-${leftChapter}-left`]&&<PrintedPage texture={paper[`page-${leftChapter}-left`]} edge={materials['paper-edge']} left/>}{paper[`page-${rightChapter}-right`]&&<PrintedPage texture={paper[`page-${rightChapter}-right`]} edge={materials['paper-edge']}/>}
  {sheet&&<TurningPage front={sheet.front} back={sheet.back} progress={progress} direction={sheet.direction} visible={sheetReady}/>}

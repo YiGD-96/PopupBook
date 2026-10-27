@@ -25,7 +25,9 @@ export type Detail={
  spread?:{pictures:{src:string;alt:string;caption:string;fallback?:string}[];byline?:string;paragraphs:string[];folio:[string,string]};
  /** Shown in the panel as one picture instead of the text (the recipe call poster). Its buttons are boxes on the picture
   *  ([left, top, width, height] in % of it), each opening the action with the same label. */
- sheet?:{src:string;alt:string;width:number;height:number;links:{label:string;box:[number,number,number,number]}[]};
+ sheet?:{src:string;alt:string;width:number;height:number;links:{label:string;box:[number,number,number,number]}[];
+  /** The same sheet drawn in another language: its picture and its links' boxes, in the order of `links`. */
+  byLang?:Partial<Record<'en'|'zh',{src:string;boxes:[number,number,number,number][]}>>};
 };
 import { SHARE } from './site.ts';
 import { url } from './base.ts';
@@ -100,7 +102,8 @@ export const details:Record<string,Detail>={
   actions:[...(SHARE.email?[{label:'이메일로 레시피 보내기',href:`mailto:${SHARE.email}?subject=${encodeURIComponent('[당근 레시피] 내 레시피를 보내요')}&body=${encodeURIComponent('요리 이름:\n재료:\n만드는 순서:\n닉네임(선택):\n(요리 사진도 함께 첨부해 주세요)')}`}]:[]),...(SHARE.instagram?[{label:'인스타그램으로 레시피 보내기',href:`https://www.instagram.com/${SHARE.instagram}/`}]:[])],
   note:SHARE.email||SHARE.instagram?undefined:'레시피를 받는 곳(인스타그램·이메일)을 준비하고 있어요. 곧 열려요.',
   sheet:{src:url('/media/recipe-share.webp'),alt:'구좌 당근 레시피 모집. 우리 집 당근 요리, 함께 공유해요. 요리 이름·재료·만드는 법, 사진도 좋아요. 인스타 DM 보내기, 이메일 보내기(jejucarrotlab@gmail.com).',width:1086,height:1448,
-   links:[{label:'인스타그램으로 레시피 보내기',box:[15.47,80.04,69.8,6.56]},{label:'이메일로 레시피 보내기',box:[15.1,87.71,70.26,8.7]}]},
+   links:[{label:'인스타그램으로 레시피 보내기',box:[15.47,80.04,69.8,6.56]},{label:'이메일로 레시피 보내기',box:[15.1,87.71,70.26,8.7]}],
+   byLang:{en:{src:url('/media/recipe-share-en.webp'),boxes:[[16.3,79.21,68.69,6.7],[15.19,86.95,70.35,8.7]]},zh:{src:url('/media/recipe-share-zh.webp'),boxes:[[15.29,79.77,70.07,6.91],[14.64,87.71,70.72,8.7]]}}},
   link:{label:'웹진 둘러보기',href:site},related:['recipe-burger']},
  // The notes on the kitchen wall open their recipe posters as a book (src/PosterBook.tsx, src/posters.ts); these entries name them for
  // links, analytics and the related buttons.

@@ -433,6 +433,7 @@ const words:Record<string,string>={
  "효과음":"Sound effects",
  "후추":"Black pepper",
  "흔한 재료였던 당근을 새로운 메뉴로 풀어내는 식당의 이야기입니다.":"The story of a restaurant that turns the humble carrot into new dishes.",
- "흙이 묻은 채 수확해 밭에 놓아둔 제주 구좌 당근":"Gujwa carrots from Jeju, freshly harvested and still covered in soil, laid out in the field"
+ "흙이 묻은 채 수확해 밭에 놓아둔 제주 구좌 당근":"Gujwa carrots from Jeju, freshly harvested and still covered in soil, laid out in the field",
+ "구좌 당근 레시피 모집. 우리 집 당근 요리, 함께 공유해요. 요리 이름·재료·만드는 법, 사진도 좋아요. 인스타 DM 보내기, 이메일 보내기(jejucarrotlab@gmail.com).":"Gujwa Carrots Call for Recipes. Share your family's carrot dishes. Dish name · Ingredients · Steps · Photos welcome. Send an Instagram DM, Send an Email (jejucarrotlab@gmail.com).",
 };
 export default words;

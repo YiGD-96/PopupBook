@@ -27,9 +27,10 @@ test('the shipped movie and its endpoint images use the same framing as the inte
  assert.equal(meta.projection,'perspective');assert.deepEqual(meta.camera,[...BOOK_CAMERA_POSITION]);
  // The book casts no shadows at all, neither live nor baked.
  assert.equal(meta.bakedShadows,false);
- // The reader, the intro screen and the movie share one table colour, so the handoff has no visible frame.
+ // The intro screen and the movie share one colour, so the film has no visible frame. (The reader around the live book is the lighter
+ // room's wall, src/bookParts.tsx ROOM, until the films are rendered in that room too.)
  const css=await fs.readFile(new URL('../src/cinematic.css',import.meta.url),'utf8');
- assert.ok(css.includes(`.reader-mode.cinematic-reader{background:${meta.background}`));assert.ok(css.includes(`.intro-screen{position:absolute;inset:0;z-index:3;background:${meta.background}`));
+ assert.ok(css.includes(`.intro-screen{position:absolute;inset:0;z-index:3;background:${meta.background}`));
  for(const name of ['book-opening.mp4','book-cover.webp','book-open.webp'])assert.ok((await fs.stat(new URL('../public/media/'+name,import.meta.url))).size>1000);
 });
 test('the phone movie and its endpoint images use the standing book\'s camera and framing',async()=>{

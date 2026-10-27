@@ -1,4 +1,4 @@
-.reader-mode.cinematic-reader{background:#1a110b;background-image:none}
+.reader-mode.cinematic-reader{background:#e2d2b5;background-image:none}
 .cinematic-reader .hero{height:100svh;min-height:0}
 .cinematic-reader .site-header{position:absolute;top:0;left:6.2%;right:6.2%;height:72px;border:0;display:grid;grid-template-columns:1fr auto;animation:reader-arrive .45s ease-out both}
 .cinematic-reader .site-header .brand{justify-self:start}
@@ -15,7 +15,7 @@
 .cinematic-reader .static-cover,.cinematic-reader .static-spread,.cinematic-reader .static-spread img{filter:none;box-shadow:none}
 .cinematic-reader .static-cover{transform:translate(-50%,-50%)}
 .cinematic-reader .static-spread{transform:perspective(1200px) rotateX(15deg)}
-.intro-screen{position:absolute;inset:0;z-index:3;background:#1a110b;transition:opacity .28s ease-out;overflow:hidden}
+.intro-screen{position:absolute;inset:0;z-index:3;background:#e2d2b5;transition:opacity .28s ease-out;overflow:hidden}
 .intro-screen.is-leaving{opacity:0;pointer-events:none}
 .intro-media{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:var(--book-media-width,100%);height:var(--book-media-height,100%);object-fit:contain;display:block;max-width:none}
 /* The phone film is sized for the standing book's camera (src/standingMedia.ts). */
@@ -199,23 +199,23 @@
 .noscript{padding:12px 24px;margin:0;background:#fff3d6;font-size:14px}
 @media(max-width:760px){.book-text-inner{padding:64px 18px 80px;font-size:15px}.book-text h1{font-size:28px}}
 
-/* ───────── The walnut desk at night (src/bookParts.tsx Desk): the room is dark, the lamp lights the book; reading text is warm cream. */
-html,body{background:#1a110b}
+/* ───────── The room (src/bookParts.tsx ROOM): a beige wall over a brown wooden floor in daylight, the page around the canvas the wall's
+   colour; the words over it in dark brown. The intro films still show the walnut desk at night until they are rendered again. */
+html,body{background:#e2d2b5}
 .desk-air{position:absolute;inset:0;z-index:4;pointer-events:none;
- background:radial-gradient(95% 85% at 50% 46%,transparent 48%,rgba(12,7,4,.55) 100%)}
-.cinematic-reader .brand-name{font-weight:400;color:#f1e3c8;border-left-color:rgba(255,236,205,.22)}
+ background:radial-gradient(110% 95% at 50% 46%,transparent 58%,rgba(74,48,26,.2) 100%)}
+.cinematic-reader .brand-name{font-weight:400;color:#3b2a1c;border-left-color:rgba(59,42,28,.25)}
 
 .cinematic-reader .reader-arrow{color:#ead8b8}.cinematic-reader .reader-arrow:hover:not(:disabled){background:transparent;color:#f5a25a}
 
 
 
 
-.cinematic-reader .audio-hint,.cinematic-reader .cover-intro p{color:#cdb894}
+.cinematic-reader .audio-hint{color:#6b5340}.cinematic-reader .cover-intro p{color:#cdb894}
 .cinematic-reader .cover-intro>span{color:#d9a679}.cinematic-reader .cover-intro h1{color:#f6e9d0}
 .cinematic-reader .scene-loading{background:rgba(30,18,10,.6);color:#efe1c6;border-color:rgba(255,236,205,.2)}
 @media(max-width:760px){
- /* The phone canvas stops above the reading text: let the desk fade into the room there. */
- .desk-air{background:radial-gradient(95% 85% at 50% 46%,transparent 48%,rgba(12,7,4,.55) 100%),linear-gradient(to bottom,transparent 82%,#1a110b 100%)}
+ .desk-air{background:radial-gradient(120% 90% at 50% 46%,transparent 60%,rgba(74,48,26,.18) 100%)}
 }
 
 /* The phone's standing book turns by dragging up or down too (src/useBookGestures.ts), so the browser must not take vertical drags as
@@ -228,12 +228,12 @@ html,body{background:#1a110b}
 /* The spread's title, on its own line under the header and above the book (src/App.tsx). */
 .cinematic-reader .chapter-title{position:absolute;z-index:6;top:76px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:7px;
  width:max-content;max-width:calc(100% - 36px);text-align:center;pointer-events:none;animation:chapter-title-in .6s ease-out both}
-.cinematic-reader .chapter-title>span{font:600 11px 'Cormorant Garamond',Georgia,serif;letter-spacing:.3em;color:#d9a35f}
-.cinematic-reader .chapter-title>strong{font-family:var(--serif);font-size:clamp(22px,2.1vw,30px);font-weight:400;letter-spacing:-.01em;color:#f5e6c9;line-height:1.25}
+.cinematic-reader .chapter-title>span{font:600 11px 'Cormorant Garamond',Georgia,serif;letter-spacing:.3em;color:#b0581f}
+.cinematic-reader .chapter-title>strong{font-family:var(--serif);font-size:clamp(22px,2.1vw,30px);font-weight:400;letter-spacing:-.01em;color:#3b2a1c;line-height:1.25}
 /* Which of the three chapters this is (the reading guide's dots, src/Guide.tsx). */
 .chapter-dots{display:flex;gap:8px;margin-top:6px}
-.chapter-dots i{width:7px;height:7px;border-radius:50%;background:rgba(255,226,173,.25)}
-.chapter-dots i.is-on{background:#ffd27a}
+.chapter-dots i{width:7px;height:7px;border-radius:50%;background:rgba(59,42,28,.2)}
+.chapter-dots i.is-on{background:#c4531f}
 @keyframes chapter-title-in{from{opacity:0;transform:translate(-50%,6px)}to{opacity:1;transform:translate(-50%,0)}}
 @media (max-height:760px) and (min-width:761px){
  .cinematic-reader .chapter-title{top:66px;gap:4px}
@@ -523,23 +523,24 @@ html,body{background:#1a110b}
 }
 
 /* ───────── The contents (App.tsx, "목차" in the header): the prologue's look, a way into each chapter. */
-.modal-backdrop:has(.contents-modal){background:rgba(8,5,2,.66);backdrop-filter:none}
-.modal.contents-modal{width:min(100%,520px);background:#1e130c;border:1px solid rgba(255,214,140,.22);box-shadow:0 30px 90px rgba(0,0,0,.5);color:#efe1c6;padding:26px 28px 22px}
-.contents-modal .modal-head h2{font-size:26px;color:#f8ead1}
-.contents-modal .modal-head .icon-button{color:#d9c39d}
-.contents-lead{margin:4px 0 14px;font:600 11px 'Cormorant Garamond',Georgia,serif;letter-spacing:.24em;color:#d9a35f}
+.modal-backdrop:has(.contents-modal){background:rgba(58,38,22,.38);backdrop-filter:none}
+/* The room's beige (src/bookParts.tsx ROOM): a sheet of the wall's paper, dark brown words, the chapter numbers in the book's orange. */
+.modal.contents-modal{width:min(100%,520px);background:#f4ead8 url('/book-materials/wall.webp') center/256px;border:1px solid rgba(120,82,48,.22);box-shadow:0 24px 70px rgba(58,38,22,.32);color:#3b2a1c;padding:26px 28px 22px}
+.contents-modal .modal-head h2{font-size:26px;color:#2f2116}
+.contents-modal .modal-head .icon-button{color:#7a5a3e}
+.contents-lead{margin:4px 0 14px;font:600 11px 'Cormorant Garamond',Georgia,serif;letter-spacing:.24em;color:#b0581f}
 .contents-list{list-style:none;margin:0;padding:0}
-.contents-list li+li{border-top:1px solid rgba(255,236,205,.1)}
+.contents-list li+li{border-top:1px solid rgba(120,82,48,.18)}
 .contents-list button{display:flex;align-items:center;gap:16px;width:100%;padding:16px 4px;background:none;border:0;text-align:left;color:inherit;cursor:pointer;border-radius:10px}
-.contents-list button:hover,.contents-list button:focus-visible{background:rgba(255,214,140,.06)}
-.contents-list button>svg{flex-shrink:0;color:#d9a35f;opacity:.7}
-.contents-no{flex-shrink:0;width:42px;font:26px Georgia,serif;color:#e08a3a}
+.contents-list button:hover,.contents-list button:focus-visible{background:rgba(196,83,31,.07)}
+.contents-list button>svg{flex-shrink:0;color:#b0581f;opacity:.75}
+.contents-no{flex-shrink:0;width:42px;font:26px Georgia,serif;color:#c4531f}
 .contents-body{display:flex;flex-direction:column;gap:4px;min-width:0;flex:1}
-.contents-body small{font:600 10px 'Cormorant Garamond',Georgia,serif;letter-spacing:.22em;color:#b99b74}
-.contents-body strong{font-family:var(--serif);font-size:19px;font-weight:400;color:#f3e4c8;word-break:keep-all}
-.contents-body em{font-style:normal;font-size:12.5px;line-height:1.6;color:#bfa987;word-break:keep-all}
-.contents-here{flex-shrink:0;padding:4px 10px;border-radius:999px;border:1px solid rgba(255,214,140,.4);font-size:11px;color:#ffd27a}
-.contents-list .is-current .contents-body strong{color:#ffe2ad}
+.contents-body small{font:600 10px 'Cormorant Garamond',Georgia,serif;letter-spacing:.22em;color:#9a7a58}
+.contents-body strong{font-family:var(--serif);font-size:19px;font-weight:400;color:#2f2116;word-break:keep-all}
+.contents-body em{font-style:normal;font-size:12.5px;line-height:1.6;color:#6e5640;word-break:keep-all}
+.contents-here{flex-shrink:0;padding:4px 10px;border-radius:999px;border:0;background:#c4531f;font-size:11px;color:#fff6e6}
+.contents-list .is-current .contents-body strong{color:#a8471a}
 @media (max-width:760px){
  .modal.contents-modal{padding:22px 18px 16px}
  .contents-no{width:34px;font-size:22px}
