@@ -7,16 +7,17 @@ import { PAGE_TITLE, headTags, llmsTxt, robotsTxt, sitemapXml, textVersion } fro
  * sitemap.xml and llms.txt, all from the book's own data (src/seo.ts). VITE_SITE_URL (the deployed address) makes URLs absolute.
  */
 function seo(siteUrl?: string): Plugin {
+ const today = new Date().toISOString().slice(0, 10); // dateModified and the sitemap's lastmod
  return {
   name: 'book-seo',
   transformIndexHtml: { order: 'pre', handler: html => html
    .replace(/<title>[\s\S]*?<\/title>/, `<title>${PAGE_TITLE}</title>`)
-   .replace('<!-- seo:head -->', headTags(siteUrl))
+   .replace('<!-- seo:head -->', headTags(siteUrl, today))
    .replace('<!-- seo:text -->', textVersion()) },
   generateBundle() {
    this.emitFile({ type: 'asset', fileName: 'robots.txt', source: robotsTxt(siteUrl) });
    this.emitFile({ type: 'asset', fileName: 'llms.txt', source: llmsTxt(siteUrl) });
-   if (siteUrl) this.emitFile({ type: 'asset', fileName: 'sitemap.xml', source: sitemapXml(siteUrl, new Date().toISOString().slice(0, 10)) });
+   if (siteUrl) this.emitFile({ type: 'asset', fileName: 'sitemap.xml', source: sitemapXml(siteUrl, today) });
   },
  };
 }

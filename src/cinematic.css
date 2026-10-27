@@ -575,7 +575,7 @@ html:lang(en) .wz-h1 span+span::before{content:' '}
  .cinematic-reader .book-stage .reader-vnav .reader-arrow:hover:not(:disabled){background:none;color:#f5a25a}
  .cinematic-reader .book-stage .reader-vnav .reader-arrow.is-none{visibility:hidden}
 }
-/* The web magazine's quotes in the brand's own letters (the "구좌 당근을 만나는 사람들" beside the logo): Gowun Batang, bold, upright. */
+/* The web magazine's quotes in the brand's own letters (the service name beside the logo): Gowun Batang, bold, upright. */
 .wz-quote p{font-family:var(--serif);font-weight:700;font-style:normal;letter-spacing:-.01em}
 /* Korean set justified opened wide gaps between words: the spaces a little narrower. */
 html:lang(ko) :is(.wz-p,.wz-lead p,.wz-quote p,.wz-menu p,.wz-captions p,.detail-lead,.detail-book-text){word-spacing:-.08em}

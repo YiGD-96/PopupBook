@@ -31,7 +31,6 @@ export default function DetailPanel({id,onClose,onOpen}:{id:string;onClose:()=>v
    {detail.tip&&<p className="detail-tip"><strong>TIP</strong> {detail.tip}</p>}
    {detail.note&&<p className="detail-note">{detail.note}</p>}
    {detail.actions&&detail.actions.length>0&&<div className="detail-actions">{detail.actions.map(action=><a key={action.href} className="detail-link" href={action.href} target={action.href.startsWith('http')?'_blank':undefined} rel="noopener noreferrer">{action.label}<ArrowUpRight size={17}/></a>)}</div>}
-   <a className={detail.actions&&detail.actions.length>0?"detail-link is-quiet":"detail-link"} href={detail.link.href} target="_blank" rel="noopener noreferrer">{detail.link.label}<ArrowUpRight size={17}/></a>
    {detail.related&&<nav className="detail-related" aria-label={t('함께 보면 좋은 이야기')}><h3>{t('함께 보면 좋은 이야기')}</h3>{detail.related.filter(r=>details[r]).map(r=><button key={r} onClick={()=>onOpen(r)}><span>{details[r].kicker.split(' — ')[0]}</span>{t(details[r].title)}</button>)}</nav>}
   </div>
  </aside>;

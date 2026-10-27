@@ -75,7 +75,7 @@ const words:Record<string,string>={
  "구좌 당근으로 만든 요리를 사진으로 남겨요.":"Take a photo of a dish you made with Gujwa carrots.",
  "구좌 당근으로 새로운 맛을 만드는\n식당 사장님들을 만났어요.":"We met the restaurant owners\nmaking new flavours with Gujwa carrots.",
  "구좌 당근을 대표 메뉴로 선보이는 식당의 이야기입니다.":"The story of a restaurant that makes Gujwa carrots its signature dish.",
- "구좌 당근을 만나는 사람들":"People Who Meet Gujwa Carrots",
+ "구좌 당근, 몬딱 담았수다":"Gujwa Carrots, All Packed In",
  "구좌 당근을 선택했다기보다는, 구좌 당근을 만나기 때문에 버거캐럿이 시작됐다는 표현이 더 맞는 것 같다고.":"As Kim puts it, it's less that Burger Carrot chose Gujwa carrots, and more that Burger Carrot began because of meeting them.",
  "구좌 당근의 맛을 가장 순수하게 느낄 수 있는 메뉴다. 신선한 당근을 착즙해 특유의 향과 자연스러운 단맛을 그대로 담았다.":"The purest way to taste Gujwa carrots: pressed fresh to keep their aroma and natural sweetness.",
  "구좌 당근의 부드러운 단맛을 한 그릇에 담아낸 메뉴. 따뜻하고 포근한 질감이 살아 있다.":"The gentle sweetness of Gujwa carrots in a single bowl, warm and comforting.",
