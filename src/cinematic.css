@@ -229,7 +229,7 @@ html,body{background:#e2d2b5}
 .cinematic-reader .chapter-title{position:absolute;z-index:6;top:76px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:7px;
  width:max-content;max-width:calc(100% - 36px);text-align:center;pointer-events:none;animation:chapter-title-in .6s ease-out both}
 .cinematic-reader .chapter-title>span{font:600 11px 'Cormorant Garamond',Georgia,serif;letter-spacing:.3em;color:#b0581f}
-.cinematic-reader .chapter-title>strong{font-family:var(--serif);font-size:clamp(22px,2.1vw,30px);font-weight:400;letter-spacing:-.01em;color:#3b2a1c;line-height:1.25}
+.cinematic-reader .chapter-title>strong{font-family:var(--serif);font-size:clamp(22px,2.1vw,30px);font-weight:700;letter-spacing:-.01em;color:#3b2a1c;line-height:1.25}
 /* Which of the three chapters this is (the reading guide's dots, src/Guide.tsx). */
 .chapter-dots{display:flex;gap:8px;margin-top:6px}
 .chapter-dots i{width:7px;height:7px;border-radius:50%;background:rgba(59,42,28,.2)}
