@@ -118,12 +118,18 @@ export function initAnalytics() {
  }
  track('page_view', { page_location: location.href, page_title: document.title });
 
- let shown = '', opened: { id: string; at: number; deepest: number | null; marks: Set<number> } | null = null, seen = new Set<string>(), lastChapter = useStory.getState().chapter, introDone = false;
+ // shown starts at the address the reader arrived at, which the page_view above already counted.
+ let shown = location.hash, opened: { id: string; at: number; deepest: number | null; marks: Set<number> } | null = null, seen = new Set<string>(), lastChapter = useStory.getState().chapter, introDone = false;
  // scroll_percent: the furthest the reader scrolled (left out when the story never had anything to scroll).
  function closeStory() {
   if (!opened) return;
   track('story_close', { content_id: opened.id, open_seconds: Math.round((performance.now() - opened.at) / 1000), scroll_percent: opened.deepest ?? undefined });
   opened = null;
+ }
+ function openStory(id: string, chapter: number) {
+  opened = { id, at: performance.now(), deepest: null, marks: new Set() }; seen.add(id);
+  track('select_content', { content_type: 'story', content_id: id, chapter_id: scenes[chapter].id, source: detailSource });
+  detailSource = 'object';
  }
  useStory.subscribe((state, previous) => {
   const reading = state.phase === 'EXPLORING' || state.phase === 'ENDING';
@@ -133,20 +139,17 @@ export function initAnalytics() {
    idle ? idle(loadGtag) : window.setTimeout(loadGtag, 1200);
   }
   if (state.phase === 'INIT' && previous.phase !== 'INIT') seen.clear(); // the reader starts over
+  // Stories open and close before the book is ready too: a story link's story is up while the book still loads behind it.
+  if (state.detail !== previous.detail) {
+   closeStory();
+   if (state.detail) openStory(state.detail, state.chapter);
+  }
   if (!reading) return;
   const ending = state.phase === 'ENDING';
   // A page turn completes when the chapter changes while reading.
   if (state.chapter !== lastChapter) {
    track('page_turn', { from_chapter: scenes[lastChapter].id, to_chapter: scenes[state.chapter].id, direction: state.chapter > lastChapter ? 'next' : 'previous', method: turnMethod });
    turnMethod = 'arrow'; lastChapter = state.chapter;
-  }
-  if (state.detail !== previous.detail) {
-   closeStory();
-   if (state.detail) {
-    opened = { id: state.detail, at: performance.now(), deepest: null, marks: new Set() }; seen.add(state.detail);
-    track('select_content', { content_type: 'story', content_id: state.detail, chapter_id: scenes[state.chapter].id, source: detailSource });
-    detailSource = 'object';
-   }
   }
   if (ending && previous.phase !== 'ENDING') track('story_complete', { stories_opened: seen.size });
   const hash = locationHash(state.chapter, ending ? null : state.detail, ending);
@@ -156,6 +159,9 @@ export function initAnalytics() {
    track('page_view', { page_location: location.href, page_title: pageTitle(state.chapter, ending ? null : state.detail, ending) });
   }
  });
+ // A story link (src/App.tsx) opens its story before this runs.
+ const arrived = useStory.getState();
+ if (arrived.detail) { noteStory('link'); openStory(arrived.detail, arrived.chapter); }
  // A reader who closes the tab or leaves with a story still open: its time is counted as well.
  window.addEventListener('pagehide', closeStory);
 

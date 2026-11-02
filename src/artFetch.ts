@@ -20,8 +20,9 @@ function prefetch(name:string){
 }
 /** An early download of this file, handed over once (the book then keeps the texture it makes from it). */
 export function takeEarly(url:string){const download=early.get(url);early.delete(url);return download;}
-/** The first spread's pictures, and on the open book its printed pages (the phone's standing book never shows those). */
-export function prefetchFirstSpread(){
- for(const [,file] of sceneArt(0))prefetch(file);
- if(!standingScreen())for(const side of ['left','right'])prefetch(`page-0-${side}`);
+/** The first spread's pictures (or the spread a story link opens at), and on the open book its printed pages (the phone's standing book
+ *  never shows those). */
+export function prefetchFirstSpread(chapter=0){
+ for(const [,file] of sceneArt(chapter))prefetch(file);
+ if(!standingScreen())for(const side of ['left','right'])prefetch(`page-${chapter}-${side}`);
 }

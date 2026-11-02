@@ -513,3 +513,11 @@ node scripts/render-intro.mjs
 - PC 영상: 닫힌 책이 프레임 중앙보다 3% 위(47%)였음 → 닫힌 동안 0.45 앞으로(CLOSED_FORWARD) + 조금 작게 시작(.82)해서 중앙(50.2%), 크기는 거의 그대로. 내려앉으며 원래 자리로 가서 펼친 마지막 프레임은 예전과 같음. (아래로 내리는 건 책이 이미 탁자에 닿아 있어 효과 없었음.) phone 영상은 배경만 바뀜.
 - 목차 팝업도 베이지로: 벽 질감(wall.webp)의 종이 판, 진한 갈색 글씨, 주황 번호, 지금 읽는 장은 주황 제목+주황 '읽는 중' 배지, 뒤 어둡힘은 옅은 갈색.
 - 책 위 장 이름(.chapter-title strong)은 Gowun Batang 굵게(700).
+
+**(2026-11-02) 세부 페이지로 바로 들어오는 링크(…#cooks/cook-03):**
+- 처음 들어올 때(새로고침·뒤로가기 아님) 해시에 이야기가 있으면 인트로 영상·프롤로그·안내 없이 그 이야기가 바로 열림(약 0.4–0.5초). `src/App.tsx` STORY_LINK가 모듈 단계에서 장·이야기를 store에 넣어 첫 화면부터 그 장 이름이 보임(1장 제목이 잠깐 보이던 것 없앰).
+- 책은 이야기가 뜬 뒤 700ms + 브라우저가 한가할 때 뒤에서 그 장으로 준비(`Storybook.tsx` startAt, `preloadBook(chapter)`, `prefetchFirstSpread(chapter)`), 카드는 이미 선 채로 시작해 넘김·세움 애니메이션 없음. 이야기를 닫으면 그 장에서 바로 읽기(#cooks).
+- 책 준비 중 80–250ms 긴 작업(three.js 코드·셰이더)은 이야기 위에서 일어남 — 이야기 여는 순간은 피함.
+- '처음으로'는 평소처럼 영상·프롤로그. 해시 없음·장만 있는 링크(#cooks)는 예전과 같음.
+- 분석: 링크로 연 이야기도 select_content(source link)·story_close가 남고, 도착 page_view는 한 번만(`analytics.ts` shown=location.hash). 책 준비 전 열고 닫는 것도 셈.
+- tests/seo-analytics의 2개 실패(레시피 4개·recipe-01 기대)는 이 작업 전부터 — fce683a의 SEO 내용 변경 뒤 테스트가 안 바뀜.
