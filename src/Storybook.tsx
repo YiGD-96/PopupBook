@@ -124,18 +124,21 @@ function Book({onReady,onFailure}:{onReady:(director:Director)=>void;onFailure:(
  function ensureUploaded(target:number){
   const art=readyScene(target)??{};for(const texture of [...Object.values(art),...['left','right'].map(side=>paperRef.current[`page-${target}-${side}`]).filter(Boolean)])gl.initTexture(texture);
  }
+ // The spread the book opens at: the first, or the one a story link names (src/App.tsx sets the chapter before the book mounts).
+ const startAt=useRef(0);
  async function prepareStartup(token:number){
   useStory.getState().set({phase:'INIT',error:null});
-  const [firstArt,,materialArt]=await Promise.all([loadScene(0),preparePaper(),Promise.all(OPEN_BOOK_MATERIALS.map(async name=>[name,await loadTexture('book-'+name)] as const)).then(entries=>Object.fromEntries(entries) as Record<string,Texture>)]);
+  const start=startAt.current=Math.max(0,Math.min(scenes.length-1,useStory.getState().chapter));
+  const [firstArt,,materialArt]=await Promise.all([loadScene(start),preparePaper(start),Promise.all(OPEN_BOOK_MATERIALS.map(async name=>[name,await loadTexture('book-'+name)] as const)).then(entries=>Object.fromEntries(entries) as Record<string,Texture>)]);
   const active=()=>mounted.current&&token===generation.current;
   if(!active())return;setTextures(firstArt);setMaterials(materialArt);
   // The turning sheet's floor painting (a stage's `-sheet`) is only seen in a turn: it is uploaded after the book is ready, in the prologue.
-  const sheetFloor=scenes[0].stage?firstArt[scenes[0].stage+'-sheet']:undefined;
+  const sheetFloor=scenes[start].stage?firstArt[scenes[start].stage+'-sheet']:undefined;
   if(!await prepareBookRenderer(gl,[...Object.values(materialArt),...Object.values(firstArt).filter(t=>t!==sheetFloor),...Object.values(paperRef.current)],world,camera,active,undefined,warmFirstFrame))return;
   
   // The turning sheets' shaders exist before the first turn (otherwise the first turn would compile them on its first frame).
   if(materialArt.endpaper){const sheets=sheetMaterials(materialArt.endpaper);warmMaterials(gl,world,camera,sheets);sheets.forEach(m=>m.dispose());}
-  warmMaterials(gl,world,camera,await prepareHalos(firstArt,0));if(!active())return;
+  warmMaterials(gl,world,camera,await prepareHalos(firstArt,start));if(!active())return;
   prepared.current=true;useStory.getState().set({phase:'COVER'});
   if(sheetFloor)window.setTimeout(()=>{if(active())gl.initTexture(sheetFloor);},600);
  }
@@ -177,10 +180,10 @@ function Book({onReady,onFailure}:{onReady:(director:Director)=>void;onFailure:(
  function foldCards(){hinges.current.forEach(h=>{if(!h.userData.glued)h.rotation.x=-Math.PI/2;});}
  /** The first spread's cards standing up on the timeline from `at` seconds, front to back (src/popupStack.ts riseOrder). */
  function riseCards(tl:gsap.core.Timeline,at=0){
-  if(standingRef.current){const cards=scenes[0].layers.filter(l=>!isBackdrop(l)),ranks=stackRanks(cards,l=>standingPlacement(l).z);cards.forEach(l=>{const hinge=hinges.current.get(`${l.id}:right`);if(hinge&&!hinge.userData.glued)tl.to(hinge.rotation,{x:0,duration:.55,ease:'back.out(1.1)'},at+riseOrder(ranks.get(l.id)??0,cards.length)*.06);});return;}
-  const layers=scenes[0].layers,ranks=stackRanks(layers);layers.forEach(l=>{for(const side of ['left','right']){const hinge=hinges.current.get(`${l.id}:${side}`);if(hinge&&!hinge.userData.glued)tl.to(hinge.rotation,{x:0,duration:.72,ease:'back.out(1.05)'},at+riseOrder(ranks.get(l.id)??0,layers.length)*.13);}});
+  if(standingRef.current){const cards=scenes[startAt.current].layers.filter(l=>!isBackdrop(l)),ranks=stackRanks(cards,l=>standingPlacement(l).z);cards.forEach(l=>{const hinge=hinges.current.get(`${l.id}:right`);if(hinge&&!hinge.userData.glued)tl.to(hinge.rotation,{x:0,duration:.55,ease:'back.out(1.1)'},at+riseOrder(ranks.get(l.id)??0,cards.length)*.06);});return;}
+  const layers=scenes[startAt.current].layers,ranks=stackRanks(layers);layers.forEach(l=>{for(const side of ['left','right']){const hinge=hinges.current.get(`${l.id}:${side}`);if(hinge&&!hinge.userData.glued)tl.to(hinge.rotation,{x:0,duration:.72,ease:'back.out(1.05)'},at+riseOrder(ranks.get(l.id)??0,layers.length)*.13);}});
  }
- function startReading(token:number){stand.current.value=1;useStory.getState().set({phase:'EXPLORING'});pulseHalos(clickableCards(0));warmChapter(1,token);}
+ function startReading(token:number){stand.current.value=1;useStory.getState().set({phase:'EXPLORING'});pulseHalos(clickableCards(startAt.current));warmChapter(startAt.current+1,token);}
  /** The cards stand up (and, `standUp`, the standing book's first half rises with them) and the reader may read. */
  async function standAndRise(standUp:boolean,token:number){
   useStory.getState().set({phase:'OPENING_POPUP'});
@@ -195,7 +198,7 @@ function Book({onReady,onFailure}:{onReady:(director:Director)=>void;onFailure:(
  async function reveal(standingFilmed=false,hold=false){
   if(useStory.getState().phase!=='COVER'||!prepared.current)return;
   const token=++generation.current;hinges.current.forEach(h=>h.rotation.x=0);
-  useStory.getState().set({phase:'LOADING_PAGE',chapter:0,dialog:false,detail:null,introPagesTurned:INTRO_PAGE_COUNT});
+  useStory.getState().set({phase:'LOADING_PAGE',chapter:startAt.current,dialog:false,introPagesTurned:INTRO_PAGE_COUNT});
   // Only when the standing book follows the open book's film (the phone was turned during the intro) does it first lie open and stand
   // its first half up while the cards pop up.
   const standUp=standingRef.current&&!standingFilmed;
@@ -347,9 +350,9 @@ function ContextMonitor({onFailure}:{onFailure:()=>void}){const {gl}=useThree();
  * off-thread decoding, the GPU work still waits until the book mounts after the film. Without it the book began loading when the film
  * ended and the reader waited a further ~2.5 s on a 9 Mbps connection.
  */
-export function preloadBook(){
+export function preloadBook(chapter=0){
  const standing=typeof matchMedia==='function'&&matchMedia(STANDING_QUERY).matches;
- void Promise.all([loadScene(0),...(standing?[]:['left','right'].map(side=>loadTexture(`page-0-${side}`))),...OPEN_BOOK_MATERIALS.map(name=>loadTexture('book-'+name))]).catch(()=>{});
+ void Promise.all([loadScene(chapter),...(standing?[]:['left','right'].map(side=>loadTexture(`page-${chapter}-${side}`))),...OPEN_BOOK_MATERIALS.map(name=>loadTexture('book-'+name))]).catch(()=>{});
 }
 /** A tap on the book that hits no picture closes what floats over it without a backdrop: the closing message (ENDING), which hands the
  *  last spread back, and a story's side panel (src/DetailPanel.tsx). The story books have their own backdrop (src/outsideTap.ts). */

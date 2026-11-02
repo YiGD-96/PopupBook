@@ -31,7 +31,7 @@ const Storybook = lazy(() => import('./Storybook'));
 // downloading (src/artFetch.ts, no three.js), and the code then prepares them (src/Storybook.tsx preloadBook). Not before: on a slow
 // connection even the code, fetched as the film started, held the film up.
 const loadBookCode = () => import('./Storybook');
-const preloadBook = () => { prefetchFirstSpread(); void loadBookCode().then(module => module.preloadBook()).catch(() => {}); };
+const preloadBook = (chapter = 0) => { prefetchFirstSpread(chapter); void loadBookCode().then(module => module.preloadBook(chapter)).catch(() => {}); };
 
 class CanvasBoundary extends Component<{children:ReactNode;onError:()=>void},{failed:boolean}> {
   state = {failed:false};
@@ -108,6 +108,20 @@ function useEndingArt(wanted:boolean){
   },[wanted,ready]);
   return ready;
 }
+/**
+ * A link straight to a story (…#cooks/cook-03), on arriving (not a reload or back/forward): the story opens at once, with no opening
+ * (film, prologue, guide) this visit, and the book loads quietly behind it at that story's spread, its cards already standing, so nothing
+ * turns or rises behind the story and the reader finds the book ready when they close it. Read once as the page loads, and the story and
+ * its spread are set before the first render, so nothing shows the first spread even for a frame.
+ */
+const STORY_LINK=(()=>{
+  const navigation=(performance.getEntriesByType?.('navigation')[0] as PerformanceNavigationTiming|undefined)?.type;
+  const link=navigation==='reload'||navigation==='back_forward'?null:parseHash(window.location.hash);
+  if(!link?.detail)return null;
+  const chapter=link.chapter??Math.max(0,scenes.findIndex(scene=>scene.layers.some(layer=>layer.detail===link.detail)));
+  useStory.getState().set({chapter,detail:link.detail});
+  return {detail:link.detail,chapter};
+})();
 export default function App() {
   const state=useStory();const {lang,t}=useT();
   const {phase,chapter,audioReady}=state;
@@ -116,9 +130,12 @@ export default function App() {
   const [modal,setModal]=useState<'about'|null>(null);
   const [engineReady,setEngineReady]=useState(false);
   const [sceneMounted,setSceneMounted]=useState(false);
-  const [introVisible,setIntroVisible]=useState(true);
+  const storyLink=STORY_LINK;
+  // The book opens straight to reading behind that story only the first time; a restart (처음으로) plays the opening as usual.
+  const storyFirst=useRef(!!STORY_LINK);
+  const [introVisible,setIntroVisible]=useState(!storyLink);
   const [introLeaving,setIntroLeaving]=useState(false);
-  const [chromeVisible,setChromeVisible]=useState(false);
+  const [chromeVisible,setChromeVisible]=useState(!!storyLink);
   const [chromeVideoTime,setChromeVideoTime]=useState<number|null>(null);
   const [mediaFinished,setMediaFinished]=useState(false);
   const [introRun,setIntroRun]=useState(0);
@@ -129,7 +146,7 @@ export default function App() {
   // Skipping the opening (film, prologue and guide): now with 건너뛰기, or every visit once "다음부터 보지 않기" is ticked (src/openingPref.ts:
   // saved at once in this browser; "시작 영상 보기" in the settings turns it back on). A restart (처음부터 다시 보기) still plays it.
   const soundOn=useSoundPref(s=>s.on);
-  const [skipOpening,setSkipOpening]=useState(()=>useOpeningPref.getState().skip);const rememberSkip=useOpeningPref(s=>s.skip),setRememberSkip=useOpeningPref(s=>s.setSkip);
+  const [skipOpening,setSkipOpening]=useState(()=>useOpeningPref.getState().skip||!!storyLink);const rememberSkip=useOpeningPref(s=>s.skip),setRememberSkip=useOpeningPref(s=>s.setSkip);
   const skipOpeningRef=useRef(skipOpening);skipOpeningRef.current=skipOpening;
   // The two-step reading guide (src/Guide.tsx): 0 closed, 1 the glowing cards, 2 the page arrow. It follows every "책장 속으로".
   const [guide,setGuide]=useState<0|1|2>(0);const guidePending=useRef(false);
@@ -165,7 +182,18 @@ export default function App() {
   // A link with a hash (a shared spread or story) opens it after the intro. A reload or back/forward only returns to the address the book
   // itself kept up to date, so the reader starts again from the first spread instead of watching the book turn to where they were.
   const navigation=(performance.getEntriesByType?.('navigation')[0] as PerformanceNavigationTiming|undefined)?.type;
-  const deepLink=useRef<ReturnType<typeof parseHash>|null>(navigation==='reload'||navigation==='back_forward'?null:parseHash(window.location.hash));const [linkTick,setLinkTick]=useState(0);
+  const deepLink=useRef<ReturnType<typeof parseHash>|null>(storyLink||navigation==='reload'||navigation==='back_forward'?null:parseHash(window.location.hash));const [linkTick,setLinkTick]=useState(0);
+  // The story opens on the first render, at its spread; the book is mounted only once the story is up and the browser is idle (its code,
+  // pictures, uploads and shaders then run while the reader reads, not during the story's own opening), and needs no film to finish.
+  useEffect(()=>{
+    if(!storyLink)return;let idle=0;
+    const timer=window.setTimeout(()=>{
+      const mount=()=>{preloadBook(storyLink.chapter);setMediaFinished(true);setIntroReport({coverHoldMs:0,videoFrames:null,droppedFrames:null,mediaFailed:false,standing:true});
+        if(new URLSearchParams(window.location.search).get('view')!=='paper'&&!supportsWebGL())setFallback(true);setSceneMounted(true);};
+      if('requestIdleCallback' in window)idle=window.requestIdleCallback(mount,{timeout:1500});else mount();
+    },700);
+    return()=>{window.clearTimeout(timer);if(idle)window.cancelIdleCallback(idle);};
+  },[storyLink]);
 
   function staticInteract(detail?:string){
     const s=useStory.getState();
@@ -244,9 +272,13 @@ export default function App() {
     setSkipOpening(false);track('restart');api.current=null;setEngineReady(false);setSceneMounted(false);setMediaFinished(false);setIntroLeaving(false);setIntroVisible(true);setIntroRun(n=>n+1);setIntroReport(null);setChromeVisible(false);setChromeVideoTime(null);setPrologue('none');
     useStory.getState().set({phase:'INIT',chapter:0,dialog:false,visited:[],error:null,introPagesTurned:0});
   },[]);
+  // After the film the book waits under the prologue (hold); behind a story link's story it opens straight to reading, as it was filmed
+  // standing, with nothing to animate.
   useEffect(()=>{
-    if(canRevealReader(mediaFinished,engineReady&&phase==='COVER'))api.current?.reveal(introReport?.standing,true);
-  },[mediaFinished,engineReady,phase,introReport]);
+    if(!canRevealReader(mediaFinished,engineReady&&phase==='COVER'))return;
+    const behindStory=storyFirst.current;storyFirst.current=false;
+    api.current?.reveal(behindStory?true:introReport?.standing,!behindStory);
+  },[mediaFinished,engineReady,phase,introReport,storyLink]);
   useEffect(()=>{
     if(!introVisible||!(phase==='EXPLORING'||phase==='PROLOGUE'))return;
     setIntroLeaving(true);const timer=window.setTimeout(()=>setIntroVisible(false),280);
@@ -335,7 +367,7 @@ export default function App() {
           <DeskAir/>
           {introVisible&&<Intro key={introRun} onFinished={finishIntro} onUnfolding={showChrome} onBuffered={preloadBook} onNearEnd={mountEarly} leaving={introLeaving} skip={skipOpening}/>}
         </div>
-        {!introVisible&&!audioReady&&intro&&soundOn&&<p className="audio-hint">{t('소리는 화면을 터치하면 함께 시작돼요')}</p>}
+        {!introVisible&&!audioReady&&intro&&soundOn&&!state.detail&&<p className="audio-hint">{t('소리는 화면을 터치하면 함께 시작돼요')}</p>}
         {/* No indicator while a page turns (it made turns feel slower); only a next spread still loading after a while says so. */}
         {slowLoad&&prologue==='none'&&guide===0&&<div className="scene-loading" role="status"><LoaderCircle size={16} className="spin"/>{t('다음 풍경을 준비해요')}</div>}
         {chromeVisible&&!coverMode&&<>
