@@ -10,7 +10,8 @@ function seo(siteUrl?: string): Plugin {
  const today = new Date().toISOString().slice(0, 10); // dateModified and the sitemap's lastmod
  return {
   name: 'book-seo',
-  transformIndexHtml: { order: 'pre', handler: html => html
+  // Only the book's own page: the game (game/index.html) has its own title and is not the book's text version.
+  transformIndexHtml: { order: 'pre', handler: (html, ctx) => ctx.path.replace(/^\//, '') !== 'index.html' ? html : html
    .replace(/<title>[\s\S]*?<\/title>/, `<title>${PAGE_TITLE}</title>`)
    .replace('<!-- seo:head -->', headTags(siteUrl, today))
    .replace('<!-- seo:text -->', textVersion()) },
@@ -27,5 +28,7 @@ export default defineConfig(({ mode }) => {
  // Relative by default, so one build works at a domain's root (Vercel), under a sub-path (GitHub Pages: /PopupBook/) or anywhere else;
  // VITE_BASE pins it to an absolute path when a host needs that. The app's own paths go through src/base.ts.
  const base = env.VITE_BASE || './';
- return { base, plugins: [react(), seo(siteUrl)], resolve: { preserveSymlinks: true }, build: { chunkSizeWarningLimit: 1200 } };
+ return { base, plugins: [react(), seo(siteUrl)], resolve: { preserveSymlinks: true }, build: { chunkSizeWarningLimit: 1200,
+  // Two pages: the book, and the carrot-field game one folder below it (…/game/, src/game).
+  rollupOptions: { input: { main: 'index.html', game: 'game/index.html' } } } };
 });
