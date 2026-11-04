@@ -28,6 +28,7 @@ export type Detail={
 };
 import { SHARE } from './site.ts';
 import { url } from './base.ts';
+import { RECIPES } from './zine.ts';
 const draft='매거진 원고를 준비하고 있어요. 자세한 이야기는 매거진에서 이어집니다.';
 export const details:Record<string,Detail>={
  farmer:{id:'farmer',kicker:'01 · FARMER',title:'당근밭에서 시작되는 이야기',
@@ -109,4 +110,9 @@ export const details:Record<string,Detail>={
   related:['poster-gnocchi','poster-jeon']},
  'poster-jeon':{id:'poster-jeon',kicker:'03 · RECIPE — 당근전',title:'당근전',lead:'채 썬 당근을 부쳐 내는 고소한 당근전이에요.',
   related:['poster-gnocchi','poster-gimbap']},
+ // The fridge's views (src/FridgeBook.tsx, recipes from the 3D-character webzine, src/zine.ts): named here for links, page titles and
+ // analytics; the fridge book draws them itself.
+ recipes:{id:'recipes',kicker:'03 · RECIPE — 냉장고 레시피',title:'구좌 당근 레시피 15가지',lead:'당근으로 만드는 한 끼, 반찬, 간식 15가지예요. 종류와 맛으로 골라 볼 수 있어요.'},
+ planner:{id:'planner',kicker:'03 · RECIPE — 냉장고 레시피',title:'냉장고에 뭐가 있나요?',lead:'있는 재료를 고르면 오늘 만들 수 있는 당근 요리를 찾아 드려요.'},
+ ...Object.fromEntries(RECIPES.map(recipe=>['recipe-'+recipe.id,{id:'recipe-'+recipe.id,kicker:'03 · RECIPE — '+recipe.name,title:recipe.name,lead:recipe.desc} satisfies Detail])),
 };

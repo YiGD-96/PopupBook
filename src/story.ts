@@ -12,7 +12,7 @@ const clickable=(layer:Omit<Layer,'interactive'>&{detail:string}):Layer=>({...la
 // Three chapters following the web magazine "당근을 따라, 구좌": the farmer, the people who cook, and menus & recipes.
 // The first version's chapters are kept in _archive/scenes-v1. Sizes keep each texture's proportions (width : height).
 export const scenes = [
- {id:'farmer',title:'구좌 당근, 맛의 시작',stage:'farm-floor-stage',paper:'#ffe4cd',english:'01 · FARMER',intro:'검은 화산토와 겨울 바람이 키운 당근.\n밭에서 시작되는 이야기예요.',dialog:'“겨울을 제대로 맞아야 진짜 맛이 들어요.” 농부님, 당근 상자, 헛간에 걸린 파리채와 손전등을 눌러 보세요.',label:'농부님 이야기 보기',color:'#96a780',detail:'farmer',layers:[
+ {id:'farmer',title:'농부 이야기',stage:'farm-floor-stage',paper:'#ffe4cd',english:'01 · FARMER',intro:'검은 화산토와 겨울 바람이 키운 당근.\n밭에서 시작되는 이야기예요.',dialog:'“겨울을 제대로 맞아야 진짜 맛이 들어요.” 농부님, 당근 상자, 헛간에 걸린 파리채와 손전등을 눌러 보세요.',label:'농부님 이야기 보기',color:'#96a780',detail:'farmer',layers:[
   // Painted layers (GPT, art-src/gpt/page-1/new → scripts/prepare-gpt-art.mjs), laid out after the sketch 전체화면.png: a sunny view over
   // Gujwa's oreum and wind turbines, and in front of it the farmyard. The page itself is the yard: one painting of a muddy path with
   // basalt rubble and three small boot prints, printed on the page
@@ -34,7 +34,7 @@ export const scenes = [
   {id:'dog',src:'farm-dog',position:[-.16,.21,1.38],size:[1.178,.781],phone:{x:.2,z:3.2,size:[1.368,.908]}},
   clickable({id:'crate',src:'farm-crate',position:[1.9,.285,1.68],size:[1.3,1.061],detail:'harvest',phone:{x:1.6,z:2.5,size:[1.1,.898]}})
  ] as Layer[]},
- {id:'cooks',title:'구좌 당근, 색다른 변신',stage:'village-floor-stage',paper:'#fff6e3',english:'02 · PEOPLE WHO COOK',intro:'구좌 당근으로 새로운 맛을 만드는\n식당 사장님들을 만났어요.',dialog:'세 곳의 식당이 구좌 당근으로 저마다의 한 접시를 만들어요. 가게를 눌러 이야기를 펼쳐 보세요.',label:'식당 이야기 보기',color:'#b89970',detail:'cook-01',layers:[
+ {id:'cooks',title:'맛집 탐험기',stage:'village-floor-stage',paper:'#fff6e3',english:'02 · PEOPLE WHO COOK',intro:'구좌 당근으로 새로운 맛을 만드는\n식당 사장님들을 만났어요.',dialog:'세 곳의 식당이 구좌 당근으로 저마다의 한 접시를 만들어요. 가게를 눌러 이야기를 펼쳐 보세요.',label:'식당 이야기 보기',color:'#b89970',detail:'cook-01',layers:[
   // Painted layers (GPT, art-src/gpt/page-2 → scripts/prepare-gpt-art.mjs): a Gujwa seaside village in late morning, back to front. The page
   // itself is the street (a winding path of small cobbles printed on the page, scripts/create-pages.mjs; on the phone the flat
   // page carries it as its `stage` texture): the three real shops are drawn turned toward the middle of the street, buggercarrot at the left
@@ -48,7 +48,7 @@ export const scenes = [
   {id:'traveler',src:'char-traveler',position:[-1,.215,2],size:[.68,1.518],phoneHidden:true,phone:{x:-.75,z:2.4,size:[.55,1.228]}},
   {id:'family',src:'family-walk',position:[.95,.2,2.05],size:[1.8,1.55],phone:{x:.55,z:3.1,size:[1.5,1.29]}}
  ] as Layer[]},
- {id:'recipes',title:'구좌 당근, 식탁 위의 발견',stage:'kitchen-floor-stage',paper:'#ffe9d2',english:'03 · MENU & RECIPE',intro:'식당의 당근 메뉴와\n집에서 따라 하는 레시피를 모았어요.',dialog:'냉장고 문에 당근 뇨끼, 당근 김밥, 당근전 레시피가 붙어 있어요. 메모를 눌러 레시피 포스터를 보고, 빈 메모나 식탁 위 나만의 레시피 책을 눌러 여러분의 당근 레시피도 보내 주세요.',label:'레시피 보기',color:'#81a69c',detail:'poster-gnocchi',layers:[
+ {id:'recipes',title:'레시피 연구소',stage:'kitchen-floor-stage',paper:'#ffe9d2',english:'03 · MENU & RECIPE',intro:'식당의 당근 메뉴와\n집에서 따라 하는 레시피를 모았어요.',dialog:'냉장고를 열면 구좌 당근 레시피 15가지가 있어요. 냉장고 속 재료를 고르면 오늘 만들 수 있는 요리도 찾아 드려요.',label:'레시피 보기',color:'#81a69c',detail:'recipes',layers:[
   // Painted layers (GPT, art-src/gpt/page-3/new/new2 → scripts/prepare-gpt-art.mjs): a Jeju kitchen wall with a window on the evening sea, an
   // old fridge on the left page with four magnet notes on its door (glued to it, so they fold with it), and a low table at the right front with
   // the "나만의 레시피" book lying on its left end (glued to the table). The gnocchi, gimbap and jeon notes open their recipe posters
@@ -59,15 +59,17 @@ export const scenes = [
   // pages in the open book, lighter under the printed words as on chapters 1–2; the `stage` floor on the phone). The fridge stands at the front of the left page, its feet just behind the
   // printed title, as tall as the open book allows (its top just below the chapter heading, and inside the frame while a page turns).
   {id:'back',src:'kitchen-back',phoneSrc:'kitchen-back-phone',position:[0,.24,-1.7],size:[6.45,2.732]},
-  {id:'fridge',src:'kitchen-fridge',position:[-1.65,.144,1.55],size:[1.706,3.693],phone:{x:-1.05,z:2.2,size:[1.809,3.915]}},
+  // The fridge is the one thing to press here: it opens every recipe of the 3D-character webzine (src/FridgeBook.tsx); its magnets and the
+  // recipe book on the table are painted for show.
+  clickable({id:'fridge',src:'kitchen-fridge',position:[-1.65,.144,1.55],size:[1.706,3.693],detail:'recipes',phone:{x:-1.05,z:2.2,size:[1.809,3.915]}}),
   // The notes run down the door in a loose zigzag (left, right, left, further right), large, the first two overlapping at a corner; each
   // later one stands a hair in front so overlaps stack in reading order.
-  clickable({id:'magnet-gnocchi',on:'fridge',src:'magnet-gnocchi',position:[-1.69,2.623,1.59],size:[.72,.627],detail:'poster-gnocchi',phone:{x:-1.175,z:2.24,size:[.66,.575],lift:2.725}}),
-  clickable({id:'magnet-gimbap',on:'fridge',src:'magnet-gimbap',position:[-1.25,2.174,1.6],size:[.72,.626],detail:'poster-gimbap',phone:{x:-.655,z:2.25,size:[.66,.573],lift:2.275}}),
-  clickable({id:'magnet-jeon',on:'fridge',src:'magnet-jeon',position:[-1.67,1.613,1.61],size:[.72,.627],detail:'poster-jeon',phone:{x:-1.145,z:2.26,size:[.66,.575],lift:1.755}}),
-  clickable({id:'magnet-blank',on:'fridge',src:'magnet-blank',position:[-1.22,.998,1.62],size:[.72,.662],detail:'recipe-share',phone:{x:-.595,z:2.27,size:[.66,.607],lift:1.143}}),
+  {id:'magnet-gnocchi',on:'fridge',src:'magnet-gnocchi',position:[-1.69,2.623,1.59],size:[.72,.627],phone:{x:-1.175,z:2.24,size:[.66,.575],lift:2.725}},
+  {id:'magnet-gimbap',on:'fridge',src:'magnet-gimbap',position:[-1.25,2.174,1.6],size:[.72,.626],phone:{x:-.655,z:2.25,size:[.66,.573],lift:2.275}},
+  {id:'magnet-jeon',on:'fridge',src:'magnet-jeon',position:[-1.67,1.613,1.61],size:[.72,.627],phone:{x:-1.145,z:2.26,size:[.66,.575],lift:1.755}},
+  {id:'magnet-blank',on:'fridge',src:'magnet-blank',position:[-1.22,.998,1.62],size:[.72,.662],phone:{x:-.595,z:2.27,size:[.66,.607],lift:1.143}},
   {id:'table',src:'kitchen-table-low',position:[1.75,.14,1.0],size:[2.7,1.563],phone:{x:1.0,z:2.55,size:[2.1,1.215]}},
-  clickable({id:'recipe-book',on:'table',src:'my-recipe-book',position:[1.45,.7,1.1],size:[1.1,.801],detail:'recipe-share',phone:{x:.55,z:2.61,size:[.95,.692],lift:.47}})
+  {id:'recipe-book',on:'table',src:'my-recipe-book',position:[1.45,.7,1.1],size:[1.1,.801],phone:{x:.55,z:2.61,size:[.95,.692],lift:.47}}
  ] as Layer[]}
 ];
 type StoryState = {phase:Phase;chapter:number;dialog:boolean;detail:string|null;visited:number[];audioReady:boolean;introPagesTurned:number;error:string|null;set:(patch:Partial<StoryState>)=>void};

@@ -102,7 +102,7 @@ function idOf(control: Element) {
  for (let parent = control.parentElement; parent; parent = parent.parentElement) if (own(parent)) return `${own(parent)} ${control.tagName.toLowerCase()}`;
  return control.tagName.toLowerCase();
 }
-const STORY_VIEWS = '.webzine-book,.poster-book,.detail-book,.detail-panel';
+const STORY_VIEWS = '.webzine-book,.poster-book,.fridge-book,.detail-book,.detail-panel';
 const CONTROLS ='button,a[href],[role="button"],[role="radio"],[role="tab"],[role="menuitem"],[role="switch"],summary,input[type="checkbox"],input[type="radio"],select';
 
 /** Readable ids in the URL: the chapter's own id, a story's id after a slash, 'ending' for the closing page. */

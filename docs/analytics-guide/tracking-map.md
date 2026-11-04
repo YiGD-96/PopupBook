@@ -95,14 +95,14 @@
 | 독자 행동 | 이벤트 |
 |---|---|
 | 첫 화면에서 "책장 속으로" | `prologue_start` |
-| 인트로 끝까지 보기 / 건너뛰기 | `intro_complete` (layout: open·standing) / `intro_skip` (remember: 다음에도 건너뛰기, method: button = 건너뛰기 버튼 · source = 광고 등 utm_source로 자동 건너뜀) |
+| 인트로 끝까지 보기 / 건너뛰기 | `intro_complete` (layout: open·standing) / `intro_skip` (remember: 다음에도 건너뛰기, method: button = 건너뛰기 버튼 · source = 광고 등 utm_source로 자동 건너뜀 · phone = 휴대폰은 영상·프롤로그 없이 바로 책 → 안내 · link = #cooks 같은 장 링크로 도착해 바로 그 장) |
 | 사용법 안내 시작 / 완료 | `guide_start` / `guide_done` |
 | 10초 이상 보면서 스스로 한 번 움직임 (방문당 한 번) | `engaged_read` (engaged_seconds) → Meta 픽셀 `EngagedRead` |
 | 상단 언어·효과음·시작 영상·목차 | `ui_click` (`ui_area` settings·header), `language_change`, `about_open` |
 
 **알 수 있는 것:** 진입률(첫 방문 대비 "책장 속으로"), 인트로 이탈률(건너뛰기 비율), 기기별 성능(끊긴 프레임)
 
-### 1장. 구좌 당근, 맛의 시작 (`farmer`)
+### 1장. 농부 이야기 (`farmer`)
 
 | 주소 | `#farmer`, 이야기를 열면 `#farmer/<이야기 ID>` |
 |---|---|
@@ -115,7 +115,7 @@
 
 **이벤트:** `page_view` → 그림 클릭 `select_content` → 웹진 쪽 넘김·닫기 `ui_click` (`ui_id` `wz-nav button`·`wz-close`) → 내려 읽기 `story_scroll`(25·50·75·100%) → `story_close`(체류 초) → 다음 장 `page_turn`
 
-### 2장. 구좌 당근, 색다른 변신 (`cooks`)
+### 2장. 맛집 탐험기 (`cooks`)
 
 | 주소 | `#cooks`, 이야기를 열면 `#cooks/<이야기 ID>` |
 |---|---|
@@ -130,7 +130,7 @@
 
 **이벤트:** `page_view` → `select_content` → 웹진 쪽 넘김 `ui_click` (`ui_id` `wz-nav button`, 라벨 "다음 쪽"/"이전 쪽") → 내려 읽기 `story_scroll`(25·50·75·100%) → `story_close` → `page_turn`
 
-### 3장. 구좌 당근, 식탁 위의 발견 (`recipes`)
+### 3장. 레시피 연구소 (`recipes`)
 
 | 주소 | `#recipes`, 이야기를 열면 `#recipes/<이야기 ID>` |
 |---|---|

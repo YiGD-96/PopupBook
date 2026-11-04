@@ -45,7 +45,8 @@ export default function Intro({onFinished,onUnfolding,onBuffered,onNearEnd,leavi
  const media=standing?'-standing':'',uiAt=standing?STANDING_INTRO_UI_AT:INTRO_UI_AT;
  const video=useRef<HTMLVideoElement>(null);
  const [src,setSrc]=useState<string|null>(null);
- useEffect(()=>{let live=true;void filmSource(standing).then(source=>{if(live)setSrc(source);});return()=>{live=false;};},[standing]);
+ // A skipped opening never plays the film, so it is not even fetched (a phone's opening is always skipped).
+ useEffect(()=>{if(skip)return;let live=true;void filmSource(standing).then(source=>{if(live)setSrc(source);});return()=>{live=false;};},[standing,skip]);
  const started=useRef(false);
  const notified=useRef(false);
  // The pages fanning out (from INTRO_PAGES_START until the film stops) sound as one riffle of paper, started once as they begin. Sound

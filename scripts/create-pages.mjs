@@ -24,7 +24,7 @@ const PAGE_W=620,PAGE_H=830,PRINT_W=1080,PRINT_H=1446;
 const overlay=body=>Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="${PRINT_W}" height="${PRINT_H}" viewBox="0 0 ${PAGE_W} ${PAGE_H}">${body}</svg>`);
 
 // ---------- Printed pages: section number, English kicker and title in the band in front of the cards ----------
-const chapters=[['01','FARMER','구좌 당근, 맛의 시작','구좌 당근을 키우는 농부의 이야기'],['02','PEOPLE WHO COOK','구좌 당근, 색다른 변신','구좌 당근을 요리하는 사람들의 이야기'],['03','MENU &amp; RECIPE','구좌 당근, 식탁 위의 발견','구좌 당근 레시피 이야기']];
+const chapters=[['01','FARMER','농부 이야기','구좌 당근을 키우는 농부의 이야기'],['02','PEOPLE WHO COOK','맛집 탐험기','구좌 당근을 요리하는 사람들의 이야기'],['03','MENU &amp; RECIPE','레시피 연구소','구좌 당근 레시피 이야기']];
 // A faint wash from the back edge tones each spread's papyrus to its scene (dusk field, sunny seaside, lamplit kitchen), so the floor
 // the cards stand on still belongs to the painting behind them; the gutter falls into shade toward the binding.
 const PAPER=[

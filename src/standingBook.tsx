@@ -5,7 +5,7 @@
  */
 import { useEffect, useMemo, useRef, type ReactNode, type RefObject } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { BackSide, BufferGeometry, Color, DoubleSide, Float32BufferAttribute, Group, Mesh, type MeshBasicMaterial, type Texture } from 'three';
+import { BackSide, BufferGeometry, Color, DoubleSide, Float32BufferAttribute, Group, Mesh, SRGBColorSpace, TextureLoader, type MeshBasicMaterial, type Texture } from 'three';
 import { BOOK_BOARD, BOOK_PAGES } from './bookStructure';
 import { BOOK_HINGE_Y, createBoardGeometry, createPaperBlockGeometry, createSpineGeometry, relightTurned } from './bookGeometry';
 import { PAGE_WIDTH, createPageSkirt, createPaperGeometry, pageShade } from './paperGeometry';
@@ -15,6 +15,8 @@ import { UPRIGHT_LEAN, UPRIGHT_SCALE, backdropCrop, standingFoldIn, standingFold
 import { type Layer, useStory } from './story';
 import { flatLift } from './popupStack';
 import { lightHalo, restHalo } from './cardHalo';
+import { useTapHints } from './tapHints';
+import { url } from './base';
 
 const UP=-Math.PI/2,COLUMNS=32,ROWS=10;
 const linear=(v:number)=>Math.pow(v,2.2);
@@ -143,13 +145,34 @@ export function StandingCase({materials,backdrop,turnBackdrop,turning,progress,s
 type StandingTurn={direction:1|-1}|null;
 /** A pop-up card standing on the flat page at its phone placement; it folds back flat to turn the page and stands up again after. */
 type StandingCardProps={layer:Layer;texture:Texture;hinges:RefObject<Map<string,Group>>;onClick:(detail?:string)=>void;incoming?:boolean};
-/** The card's face on the phone: its picture, its click, and the glow that marks it clickable. */
+/**
+ * The tap hint on a clickable card on the phone (no hover there to find it): the 3D-character webzine's carrot (public/media/zine/
+ * carrot.webp, scripts/import-zine.mjs) at the card's upper right, wobbling on its tip and hopping, until that card's story has been opened
+ * once (src/tapHints.ts). Clicks pass through it to the card, and it is drawn over the card's own glued pieces (the fridge's magnets); with
+ * reduced motion it holds still.
+ */
+let carrotTexture:Texture|null=null;
+function tapCarrotTexture(){if(!carrotTexture){carrotTexture=new TextureLoader().load(url('/media/zine/carrot.webp'));carrotTexture.colorSpace=SRGBColorSpace;}return carrotTexture;}
+function TapCarrot({id,width,height}:{id:string;width:number;height:number}){
+ const hop=useRef<Group>(null!),sway=useRef<Group>(null!);const detail=useStory(s=>s.detail),press=useTapHints(s=>s.press);
+ useEffect(()=>{if(detail===id)press(id);},[detail,id,press]);
+ const still=useMemo(()=>typeof matchMedia==='function'&&matchMedia('(prefers-reduced-motion: reduce)').matches,[]);
+ // About a third of the card's width (readable on small cards, modest on big ones), its tip on the card's upper right.
+ const w=Math.min(.5,Math.max(.34,width*.3)),h=w*411/268,foot:[number,number,number]=[width*.34,height*.6,.12];
+ useFrame(({clock})=>{if(still)return;const t=clock.elapsedTime;
+  // A wobble on its tip, and every so often a small hop, as if calling to be pressed.
+  sway.current.rotation.z=Math.sin(t*6)*.22*(.6+.4*Math.max(0,Math.sin(t*1.7)));hop.current.position.y=Math.max(0,Math.sin(t*3.4))**3*.09;});
+ return <group position={foot}><group ref={hop}><group ref={sway}>
+  <mesh position={[0,h/2,0]} renderOrder={12} raycast={()=>null}><planeGeometry args={[w,h]}/><meshBasicMaterial map={tapCarrotTexture()} transparent depthWrite={false} depthTest={false} toneMapped={false}/></mesh>
+ </group></group></group>;
+}
+/** The card's face on the phone: its picture, its click, and the glow that marks it clickable (and the tap hint, until it has been pressed). */
 function StandingFace({layer,texture,onClick,incoming=false}:Omit<StandingCardProps,'hinges'>){
- const place=standingPlacement(layer),phase=useStory(s=>s.phase);
+ const place=standingPlacement(layer),phase=useStory(s=>s.phase),tapped=useTapHints(s=>!!layer.detail&&s.pressed.includes(layer.detail));
  const geometry=useDisposable(()=>createCardGeometry({center:0,width:place.size[0],u0:0,u1:1,side:'right'},place.size[1]),[place.size[0],place.size[1]]);
  // Clickable cards glow (src/cardHalo.ts) instead of swaying.
  const glows=!!layer.interactive,live=!incoming&&glows;
- return <>{glows&&<CardHalo layer={layer} texture={texture} width={place.size[0]} height={place.size[1]} incoming={incoming} reach={layer.glow}/>}<mesh geometry={geometry} material={cardMaterial(texture)} dispose={null} position={[0,place.size[1]/2,0]} onClick={live?e=>{e.stopPropagation();if(phase==='EXPLORING'||phase==='ENDING')onClick(layer.detail);}:undefined} onPointerOver={live?()=>{if(phase==='EXPLORING'||phase==='ENDING'){document.body.style.cursor='pointer';lightHalo(texture);}}:undefined} onPointerOut={()=>{document.body.style.cursor='';if(live&&useStory.getState().detail!==layer.detail)restHalo(layer,texture);}}/></>;
+ return <>{glows&&<CardHalo layer={layer} texture={texture} width={place.size[0]} height={place.size[1]} incoming={incoming} reach={layer.glow}/>}<mesh geometry={geometry} material={cardMaterial(texture)} dispose={null} position={[0,place.size[1]/2,0]} onClick={live?e=>{e.stopPropagation();if(phase==='EXPLORING'||phase==='ENDING')onClick(layer.detail);}:undefined} onPointerOver={live?()=>{if(phase==='EXPLORING'||phase==='ENDING'){document.body.style.cursor='pointer';lightHalo(texture);}}:undefined} onPointerOut={()=>{document.body.style.cursor='';if(live&&useStory.getState().detail!==layer.detail)restHalo(layer,texture);}}/>{live&&!tapped&&layer.detail&&phase==='EXPLORING'&&<TapCarrot id={layer.detail} width={place.size[0]} height={place.size[1]}/>}</>;
 }
 /** A card standing on another card (`on` in src/story.ts), inside that card's hinge so it folds with it (src/popupStack.ts). */
 export function StandingGluedCard({parent,...card}:StandingCardProps&{parent:Layer}){

@@ -315,7 +315,8 @@ html,body{background:#e2d2b5}
 @media(max-width:760px){.opening-skip{right:auto;left:50%;transform:translateX(-50%);bottom:max(16px,env(safe-area-inset-bottom))}}
 
 /* ───────── The reading guide (src/Guide.tsx): a spotlight on what to press, an arrow to it, a short bubble. Tap anywhere to go on. */
-.guide{position:fixed;inset:0;z-index:40;cursor:pointer;animation:guide-in .2s ease-out both;-webkit-tap-highlight-color:transparent}
+/* touch-action:none: a swipe on the guide stays with it (src/Guide.tsx onSwipe) instead of being taken by the browser as panning. */
+.guide{position:fixed;inset:0;z-index:40;cursor:pointer;animation:guide-in .2s ease-out both;-webkit-tap-highlight-color:transparent;touch-action:none}
 .guide-spot{position:fixed;border-radius:20px;box-shadow:0 0 0 200vmax rgba(8,5,2,.62),0 0 0 2px rgba(255,214,140,.85),0 0 26px 6px rgba(255,190,90,.35);pointer-events:none}
 .guide-dim{position:fixed;inset:0;background:rgba(8,5,2,.62)}
 .guide-arrow{position:fixed;inset:0;pointer-events:none;overflow:visible}
@@ -342,6 +343,14 @@ html,body{background:#e2d2b5}
 @keyframes guide-in{from{opacity:0}to{opacity:1}}
 /* Each step's arrow and words fade in where they belong (the dim and the spotlight stay). */
 .guide-step{animation:guide-in .22s ease-out both}
+/* The small page that opens out of the card on a phone's first guide tap (src/Guide.tsx): up from the card, held a moment, then gone. */
+.guide.is-peeking .guide-bubble,.guide.is-peeking .guide-arrow{opacity:0;transition:opacity .15s}
+.guide-peek{position:fixed;width:min(60vw,220px);aspect-ratio:3/4;box-sizing:border-box;padding:12px;display:flex;flex-direction:column;gap:8px;border-radius:8px;background:#fbf4e4;box-shadow:0 14px 36px rgba(0,0,0,.5),0 0 0 1px rgba(255,214,140,.5);pointer-events:none;transform:translate(-50%,-50%) scale(.2);opacity:0;animation:guide-peek 1.1s cubic-bezier(.2,.8,.25,1) both}
+.guide-peek-photo{flex:1;border-radius:4px;background:#e5d3b3}
+.guide-peek-bar{height:7px;border-radius:4px;background:#cdb995}
+.guide-peek-bar.is-title{height:11px;width:70%;background:#8a6a45}.guide-peek-bar.is-short{width:55%}
+@keyframes guide-peek{0%{transform:translate(-50%,-50%) scale(.2);opacity:0}28%{transform:translate(-50%,-50%) scale(.64);opacity:1}78%{transform:translate(-50%,-50%) scale(.64);opacity:1}100%{transform:translate(-50%,-50%) scale(.36);opacity:0}}
+@media(prefers-reduced-motion:reduce){.guide-peek{animation:none;opacity:1;transform:translate(-50%,-50%) scale(.64)}}
 @keyframes guide-bob-up{from{transform:translateY(0)}to{transform:translateY(-7px)}}
 @keyframes guide-bob-down{from{transform:translateY(0)}to{transform:translateY(7px)}}
 @media (prefers-reduced-motion:reduce){.guide,.guide-arrow g{animation:none}}
@@ -437,6 +446,19 @@ html,body{background:#e2d2b5}
 .wz-lead+.wz-flow>.wz-quote:first-child{margin-top:var(--gap-quote)}
 .wz-lead+.wz-flow{margin-top:var(--gap)}
 .wz-hero figcaption{margin-top:calc(var(--u)*8);font-size:var(--body);line-height:1.4;font-weight:500;color:#746757}
+/* Menu boards (src/webzine.ts 'prices'): a name, a dotted line and the price on one line, the words under it. `is-compact`: names and prices only, in the body size. */
+.wz-prices{list-style:none;margin:0 0 var(--gap);padding:0}
+.wz-prices li{padding:calc(var(--u)*9) 0;border-top:1px solid #d2c4b0}
+.wz-prices li:first-child{border-top:0;padding-top:0}
+.wz-prices li>.wz-prices-body>div{display:flex;align-items:baseline;gap:calc(var(--u)*12)}
+.wz-prices li.has-img{display:grid;grid-template-columns:calc(var(--u)*150) minmax(0,1fr);gap:calc(var(--u)*18);align-items:center}
+.wz-prices li.has-img img{display:block;width:100%;aspect-ratio:1;object-fit:cover;border-radius:4px;box-shadow:0 1px 0 rgba(255,255,255,.6),0 3px 10px rgba(80,60,40,.2);background:#e6d7bb}
+.wz-prices strong{font-size:var(--head);font-weight:700;line-height:1.3;color:#2f241a;word-break:keep-all}
+.wz-prices u{flex:1;min-width:calc(var(--u)*16);border-bottom:2px dotted #c9b48d;text-decoration:none;transform:translateY(-.3em)}
+.wz-prices b{flex:none;font-size:var(--quote);font-weight:750;color:#a35c2d}
+.wz-prices span{display:block;margin-top:calc(var(--u)*4);font-size:var(--body);line-height:1.5;color:#43372b;word-break:keep-all}
+.wz-prices.is-compact li{padding:calc(var(--u)*6) 0}
+.wz-prices.is-compact strong,.wz-prices.is-compact b{font-size:var(--body);font-weight:650}
 .wz-rows{margin-bottom:var(--gap)}
 .wz-rows>div{display:flex;align-items:baseline;gap:calc(var(--u)*18);padding:calc(var(--u)*7) 0;border-top:1px solid #d2c4b0}
 .wz-rows b{flex:none;width:calc(var(--u)*40);font-size:var(--quote);font-weight:750;color:#a35c2d}
@@ -504,6 +526,7 @@ html,body{background:#e2d2b5}
 .wz-menu.is-tall{grid-template-columns:42% 1fr;gap:14px}
  .wz-captions{grid-template-columns:1fr;gap:12px}.wz-captions>div+div{border-left:0;padding-left:0;border-top:0;padding-top:0}
  .wz-captions.is-cards{grid-template-columns:1fr 1fr}
+ .wz-prices li.has-img{grid-template-columns:92px minmax(0,1fr);gap:12px}
  .wz-rows>div{gap:10px;padding:10px 0;align-items:start}.wz-rows b{width:24px}.wz-rows strong{min-width:110px}
  .wz-rows.is-pairs>div{gap:12px}
  .wz-season{font-size:15px}
@@ -569,7 +592,7 @@ html:lang(en) .wz-h1 span+span::before{content:' '}
    the next's side by side, plain arrows with a soft shadow over the painting (laid out with no transform, so hover never moves them). */
 @media(max-width:760px) and (orientation:portrait){
  .cinematic-reader .reader-prev,.cinematic-reader .reader-next{display:none}
- .cinematic-reader .reader-vnav{display:flex;position:fixed;left:0;right:0;bottom:max(76px,calc(env(safe-area-inset-bottom) + 64px));z-index:5;justify-content:center;gap:36px;pointer-events:none}
+ .cinematic-reader .reader-vnav{display:flex;position:fixed;left:0;right:0;bottom:max(32px,calc(env(safe-area-inset-bottom) + 18px));z-index:5;justify-content:center;gap:36px;pointer-events:none}
  .cinematic-reader .book-stage .reader-vnav .reader-arrow{position:static;pointer-events:auto;width:48px;height:48px;border-radius:0;background:none;box-shadow:none;color:#fff3dc}
  .cinematic-reader .book-stage .reader-vnav .reader-arrow svg{width:30px;height:30px;stroke-width:2.2;filter:drop-shadow(0 1px 2px rgba(20,10,4,.8)) drop-shadow(0 0 6px rgba(20,10,4,.5))}
  .cinematic-reader .book-stage .reader-vnav .reader-arrow:hover:not(:disabled){background:none;color:#f5a25a}

@@ -521,3 +521,11 @@ node scripts/render-intro.mjs
 - '처음으로'는 평소처럼 영상·프롤로그. 해시 없음·장만 있는 링크(#cooks)는 예전과 같음.
 - 분석: 링크로 연 이야기도 select_content(source link)·story_close가 남고, 도착 page_view는 한 번만(`analytics.ts` shown=location.hash). 책 준비 전 열고 닫는 것도 셈.
 - tests/seo-analytics의 2개 실패(레시피 4개·recipe-01 기대)는 이 작업 전부터 — fce683a의 SEO 내용 변경 뒤 테스트가 안 바뀜.
+
+**(2026-11-04) 장 제목·휴대폰 시작·가게 메뉴 쪽:**
+- 장 제목: 01 농부 이야기 / 02 맛집 탐험기 / 03 레시피 연구소 (`story.ts` title, `create-pages.mjs` → page-N-left.webp 다시 만듦, en·zh 번역, tracking-map). PC 인트로 영상 속 1p 페이지의 예전 제목 글씨는 영상을 다시 렌더링해야 바뀜(아직 안 함).
+- 휴대폰: 인트로 영상(받지도 않음)과 프롤로그("책장 속으로")를 없애고 책이 바로 열린 뒤 안내(가이드)부터. `App.tsx` PHONE: skipOpening 기본 true, 안내는 skipOpening일 때도 `guideOnOpen`으로 뜸(다음부터 보지 않기·이야기 링크·광고 유입이면 안 뜸), '처음으로'도 영상 없이 안내만. GA4 `intro_skip` method 'phone'. 휴대폰 안내 1단계를 누르면 카드에서 작은 페이지가 잠깐 펼쳐졌다 닫히며(`Guide.tsx` peek, 1.1초) 2단계로.
+- 2p 가게 웹진 맨 앞에 메뉴 펼침면(`webzine.ts` `prices` 블록): 소농로드·마노아는 다이닝코드(2026-11) 가격, 버거캐럿은 가격을 공개된 곳에서 못 찾아 가격 없이 메뉴·영업 안내만(인스타그램 @burger_carrot 확인 안내). 휴대폰에서는 제목을 제목이 있는 첫 펼침면(`titleAt`)에만 둠.
+- 메뉴 쪽 대표 메뉴 사진: 프로젝트에 있는 가게 사진만 씀(소농로드 주스·라떼·샤베트, 마노아 스프·잼·파니니; `prices` 항목의 `img`). 웹에서 가져온 사진은 저작권·허락 문제로 안 씀.
+- 남은 일: 가게 사장님께 실제 메뉴판·가격 받아 확인(특히 버거캐럿), 가격은 바뀔 수 있음.
+- 장 링크(#cooks, #recipes, #ending)로 처음 들어오면(새로고침·뒤로가기 아님) 1p를 거치지 않고 그 장에서 바로 시작: 영상·프롤로그·안내 없이 책이 그 장으로 열림(`App.tsx` CHAPTER_LINK, Storybook의 startAt 재사용). #farmer와 장 없는 주소는 그대로 영상부터. GA4 `intro_skip` method 'link'.
