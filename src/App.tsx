@@ -122,6 +122,15 @@ const STORY_LINK=(()=>{
   useStory.getState().set({chapter,detail:link.detail});
   return {detail:link.detail,chapter};
 })();
+/**
+ * The opening plays only for our own channels (utm_source kakao, direct, threads or blog, or none at all: a visit typed in or bookmarked);
+ * every other source, the ads first, goes straight to the book as with 건너뛰기, since most ad visitors left during the film (GA4, Nov 2026).
+ */
+const OPENING_SOURCES=['kakao','direct','threads','blog'];
+const SOURCE_SKIPS_OPENING=(()=>{
+  const source=new URLSearchParams(window.location.search).get('utm_source')?.trim().toLowerCase();
+  return !!source&&!OPENING_SOURCES.includes(source);
+})();
 export default function App() {
   const state=useStory();const {lang,t}=useT();
   const {phase,chapter,audioReady}=state;
@@ -146,8 +155,11 @@ export default function App() {
   // Skipping the opening (film, prologue and guide): now with 건너뛰기, or every visit once "다음부터 보지 않기" is ticked (src/openingPref.ts:
   // saved at once in this browser; "시작 영상 보기" in the settings turns it back on). A restart (처음부터 다시 보기) still plays it.
   const soundOn=useSoundPref(s=>s.on);
-  const [skipOpening,setSkipOpening]=useState(()=>useOpeningPref.getState().skip||!!storyLink);const rememberSkip=useOpeningPref(s=>s.skip),setRememberSkip=useOpeningPref(s=>s.setSkip);
+  const [skipOpening,setSkipOpening]=useState(()=>useOpeningPref.getState().skip||!!storyLink||SOURCE_SKIPS_OPENING);const rememberSkip=useOpeningPref(s=>s.skip),setRememberSkip=useOpeningPref(s=>s.setSkip);
   const skipOpeningRef=useRef(skipOpening);skipOpeningRef.current=skipOpening;
+  // Skipped for its utm_source (not by the reader's own choice): the film never plays, so GA4 hears intro_skip (method 'source'), not
+  // intro_complete. Only this first opening; a restart plays and reports as usual.
+  const sourceSkip=useRef(SOURCE_SKIPS_OPENING&&!storyLink&&!useOpeningPref.getState().skip);
   // The two-step reading guide (src/Guide.tsx): 0 closed, 1 the glowing cards, 2 the page arrow. It follows every "책장 속으로".
   const [guide,setGuide]=useState<0|1|2>(0);const guidePending=useRef(false);
   // A spread still loading 1.2 s after the turn was asked for (a slow connection): only then is it worth a word.
@@ -243,7 +255,8 @@ export default function App() {
   // The film pauses on the open book: the prologue comes up over it while the live book takes the film's place underneath.
   const finishIntro=useCallback((report:IntroReport)=>{
     setIntroReport(report);setPrologue(skipOpeningRef.current?'none':'open');
-    track('intro_complete',{layout:report.standing?'standing':'open',dropped_frames:report.droppedFrames??undefined,media_failed:report.mediaFailed});
+    if(sourceSkip.current){sourceSkip.current=false;track('intro_skip',{method:'source'});}
+    else track('intro_complete',{layout:report.standing?'standing':'open',dropped_frames:report.droppedFrames??undefined,media_failed:report.mediaFailed});
     if(new URLSearchParams(window.location.search).get('view')!=='paper'&&!supportsWebGL())setFallback(true);
     setMediaFinished(true);setSceneMounted(true);
   },[]);
@@ -267,7 +280,7 @@ export default function App() {
   },[]);
   // Skipped, the book opens to reading as soon as it is ready under the (skipped) prologue: the cards stand up, no guide.
   useEffect(()=>{if(!skipOpening||phase!=='PROLOGUE')return;setPrologue('none');setChromeVisible(true);api.current?.rise();},[skipOpening,phase]);
-  const skipNow=useCallback(()=>{track('intro_skip',{remember:rememberSkip});guidePending.current=false;setGuide(0);setSkipOpening(true);},[rememberSkip]);
+  const skipNow=useCallback(()=>{track('intro_skip',{remember:rememberSkip,method:'button'});guidePending.current=false;setGuide(0);setSkipOpening(true);},[rememberSkip]);
   const beginIntro=useCallback(()=>{
     setSkipOpening(false);track('restart');api.current=null;setEngineReady(false);setSceneMounted(false);setMediaFinished(false);setIntroLeaving(false);setIntroVisible(true);setIntroRun(n=>n+1);setIntroReport(null);setChromeVisible(false);setChromeVideoTime(null);setPrologue('none');
     useStory.getState().set({phase:'INIT',chapter:0,dialog:false,visited:[],error:null,introPagesTurned:0});

@@ -95,8 +95,9 @@
 | 독자 행동 | 이벤트 |
 |---|---|
 | 첫 화면에서 "책장 속으로" | `prologue_start` |
-| 인트로 끝까지 보기 / 건너뛰기 | `intro_complete` (layout: open·standing) / `intro_skip` (remember: 다음에도 건너뛰기) |
+| 인트로 끝까지 보기 / 건너뛰기 | `intro_complete` (layout: open·standing) / `intro_skip` (remember: 다음에도 건너뛰기, method: button = 건너뛰기 버튼 · source = 광고 등 utm_source로 자동 건너뜀) |
 | 사용법 안내 시작 / 완료 | `guide_start` / `guide_done` |
+| 10초 이상 보면서 스스로 한 번 움직임 (방문당 한 번) | `engaged_read` (engaged_seconds) → Meta 픽셀 `EngagedRead` |
 | 상단 언어·효과음·시작 영상·목차 | `ui_click` (`ui_area` settings·header), `language_change`, `about_open` |
 
 **알 수 있는 것:** 진입률(첫 방문 대비 "책장 속으로"), 인트로 이탈률(건너뛰기 비율), 기기별 성능(끊긴 프레임)
