@@ -14,6 +14,8 @@ import DetailBook from './DetailBook';
 import WebzineBook from './WebzineBook';
 import { webzines } from './webzine';
 import PosterBook from './PosterBook';
+import FridgeBook from './FridgeBook';
+import { zineView } from './zine';
 import { posters } from './posters';
 import Prologue from './Prologue';
 import Guide from './Guide';
@@ -122,6 +124,31 @@ const STORY_LINK=(()=>{
   useStory.getState().set({chapter,detail:link.detail});
   return {detail:link.detail,chapter};
 })();
+/**
+ * A link to a later spread (…#cooks, #recipes, #ending), on arriving (not a reload or back/forward): the book opens at that spread, with no
+ * opening (film, prologue, guide) and no turn from the first spread. Its number, or null; set in the story before the first render, as above.
+ */
+const CHAPTER_LINK=(()=>{
+  const navigation=(performance.getEntriesByType?.('navigation')[0] as PerformanceNavigationTiming|undefined)?.type;
+  const link=navigation==='reload'||navigation==='back_forward'?null:parseHash(window.location.hash);
+  if(!link||link.detail||link.chapter===null||link.chapter<1)return null;
+  useStory.getState().set({chapter:link.chapter});
+  return link.chapter;
+})();
+/**
+ * The opening plays only for our own channels (utm_source kakao, direct, threads or blog, or none at all: a visit typed in or bookmarked);
+ * every other source, the ads first, goes straight to the book as with 건너뛰기, since most ad visitors left during the film (GA4, Nov 2026).
+ */
+const OPENING_SOURCES=['kakao','direct','threads','blog'];
+const SOURCE_SKIPS_OPENING=(()=>{
+  const source=new URLSearchParams(window.location.search).get('utm_source')?.trim().toLowerCase();
+  return !!source&&!OPENING_SOURCES.includes(source);
+})();
+/**
+ * Phones held upright have no opening film and no prologue ("책장 속으로"): the book opens straight to reading and the reading guide comes up
+ * (still skipped by 다음부터 보지 않기, a story link or an ad source, like the rest of the opening). Judged once, as the page loads.
+ */
+const PHONE=typeof matchMedia==='function'&&matchMedia(STANDING_QUERY).matches;
 export default function App() {
   const state=useStory();const {lang,t}=useT();
   const {phase,chapter,audioReady}=state;
@@ -146,8 +173,17 @@ export default function App() {
   // Skipping the opening (film, prologue and guide): now with 건너뛰기, or every visit once "다음부터 보지 않기" is ticked (src/openingPref.ts:
   // saved at once in this browser; "시작 영상 보기" in the settings turns it back on). A restart (처음부터 다시 보기) still plays it.
   const soundOn=useSoundPref(s=>s.on);
-  const [skipOpening,setSkipOpening]=useState(()=>useOpeningPref.getState().skip||!!storyLink);const rememberSkip=useOpeningPref(s=>s.skip),setRememberSkip=useOpeningPref(s=>s.setSkip);
+  const [skipOpening,setSkipOpening]=useState(()=>useOpeningPref.getState().skip||!!storyLink||CHAPTER_LINK!==null||SOURCE_SKIPS_OPENING||PHONE);const rememberSkip=useOpeningPref(s=>s.skip),setRememberSkip=useOpeningPref(s=>s.setSkip);
   const skipOpeningRef=useRef(skipOpening);skipOpeningRef.current=skipOpening;
+  // Skipped for its utm_source (not by the reader's own choice): the film never plays, so GA4 hears intro_skip (method 'source'), not
+  // intro_complete. Only this first opening; a restart plays and reports as usual.
+  const sourceSkip=useRef(SOURCE_SKIPS_OPENING&&!storyLink&&CHAPTER_LINK===null&&!useOpeningPref.getState().skip);
+  // A link to a later spread skips the opening too (intro_skip, method 'link'), and the book is fetched at once.
+  const linkSkip=useRef(CHAPTER_LINK!==null&&!useOpeningPref.getState().skip);
+  useEffect(()=>{if(CHAPTER_LINK!==null)preloadBook(CHAPTER_LINK);},[]);
+  // On a phone the film is never played either: GA4 hears intro_skip (method 'phone') once, and the guide follows the book's opening.
+  const phoneSkip=useRef(PHONE&&!SOURCE_SKIPS_OPENING&&!storyLink&&CHAPTER_LINK===null&&!useOpeningPref.getState().skip);
+  const guideOnOpen=useRef(PHONE&&!SOURCE_SKIPS_OPENING&&!storyLink&&CHAPTER_LINK===null&&!useOpeningPref.getState().skip);
   // The two-step reading guide (src/Guide.tsx): 0 closed, 1 the glowing cards, 2 the page arrow. It follows every "책장 속으로".
   const [guide,setGuide]=useState<0|1|2>(0);const guidePending=useRef(false);
   // A spread still loading 1.2 s after the turn was asked for (a slow connection): only then is it worth a word.
@@ -243,7 +279,10 @@ export default function App() {
   // The film pauses on the open book: the prologue comes up over it while the live book takes the film's place underneath.
   const finishIntro=useCallback((report:IntroReport)=>{
     setIntroReport(report);setPrologue(skipOpeningRef.current?'none':'open');
-    track('intro_complete',{layout:report.standing?'standing':'open',dropped_frames:report.droppedFrames??undefined,media_failed:report.mediaFailed});
+    if(sourceSkip.current){sourceSkip.current=false;track('intro_skip',{method:'source'});}
+    else if(linkSkip.current){linkSkip.current=false;track('intro_skip',{method:'link'});}
+    else if(phoneSkip.current){phoneSkip.current=false;track('intro_skip',{method:'phone'});}
+    else track('intro_complete',{layout:report.standing?'standing':'open',dropped_frames:report.droppedFrames??undefined,media_failed:report.mediaFailed});
     if(new URLSearchParams(window.location.search).get('view')!=='paper'&&!supportsWebGL())setFallback(true);
     setMediaFinished(true);setSceneMounted(true);
   },[]);
@@ -258,6 +297,9 @@ export default function App() {
   const locateArrow=useCallback(()=>{const icon=document.querySelector('.reader-next svg')??document.querySelector('.reader-next');const r=icon?.getBoundingClientRect();if(!r||!r.width)return null;
    const size=Math.max(36,r.width+12),cx=r.x+r.width/2,cy=r.y+r.height/2;return {x:cx-size/2,y:cy-size/2,width:size,height:size};},[]);
   // Closing the guide, the spread's glowing cards blink again, so the reader's eye goes straight back to them.
+  // Step 2's swipe on a phone turns the page the way it shows (up: the next spread or the closing card; down: the previous one).
+  const guideSwipe=useCallback((direction:1|-1)=>{const s=useStory.getState();noteTurn('drag');
+   if(direction>0){if(s.chapter===scenes.length-1)api.current?.finish();else api.current?.go(s.chapter+1);}else if(s.chapter>0)api.current?.go(s.chapter-1);},[]);
   const nextGuide=useCallback(()=>setGuide(step=>{if(step===1)return 2;track('guide_done');window.setTimeout(()=>api.current?.highlight?.(),150);return 0;}),[]);
   // "책장 속으로": the prologue fades, the reader UI arrives and the cards stand up.
   const startReading=useCallback(()=>{
@@ -266,10 +308,13 @@ export default function App() {
     window.setTimeout(()=>setPrologue('none'),520);
   },[]);
   // Skipped, the book opens to reading as soon as it is ready under the (skipped) prologue: the cards stand up, no guide.
-  useEffect(()=>{if(!skipOpening||phase!=='PROLOGUE')return;setPrologue('none');setChromeVisible(true);api.current?.rise();},[skipOpening,phase]);
-  const skipNow=useCallback(()=>{track('intro_skip',{remember:rememberSkip});guidePending.current=false;setGuide(0);setSkipOpening(true);},[rememberSkip]);
+  useEffect(()=>{if(!skipOpening||phase!=='PROLOGUE')return;setPrologue('none');setChromeVisible(true);
+    // On a phone the guide still comes up as the cards stand (the same hand-over as after "책장 속으로").
+    if(guideOnOpen.current){guideOnOpen.current=false;guidePending.current=true;}
+    api.current?.rise();},[skipOpening,phase]);
+  const skipNow=useCallback(()=>{track('intro_skip',{remember:rememberSkip,method:'button'});guidePending.current=false;setGuide(0);setSkipOpening(true);},[rememberSkip]);
   const beginIntro=useCallback(()=>{
-    setSkipOpening(false);track('restart');api.current=null;setEngineReady(false);setSceneMounted(false);setMediaFinished(false);setIntroLeaving(false);setIntroVisible(true);setIntroRun(n=>n+1);setIntroReport(null);setChromeVisible(false);setChromeVideoTime(null);setPrologue('none');
+    setSkipOpening(PHONE);guideOnOpen.current=PHONE;track('restart');api.current=null;setEngineReady(false);setSceneMounted(false);setMediaFinished(false);setIntroLeaving(false);setIntroVisible(true);setIntroRun(n=>n+1);setIntroReport(null);setChromeVisible(false);setChromeVideoTime(null);setPrologue('none');
     useStory.getState().set({phase:'INIT',chapter:0,dialog:false,visited:[],error:null,introPagesTurned:0});
   },[]);
   // After the film the book waits under the prologue (hold); behind a story link's story it opens straight to reading, as it was filmed
@@ -338,7 +383,7 @@ export default function App() {
   return <div className={"app-shell reader-mode cinematic-reader"+(introVisible?" intro-active":"")+(detailOpen?" has-detail":"")}>
     {!introVisible&&<a className="skip-link" href="#main">{t('이야기로 바로 가기')}</a>}
     {/* While the film plays and while the reading guide shows, not over the prologue (its own button goes on into the book). */}
-    {(introVisible||guide!==0)&&!skipOpening&&<div className="opening-skip">
+    {(PHONE?guide!==0:(introVisible||guide!==0)&&!skipOpening)&&<div className="opening-skip">
       <label className="opening-remember"><input type="checkbox" checked={rememberSkip} onChange={e=>setRememberSkip(e.target.checked)}/><i aria-hidden="true"><Check size={11} strokeWidth={3}/></i>{t('다음부터 보지 않기')}</label>
       <span className="opening-skip-rule" aria-hidden="true"/>
       <button type="button" className="opening-skip-button" onClick={skipNow}>{t('건너뛰기')}<ChevronsRight size={15} aria-hidden="true"/></button>
@@ -386,8 +431,8 @@ export default function App() {
       </div>
     </section></main>
     {prologue!=='none'&&<Prologue ready={phase==='PROLOGUE'||prologue==='closing'} closing={prologue==='closing'} onStart={startReading}/>}
-    {guide!==0&&<Guide step={guide} locate={guide===1?locateCard:locateArrow} onNext={nextGuide}/>}
-    {detailOpen&&state.detail&&(webzines[state.detail]?<WebzineBook key={state.detail} id={state.detail} onClose={closeDetail} onOpen={openDetail}/>:posters[state.detail]?<PosterBook key={state.detail} id={state.detail} onClose={closeDetail} onOpen={openDetail}/>:details[state.detail]?.spread?<DetailBook key={state.detail} id={state.detail} onClose={closeDetail} onOpen={openDetail}/>:<DetailPanel id={state.detail} onClose={closeDetail} onOpen={openDetail}/>)}
+    {guide!==0&&<Guide step={guide} locate={guide===1?locateCard:locateArrow} onNext={nextGuide} onSwipe={guideSwipe}/>}
+    {detailOpen&&state.detail&&(zineView(state.detail)?<FridgeBook key="fridge" id={state.detail} onClose={closeDetail} onOpen={openDetail}/>:webzines[state.detail]?<WebzineBook key={state.detail} id={state.detail} onClose={closeDetail} onOpen={openDetail}/>:posters[state.detail]?<PosterBook key={state.detail} id={state.detail} onClose={closeDetail} onOpen={openDetail}/>:details[state.detail]?.spread?<DetailBook key={state.detail} id={state.detail} onClose={closeDetail} onOpen={openDetail}/>:<DetailPanel id={state.detail} onClose={closeDetail} onOpen={openDetail}/>)}
     {/* The contents ("목차" in the header): the three chapters, each one a way in; the one being read is marked. */}
     {modal==='about'&&<Modal title={t('목차')} className="contents-modal" onClose={closeModal}>
       <p className="contents-lead">{t(SITE.title)} · {t('세 장면')}</p>

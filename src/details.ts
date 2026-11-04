@@ -28,9 +28,10 @@ export type Detail={
 };
 import { SHARE } from './site.ts';
 import { url } from './base.ts';
+import { RECIPES } from './zine.ts';
 const draft='매거진 원고를 준비하고 있어요. 자세한 이야기는 매거진에서 이어집니다.';
 export const details:Record<string,Detail>={
- farmer:{id:'farmer',kicker:'01 · FARMER — 영상 인터뷰',title:'당근밭에서 시작되는 이야기',
+ farmer:{id:'farmer',kicker:'01 · FARMER',title:'당근밭에서 시작되는 이야기',
   lead:'제주 구좌에서 당근을 키우는 유도균 농부님. 23년간 광고 회사에서 일하다 2014년 제주로 내려와, “이 동네는 당근과 콩이다”라는 이웃 할머니의 말 한마디로 당근 농사를 시작했습니다.',
   quote:'겨울을 제대로 맞아야 진짜 맛이 들어요.',facts:[['농부','유도균'],['지역','제주 구좌']],
   list:{title:'인터뷰에서 다루는 이야기',items:['구좌의 흙과 바람','당근이 자라는 시간','수확하는 날','밭에서 식탁까지'],ordered:true},
@@ -109,4 +110,9 @@ export const details:Record<string,Detail>={
   related:['poster-gnocchi','poster-jeon']},
  'poster-jeon':{id:'poster-jeon',kicker:'03 · RECIPE — 당근전',title:'당근전',lead:'채 썬 당근을 부쳐 내는 고소한 당근전이에요.',
   related:['poster-gnocchi','poster-gimbap']},
+ // The fridge's views (src/FridgeBook.tsx, recipes from the 3D-character webzine, src/zine.ts): named here for links, page titles and
+ // analytics; the fridge book draws them itself.
+ recipes:{id:'recipes',kicker:'03 · RECIPE — 냉장고 레시피',title:'구좌 당근 레시피 15가지',lead:'당근으로 만드는 한 끼, 반찬, 간식 15가지예요. 종류와 맛으로 골라 볼 수 있어요.'},
+ planner:{id:'planner',kicker:'03 · RECIPE — 냉장고 레시피',title:'냉장고에 뭐가 있나요?',lead:'있는 재료를 고르면 오늘 만들 수 있는 당근 요리를 찾아 드려요.'},
+ ...Object.fromEntries(RECIPES.map(recipe=>['recipe-'+recipe.id,{id:'recipe-'+recipe.id,kicker:'03 · RECIPE — '+recipe.name,title:recipe.name,lead:recipe.desc} satisfies Detail])),
 };

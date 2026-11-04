@@ -34,6 +34,7 @@ function Block({block,first}:{block:WzBlock;first:boolean}){
   case 'menu':return <Menu menu={block.menu}/>;
   case 'menus':return <div className="wz-menus">{block.items.map(menu=><Menu key={menu.title} menu={menu}/>)}</div>;
   case 'caption':return <div className={'wz-captions'+(block.cards?' is-cards':'')}>{block.items.map(item=><div key={item.title}><h4>{item.title}</h4><p>{item.text}</p></div>)}</div>;
+  case 'prices':return <ul className={'wz-prices'+(block.compact?' is-compact':'')}>{block.items.map(item=><li key={item.name} className={item.img?'has-img':undefined}>{item.img&&<Photo src={item.img} alt={item.alt??item.name}/>}<div className="wz-prices-body"><div><strong>{item.name}</strong>{item.price&&<><u aria-hidden="true"/><b>{item.price}</b></>}</div>{item.text&&<span>{item.text}</span>}</div></li>)}</ul>;
   case 'rule':return <hr className="wz-rule"/>;
  }
 }
@@ -61,7 +62,9 @@ export default function WebzineBook({id,onClose}:{id:string;onClose:()=>void;onO
  };window.addEventListener('keydown',key,true);return()=>window.removeEventListener('keydown',key,true);});
  if(!detail||!zine)return null;
  // Run on as one scroll (a phone), a later spread's own title and byline would repeat the story's opening: they are left out there.
- const shown=(blocks:WzBlock[],at:number)=>narrow&&at>0?blocks.filter(block=>block.t!=='h1'&&block.t!=='sub'):blocks;
+ // The story's title is on the first spread that has one (a shop's menu comes before it and has none).
+ const titleAt=Math.max(0,zine.spreads.findIndex(spread=>[...spread.left,...spread.right].some(block=>block.t==='h1')));
+ const shown=(blocks:WzBlock[],at:number)=>narrow&&at>titleAt?blocks.filter(block=>block.t!=='h1'&&block.t!=='sub'):blocks;
  const withMedia=(blocks:WzBlock[])=>blocks.some(block=>['photoText','hero','menu','menus','side','cutout'].includes(block.t))?' has-media':'';
  return <div className={'detail-book-backdrop'+(open?' is-open':'')} onClick={e=>{if(tappedOutside(e))close();}}>
   <div className="webzine-book" role="dialog" aria-modal="true" aria-labelledby="wz-title">
@@ -71,7 +74,7 @@ export default function WebzineBook({id,onClose}:{id:string;onClose:()=>void;onO
      <header className="wz-bar"><span>{zine.kicker}</span><i aria-hidden="true"/><em aria-hidden="true">{(zine.label??['People','Who Cook'])[0]}<br/>{(zine.label??['People','Who Cook'])[1]}</em></header>
      {(narrow?zine.spreads.map((spread,at)=>[spread,at] as const):[[zine.spreads[index],index] as const]).map(([spread,at])=>
       <div key={at} className={'wz-spread '+(direction===1?'is-next':'is-prev')} ref={at===(narrow?0:index)?heading:undefined} tabIndex={-1}>
-       <section className={'wz-page is-left'+withMedia(spread.left)+(spread.dense==='left'?' is-dense':'')} aria-label={t('왼쪽 쪽')}>{shown(spread.left,at).map((block,i)=><Block key={i} block={block} first={at===0&&i===spread.left.findIndex(b=>b.t==='h1')}/>)}</section>
+       <section className={'wz-page is-left'+withMedia(spread.left)+(spread.dense==='left'?' is-dense':'')} aria-label={t('왼쪽 쪽')}>{shown(spread.left,at).map((block,i)=><Block key={i} block={block} first={at===titleAt&&i===spread.left.findIndex(b=>b.t==='h1')}/>)}</section>
        <section className={'wz-page is-right'+withMedia(spread.right)+(spread.dense==='right'?' is-dense':'')} aria-label={t('오른쪽 쪽')}>{shown(spread.right,at).map((block,i)=><Block key={i} block={block} first={false}/>)}</section>
       </div>)}
      {narrow&&<div className="wz-end"><button className="is-next" onClick={close}>{t('이야기 닫기')}<X size={16}/></button></div>}

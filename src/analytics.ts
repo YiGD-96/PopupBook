@@ -22,6 +22,9 @@
  *  video_start / video_progress / video_complete / video_pause   a YouTube Short in a recipe poster book (src/PosterBook.tsx): video_title,
  *                     video_url, video_provider 'youtube', video_percent (25 | 50 | 75 | 100), video_current_time, video_duration, content_id
  *  shorts_play / shorts_open   the Short's play button pressed / "open on YouTube" followed
+ *  engaged_read       once a visit, a reader rather than a passer-by: 10 s with the page on screen and one move of their own (a story
+ *                     opened, a page turned, a story scrolled, "책장 속으로", a Short played): engaged_seconds. For ad platforms to
+ *                     optimise on (GTM forwards it to the Meta pixel as EngagedRead, docs/analytics-guide)
  * Every event also carries book_chapter (farmer | cooks | recipes), book_lang (ko | en | zh), book_layout (phone | desktop), and which copy
  * of the site sent it: book_env (main = lxwebzine.hankyung.com | test = anywhere else) and book_host.
  *
@@ -50,14 +53,40 @@ function context(): Params {
  return { book_chapter: chapter?.id, book_lang: useLocale.getState().lang, book_layout: phone ? 'phone' : 'desktop',
   book_env: location.hostname === MAIN_HOST ? 'main' : 'test', book_host: location.hostname };
 }
+// engaged_read: the time the page has been on screen (shownMs, plus the stretch since shownAt while it is visible) and whether the reader
+// has made a move of their own. A story that opens by itself from a link (source 'link') is not one.
+const ENGAGED_AFTER = 10_000;
+const MOVES = new Set(['page_turn', 'story_scroll', 'prologue_start', 'shorts_play', 'video_start']);
+let shownMs = 0, shownAt: number | null = null, moved = false, engaged = false, engagedTimer = 0;
+const onScreen = () => shownMs + (shownAt === null ? 0 : performance.now() - shownAt);
+function checkEngaged() {
+ window.clearTimeout(engagedTimer);
+ if (engaged || !moved || shownAt === null) return;
+ const left = ENGAGED_AFTER - onScreen();
+ if (left > 0) { engagedTimer = window.setTimeout(checkEngaged, left); return; }
+ engaged = true;
+ track('engaged_read', { engaged_seconds: Math.round(onScreen() / 1000) });
+}
+function watchEngagement() {
+ if (document.visibilityState === 'visible') shownAt = performance.now();
+ document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') shownAt ??= performance.now();
+  else if (shownAt !== null) { shownMs += performance.now() - shownAt; shownAt = null; }
+  checkEngaged();
+ });
+}
+
 export function track(name: string, params: Params = {}) {
  if (typeof window === 'undefined') return;
+ const firstMove = !moved && (MOVES.has(name) || (name === 'select_content' && params.source !== 'link'));
  const full: Params = { ...context(), ...params };
  window.gtag?.('event', name, full);
  const entry: Record<string, unknown> = {};
  for (const key of pushedKeys) entry[key] = undefined;
  for (const [key, value] of Object.entries(full)) { entry[key] = value; pushedKeys.add(key); }
  (window.dataLayer = window.dataLayer || []).push({ event: name, ...entry });
+ // After the move itself, so engaged_read follows the event that earned it.
+ if (firstMove) { moved = true; checkEngaged(); }
 }
 
 /** Where on the page a control sits, from the nearest known part of the interface. */
@@ -73,7 +102,7 @@ function idOf(control: Element) {
  for (let parent = control.parentElement; parent; parent = parent.parentElement) if (own(parent)) return `${own(parent)} ${control.tagName.toLowerCase()}`;
  return control.tagName.toLowerCase();
 }
-const STORY_VIEWS = '.webzine-book,.poster-book,.detail-book,.detail-panel';
+const STORY_VIEWS = '.webzine-book,.poster-book,.fridge-book,.detail-book,.detail-panel';
 const CONTROLS ='button,a[href],[role="button"],[role="radio"],[role="tab"],[role="menuitem"],[role="switch"],summary,input[type="checkbox"],input[type="radio"],select';
 
 /** Readable ids in the URL: the chapter's own id, a story's id after a slash, 'ending' for the closing page. */
@@ -117,6 +146,7 @@ export function initAnalytics() {
   window.gtag('config', GA_ID, { send_page_view: false });
  }
  track('page_view', { page_location: location.href, page_title: document.title });
+ watchEngagement();
 
  // shown starts at the address the reader arrived at, which the page_view above already counted.
  let shown = location.hash, opened: { id: string; at: number; deepest: number | null; marks: Set<number> } | null = null, seen = new Set<string>(), lastChapter = useStory.getState().chapter, introDone = false;

@@ -16,6 +16,7 @@ function blockPictures(blocks:WzBlock[]):string[]{
    case 'side':return [block.img,...blockPictures(block.body)];
    case 'menu':return [block.menu.img];
    case 'menus':return block.items.map(item=>item.img);
+   case 'prices':return block.items.flatMap(item=>item.img?[item.img]:[]);
    default:return [];
   }
  });

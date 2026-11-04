@@ -9,9 +9,25 @@ import { useT } from './i18n';
  */
 export type GuideRect={x:number;y:number;width:number;height:number};
 
-const PAD=12,GAP=58,BUBBLE_H=92;
-export default function Guide({step,locate,onNext}:{step:1|2;locate:()=>GuideRect|null;onNext:()=>void}){
+const PAD=12,GAP=58,BUBBLE_H=92,PEEK_MS=1100;
+/** `onSwipe`: on a phone, step 2's own gesture (a swipe up, or down to go back) closes the guide and turns the page, as it shows. */
+export default function Guide({step,locate,onNext,onSwipe}:{step:1|2;locate:()=>GuideRect|null;onNext:()=>void;onSwipe?:(direction:1|-1)=>void}){
  const {t}=useT();
+ const phone=typeof matchMedia==='function'&&matchMedia(STANDING_QUERY).matches;
+ // On a phone the first tap does not just move on: a small page opens out of the glowing card for a moment (a hint of the story a press
+ // opens) and the guide goes on to step 2 as it closes.
+ const [peek,setPeek]=useState(false);const peeking=useRef(false);
+ const advance=useCallback(()=>{
+  if(peeking.current)return;
+  if(phone&&step===1){peeking.current=true;setPeek(true);window.setTimeout(onNext,PEEK_MS);return;}
+  onNext();
+ },[onNext,phone,step]);
+ // The peek belongs to step 1: once step 2 is up, a tap moves on again (the flag used to stay set, so step 2 never went away).
+ useEffect(()=>{peeking.current=false;setPeek(false);},[step]);
+ const start=useRef<{x:number;y:number}|null>(null);
+ const swipeEnd=(e:React.PointerEvent)=>{const from=start.current;start.current=null;if(!from||!onSwipe||!phone||step!==2)return false;
+  const dy=e.clientY-from.y;if(Math.abs(dy)<48||Math.abs(dy)<Math.abs(e.clientX-from.x))return false;
+  onNext();onSwipe(dy<0?1:-1);return true;};
  const [rect,setRect]=useState<GuideRect|null>(()=>locate());
  // `floor`: how far down the bubble may reach: above the skip bar at the bottom while it shows (src/App.tsx .opening-skip), which on a
  // phone, its height cut by the browser's bars, the bubble under the card used to cover.
@@ -24,8 +40,8 @@ export default function Guide({step,locate,onNext}:{step:1|2;locate:()=>GuideRec
  // It can open while the cards are still standing up; `locate` gives the card's upright place, so the spotlight is where it ends at once.
  // Measured before the step is painted, so the new words never show for a frame at the old place.
  useLayoutEffect(()=>{update();window.addEventListener('resize',update);return()=>window.removeEventListener('resize',update);},[update,step]);
- useEffect(()=>{const key=(e:KeyboardEvent)=>{if(['Enter',' ','Escape'].includes(e.key)){e.preventDefault();e.stopPropagation();onNext();}};window.addEventListener('keydown',key,true);return()=>window.removeEventListener('keydown',key,true);},[onNext]);
- const phone=typeof matchMedia==='function'&&matchMedia(STANDING_QUERY).matches;
+ useEffect(()=>{const key=(e:KeyboardEvent)=>{if(['Enter',' ','Escape'].includes(e.key)){e.preventDefault();e.stopPropagation();advance();}};window.addEventListener('keydown',key,true);return()=>window.removeEventListener('keydown',key,true);},[advance]);
+
  // On a phone the page turns first of all by a swipe up (down goes back); step 2 shows that gesture over the book, not the arrow.
  const swipe=phone&&step===2;
  const copy=step===1
@@ -47,7 +63,7 @@ export default function Guide({step,locate,onNext}:{step:1|2;locate:()=>GuideRec
  const from={x:Math.max(bubble.x+24,Math.min(bubble.x+width-24,centre)),y:below?bubble.y-6:bubble.y+bubbleH+6};
  const to=spot&&{x:centre,y:below?spot.y+spot.height+4:spot.y-4};
  const bend=to?Math.max(-60,Math.min(60,(to.x-from.x)*.5+(to.x>view.w/2?-28:28))):0;
- return <div className="guide" role="dialog" aria-modal="true" aria-live="polite" aria-label={copy.title} onClick={onNext}>
+ return <div className={'guide'+(peek?' is-peeking':'')} role="dialog" aria-modal="true" aria-live="polite" aria-label={copy.title} onPointerDown={e=>{start.current={x:e.clientX,y:e.clientY};}} onPointerUp={e=>{if(swipeEnd(e))e.preventDefault();}} onClick={e=>{if(e.defaultPrevented)return;advance();}}>
   {spot?<div className="guide-spot" style={{left:spot.x,top:spot.y,width:spot.width,height:spot.height}}/>:<div className="guide-dim"/>}
   {to&&<svg key={`arrow-${step}`} className="guide-arrow guide-step" width={view.w} height={view.h} aria-hidden="true">
    <defs><marker id="guide-head" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z"/></marker></defs>
@@ -56,6 +72,7 @@ export default function Guide({step,locate,onNext}:{step:1|2;locate:()=>GuideRec
   {swipe&&<div key="swipe" className="guide-swipe guide-step" style={{top:view.h*.3}} aria-hidden="true">
    <svg className="guide-swipe-chevron" viewBox="0 0 24 12"><path d="M3 10L12 3l9 7"/></svg><span className="guide-swipe-track"/><span className="guide-swipe-dot"/>
   </div>}
+  {peek&&spot&&<div className="guide-peek" style={{left:spot.x+spot.width/2,top:spot.y+spot.height/2}} aria-hidden="true"><i className="guide-peek-bar is-title"/><i className="guide-peek-photo"/><i className="guide-peek-bar"/><i className="guide-peek-bar is-short"/></div>}
   <div key={`bubble-${step}`} ref={bubbleRef} className="guide-bubble guide-step" style={{left:bubble.x,top:bubble.y,width,minHeight:BUBBLE_H}}>
    <strong>{copy.title}</strong><span>{copy.text}</span>
    <span className="guide-dots" aria-label={`${step} / 2`}><i className={step===1?'is-on':''}/><i className={step===2?'is-on':''}/></span>

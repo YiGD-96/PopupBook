@@ -26,6 +26,7 @@ export type WzBlock=
  | {t:'menu';menu:WzMenu}
  | {t:'menus';items:WzMenu[]}
  | {t:'caption';items:{title:string;text:string}[];/** Short notes as small cards in two columns, each under a rule (the farmer's story). */cards?:boolean}
+ | {t:'prices';items:{name:string;price?:string;text?:string;/** A small picture of the dish beside it. */img?:string;alt?:string}[];/** Names and prices only, in the body size (a long list). */compact?:boolean}
  | {t:'rule'};
 /** `dense`: a page set a little smaller and tighter, so a long page still fits (as its mockup does). */
 export type WzSpread={left:WzBlock[];right:WzBlock[];dense?:'left'|'right'};
@@ -36,7 +37,7 @@ const img=(name:string)=>url(`/media/webzine/${name}.webp`);
 export const webzines:Record<string,Webzine>={
  // The farmer's interview (gujwa_farmer_interview_webzine_final_vertical_epilogue.html): the farmer Yu Do-gyun on growing carrots in
  // Gujwa, ending with an epilogue.
- 'farmer':{kicker:'01 · FARMER — 영상 인터뷰',label:['Farmer','Interview'],spreads:[
+ 'farmer':{kicker:'01 · FARMER',label:['Farmer','Interview'],spreads:[
   {left:[
     {t:'h1',lines:['구좌에서 당근 농부로','살아간다는 것']},
     {t:'sub',text:'구좌 당근과 농부 이야기 | 유기농 당근 농부 유도균 대표'},
@@ -131,6 +132,36 @@ export const webzines:Record<string,Webzine>={
     {t:'flow',items:[{p:'임신 준비 중 고용량 레티놀 보충제는 주의하세요. 고용량 베타카로틴 보충제도 의료진과 상담이 필요합니다. 어린아이에게는 단단한 생당근 조각 대신 익힌 당근을 주세요.'},{q:'당근은 약이 아니라 밥상이다.'}]}]}]},
 
  'cook-01':{kicker:'02 · PEOPLE WHO COOK',spreads:[
+  // The menu first (prices as listed on DiningCode, Nov 2026).
+  {left:[
+    {t:'eyebrow',text:'MENU'},
+    {t:'h2',text:'소농로드의 대표 메뉴'},
+    {t:'prices',items:[
+      {name:'토끼세트',price:'14,500원',text:'유기농 당근주스 170ml와 당근케이크 한 조각을 함께 즐기는 세트'},
+      {name:'제주 유기농 당근 100% 착즙',price:'7,000원',text:'제주 햇당근만 짜 낸 주스',img:img('soo-juice'),alt:'소농로드의 당근 주스'},
+      {name:'구좌 당근밭 라떼',price:'9,000원',text:'당근주스에 밀크폼과 시나몬을 더한, 당근주스 입문자용 라떼',img:img('soo-latte'),alt:'소농로드의 당근 라떼'},
+      {name:'당근레몬샤베트',price:'7,000원',text:'제주 당근과 레몬을 섞은 샤베트',img:img('soo-sorbet'),alt:'소농로드의 당근 소르베'},
+      {name:'유기농 당근 수제 케이크',price:'8,000원',text:'제주 당근과 견과류를 넣어 직접 구운 케이크 · 홀케이크 48,000원(2일 전 예약)'}]}],
+   right:[
+    {t:'h2',text:'함께 즐기는 음료와 식사'},
+    {t:'eyebrow',text:'DRINKS'},
+    {t:'prices',compact:true,items:[
+      {name:'제주 유기농 귤주스',price:'6,000원'},
+      {name:'제주보리 오트라떼',price:'7,000원'},
+      {name:'제주 자연재배 청귤차',price:'7,000원'},
+      {name:'공정무역 유기농 코코아라떼',price:'8,000원'},
+      {name:'아메리카노',price:'4,500원'}]},
+    {t:'eyebrow',text:'MEALS & SEASON'},
+    {t:'prices',compact:true,items:[
+      {name:'제주 유기농 당근라페 듬뿍 샌드위치',price:'9,500원'},
+      {name:'저스트 채소커리&호밀빵',price:'9,000원'},
+      {name:'자연주의 당근 커리 (예약 필요)',price:'15,000원'},
+      {name:'미니단호박 오트라떼 (시즌 한정)',price:'8,500원'}]},
+    {t:'rows',pairs:true,items:[
+      {term:'영업시간',text:'10:00–17:00 (라스트오더 16:30)'},
+      {term:'위치',text:'제주시 구좌읍 비자림로 2615'},
+      {term:'문의',text:'064-782-9106'}]},
+    {t:'flow',items:[{p:'가격과 구성은 2026년 11월 다이닝코드 기준이에요. 시즌과 재료에 따라 달라질 수 있어요.'}]}],dense:'right'},
   {left:[
     {t:'h1',lines:['당근주스 한 잔에서 시작된','작은 농부들의 길']},
     {t:'sub',text:'소농로드 박정숙 대표'},
@@ -163,6 +194,38 @@ export const webzines:Record<string,Webzine>={
       {p:'늘 식탁의 조연이었던 당근이, 이곳에서는 가장 달콤한 주인공이 된다.'}]}]}]},
 
  'cook-02':{kicker:'02 · PEOPLE WHO COOK',spreads:[
+  // The menu first (prices as listed on DiningCode, Nov 2026).
+  {left:[
+    {t:'eyebrow',text:'MENU'},
+    {t:'h2',text:'마노아의 대표 메뉴'},
+    {t:'prices',items:[
+      {name:'제주 당근스프',price:'9,000원',text:'당근과 볶은 양파로 만든 담백한 스프',img:img('manoa-soup'),alt:'마노아의 당근수프'},
+      {name:'수제 구좌당근잼 (250ml)',price:'11,000원',text:'제주 구좌읍산 당근으로 만든 달콤한 수제 잼',img:img('manoa-jam'),alt:'마노아의 당근잼'},
+      {name:'제주당근 파니니',price:'16,000원',text:'치즈와 당근, 수제 감귤잼을 넣은 그릴 샌드위치',img:img('manoa-panini'),alt:'마노아의 당근파니니와 피클'},
+      {name:'당근 치아바타',price:'5,500원',text:'제주산 당근을 착즙해 만든 치아바타'},
+      {name:'제주 당근 주스',price:'7,000원',text:'구좌읍 당근을 착즙한 주스'}]}],
+   right:[
+    {t:'h2',text:'식사와 음료'},
+    {t:'eyebrow',text:'MEALS'},
+    {t:'prices',compact:true,items:[
+      {name:'버섯 파니니',price:'16,000원'},
+      {name:'알리오올리오 파스타',price:'16,000원'},
+      {name:'흑돼지 크림 파스타',price:'17,000원'},
+      {name:'고르곤졸라 피자',price:'19,000원'},
+      {name:'제주감귤고구마 피자',price:'20,000원'}]},
+    {t:'eyebrow',text:'DRINKS'},
+    {t:'prices',compact:true,items:[
+      {name:'제주 감귤 주스',price:'7,000원'},
+      {name:'제주 레몬 에이드',price:'7,000원'},
+      {name:'수제 생강차',price:'5,000원'},
+      {name:'아메리카노',price:'5,000원'},
+      {name:'카페라떼',price:'5,500원'},
+      {name:'카푸치노 · 바닐라라떼',price:'6,000원 · 6,500원'}]},
+    {t:'rows',pairs:true,items:[
+      {term:'영업시간',text:'10:00–16:00 (라스트오더 15:00) · 수요일 휴무'},
+      {term:'위치',text:'제주시 구좌읍 중산간동로 2124 1층'},
+      {term:'문의',text:'0507-1337-6810'}]},
+    {t:'flow',items:[{p:'가격과 구성은 2026년 11월 다이닝코드 기준이에요. 시즌과 재료에 따라 달라질 수 있어요.'}]}],dense:'right'},
   {left:[
     {t:'h1',lines:['수프가 되고 잼이 되는 당근,','마노아의 특별한 식탁']},
     {t:'sub',text:'마노아 최혜경 대표'},
@@ -195,6 +258,24 @@ export const webzines:Record<string,Webzine>={
       {p:'따뜻한 수프 한 그릇과 달콤한 잼 한 숟가락 안에는 구좌의 햇살과 바람, 그리고 제주의 계절이 고스란히 담겨 있다. 마노아의 식탁에서 만나는 당근은 단순한 재료를 넘어, 이곳의 풍경과 계절을 맛보게 하는 특별한 경험이 된다.'}]}]}]},
 
  'cook-03':{kicker:'02 · PEOPLE WHO COOK',spreads:[
+  // The menu first, without prices (none were published anywhere we could read).
+  {left:[
+    {t:'eyebrow',text:'MENU'},
+    {t:'h2',text:'버거캐럿의 대표 메뉴'},
+    {t:'prices',items:[
+      {name:'캐럿버거 · 당근라페',text:'구좌 당근라페가 들어간 버거. 아삭한 당근라페와 육즙 가득한 소고기 패티가 어우러져요.'},
+      {name:'캐럿버거 · 당근튀김',text:'당근 튀김을 넣은 또 하나의 버전이에요. 라페 버전과 골라 먹을 수 있어요.'},
+      {name:'캐럿프라이즈',text:'감자튀김 대신 당근으로 만든 사이드 메뉴예요. 감자튀김을 당근프라이로 바꿀 수도 있어요.'}]}],
+   right:[
+    {t:'hero',img:img('burger-menu'),alt:'버거캐럿의 캐럿버거와 캐럿프라이즈'},
+    {t:'h2',text:'방문 전에 알아두세요'},
+    {t:'rows',pairs:true,items:[
+      {term:'영업시간',text:'08:00–19:30 (후기 기준) · 재료가 떨어지면 일찍 마감해요'},
+      {term:'위치',text:'제주시 구좌읍 월정중길 30'},
+      {term:'이용',text:'포장·테이크아웃 가능'},
+      {term:'재고',text:'실시간 재고는 인스타그램(@burger_carrot)에서 확인해 주세요'},
+      {term:'재료',text:'화산회토에서 자란 제주 구좌 당근'}]},
+    {t:'flow',items:[{p:'영업시간은 후기와 공식 계정 기준이에요. 방문 전 인스타그램에서 확인해 주세요.'}]}],dense:'right'},
   {left:[
     {t:'h1',lines:['당근을 싫어하던 사람이','당근 버거를 만든 이유']},
     {t:'sub',text:'버거캐럿 김유민 대표'},

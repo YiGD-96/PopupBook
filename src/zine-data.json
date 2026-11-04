@@ -1,0 +1,1251 @@
+{
+ "source": "3D캐릭터 웹진 js/data.js",
+ "categories": [
+  {
+   "id": "veg",
+   "name": "채소"
+  },
+  {
+   "id": "grain",
+   "name": "밥·빵·면"
+  },
+  {
+   "id": "protein",
+   "name": "달걀·두부·고기"
+  },
+  {
+   "id": "dairy",
+   "name": "유제품"
+  },
+  {
+   "id": "pantry",
+   "name": "가루·기타"
+  },
+  {
+   "id": "season",
+   "name": "기본 양념",
+   "basic": true
+  }
+ ],
+ "ingredients": {
+  "carrot": {
+   "name": "당근",
+   "cat": "veg"
+  },
+  "potato": {
+   "name": "감자",
+   "cat": "veg"
+  },
+  "onion": {
+   "name": "양파",
+   "cat": "veg"
+  },
+  "scallion": {
+   "name": "대파",
+   "cat": "veg"
+  },
+  "rice": {
+   "name": "밥",
+   "cat": "grain"
+  },
+  "bread": {
+   "name": "식빵",
+   "cat": "grain"
+  },
+  "tortilla": {
+   "name": "또띠아",
+   "cat": "grain"
+  },
+  "pasta": {
+   "name": "파스타면",
+   "cat": "grain"
+  },
+  "egg": {
+   "name": "달걀",
+   "cat": "protein"
+  },
+  "tofu": {
+   "name": "두부",
+   "cat": "protein"
+  },
+  "chicken": {
+   "name": "닭고기",
+   "cat": "protein"
+  },
+  "milk": {
+   "name": "우유",
+   "cat": "dairy"
+  },
+  "cream": {
+   "name": "생크림",
+   "cat": "dairy"
+  },
+  "mozzarella": {
+   "name": "모짜렐라 치즈",
+   "cat": "dairy"
+  },
+  "creamcheese": {
+   "name": "크림치즈",
+   "cat": "dairy"
+  },
+  "butter": {
+   "name": "버터",
+   "cat": "dairy"
+  },
+  "flour": {
+   "name": "밀가루",
+   "cat": "pantry"
+  },
+  "starch": {
+   "name": "감자전분",
+   "cat": "pantry"
+  },
+  "breadcrumb": {
+   "name": "빵가루",
+   "cat": "pantry"
+  },
+  "oats": {
+   "name": "오트밀",
+   "cat": "pantry"
+  },
+  "seaweed": {
+   "name": "김",
+   "cat": "pantry"
+  },
+  "radish": {
+   "name": "단무지",
+   "cat": "pantry"
+  },
+  "banana": {
+   "name": "바나나",
+   "cat": "pantry"
+  },
+  "carrotjam": {
+   "name": "당근잼",
+   "cat": "pantry"
+  },
+  "salt": {
+   "name": "소금",
+   "cat": "season"
+  },
+  "sugar": {
+   "name": "설탕",
+   "cat": "season"
+  },
+  "pepper": {
+   "name": "후추",
+   "cat": "season"
+  },
+  "oil": {
+   "name": "식용유",
+   "cat": "season"
+  },
+  "sesame": {
+   "name": "참기름",
+   "cat": "season"
+  },
+  "garlic": {
+   "name": "다진 마늘",
+   "cat": "season"
+  },
+  "tomatosauce": {
+   "name": "토마토소스",
+   "cat": "season"
+  },
+  "creamsauce": {
+   "name": "크림소스",
+   "cat": "season"
+  },
+  "bakingpowder": {
+   "name": "베이킹파우더",
+   "cat": "season"
+  },
+  "water": {
+   "name": "물",
+   "cat": "none",
+   "count": false
+  }
+ },
+ "prefs": [
+  {
+   "id": "all",
+   "label": "모두 보기"
+  },
+  {
+   "id": "soft",
+   "label": "부드러운 맛"
+  },
+  {
+   "id": "chewy",
+   "label": "쫀득한 식감"
+  },
+  {
+   "id": "crispy",
+   "label": "바삭한 식감"
+  },
+  {
+   "id": "crunchy",
+   "label": "아삭한 식감"
+  }
+ ],
+ "meals": {
+  "meal": "한 끼",
+  "side": "반찬",
+  "snack": "간식"
+ },
+ "recipes": [
+  {
+   "id": "jeon",
+   "name": "당근 치즈전",
+   "meal": "snack",
+   "source": "original",
+   "desc": "채 썬 당근에 전분과 모짜렐라 치즈를 섞어 작게 부치는 고소한 전이에요.",
+   "tags": [
+    "crispy"
+   ],
+   "servings": "2인분",
+   "photo": "/media/zine/recipe-jeon.webp",
+   "photoW": 720,
+   "photoH": 960,
+   "ingredients": [
+    {
+     "id": "carrot",
+     "label": "채 썬 당근",
+     "qty": "200g",
+     "req": true
+    },
+    {
+     "id": "starch",
+     "label": "전분가루",
+     "qty": "2스푼",
+     "req": true
+    },
+    {
+     "id": "mozzarella",
+     "label": "모짜렐라 치즈",
+     "qty": "100g",
+     "req": true
+    },
+    {
+     "id": "pepper",
+     "label": "후추",
+     "qty": "1티스푼",
+     "req": true
+    }
+   ],
+   "steps": [
+    "채 썬 당근을 준비해 전분가루 2스푼을 넣어주세요.",
+    "모짜렐라 치즈와 후추를 넣고 잘 섞어줍니다.",
+    "1장씩 프라이팬에 작게 만들어 구워주세요."
+   ],
+   "tip": null,
+   "video": {
+    "id": "izTQxOcRgkg",
+    "title": "비주얼은 망했지만… 맛은 반전? - 치즈당근전",
+    "duration": "0:25"
+   },
+   "related": [
+    "croquette",
+    "minipizza"
+   ]
+  },
+  {
+   "id": "gnocchi",
+   "name": "당근 뇨끼",
+   "meal": "meal",
+   "source": "original",
+   "desc": "익힌 당근을 으깨 전분과 함께 빚는, 쫀득하고 달큰한 뇨끼예요.",
+   "tags": [
+    "soft",
+    "chewy"
+   ],
+   "servings": "2~3인분",
+   "photo": "/media/zine/recipe-gnocchi.webp",
+   "photoW": 720,
+   "photoH": 960,
+   "ingredients": [
+    {
+     "id": "carrot",
+     "label": "당근",
+     "qty": "200g",
+     "req": true
+    },
+    {
+     "id": "salt",
+     "label": "소금",
+     "qty": "2꼬집",
+     "req": true
+    },
+    {
+     "id": "starch",
+     "label": "감자전분",
+     "qty": "130g (밀가루 가능, 옥수수전분은 안 돼요)",
+     "req": true
+    },
+    {
+     "id": "water",
+     "label": "물",
+     "qty": "500ml (삶을 때)",
+     "req": false
+    },
+    {
+     "id": "creamsauce",
+     "label": "크림소스",
+     "qty": "시중 제품",
+     "req": true
+    }
+   ],
+   "subs": {
+    "starch": [
+     "flour"
+    ]
+   },
+   "steps": [
+    "당근을 얇게 썰어 주세요.",
+    "물을 약간 넣어 뚜껑을 닫고 전자레인지에 7분 돌려주세요.",
+    "당근을 으깬 후, 감자전분 130g과 소금 2꼬집을 넣어주세요. (반죽이 질 경우, 조금씩 감자전분을 더 넣어주세요.)",
+    "원하는 모양으로 만들어 끓는 물에 넣고, 동동 떠오르면 1~2분 더 삶아 건져주세요.",
+    "시중에 파는 크림소스에 익힌 당근을 추가하여 만들어둔 뇨끼와 먹으면 완성!"
+   ],
+   "tip": "전분은 감자전분이나 밀가루로 만들어요. 옥수수전분은 안 돼요.",
+   "video": {
+    "id": "xQMgSiBRk60",
+    "title": "누구나 쉽게 할 수 있는 뇨끼 - 당근 뇨끼",
+    "duration": "0:55"
+   },
+   "related": [
+    "creampasta",
+    "potatosoup"
+   ]
+  },
+  {
+   "id": "gimbap",
+   "name": "당근 김밥",
+   "meal": "meal",
+   "source": "original",
+   "desc": "살짝 볶은 채 썬 당근을 듬뿍 넣어 마는 아삭한 김밥이에요.",
+   "tags": [
+    "crunchy"
+   ],
+   "servings": "2~3줄",
+   "photo": "/media/zine/recipe-gimbap.webp",
+   "photoW": 720,
+   "photoH": 960,
+   "ingredients": [
+    {
+     "id": "carrot",
+     "label": "당근",
+     "qty": "2개",
+     "req": true
+    },
+    {
+     "id": "egg",
+     "label": "달걀",
+     "qty": "3개",
+     "req": true
+    },
+    {
+     "id": "rice",
+     "label": "밥",
+     "qty": "2공기",
+     "req": true
+    },
+    {
+     "id": "radish",
+     "label": "단무지",
+     "qty": "",
+     "req": true
+    },
+    {
+     "id": "seaweed",
+     "label": "김밥용 김",
+     "qty": "3장",
+     "req": true
+    },
+    {
+     "id": "oil",
+     "label": "식용유",
+     "qty": "",
+     "req": true
+    },
+    {
+     "id": "salt",
+     "label": "소금",
+     "qty": "",
+     "req": true
+    },
+    {
+     "id": "garlic",
+     "label": "다진 마늘",
+     "qty": "1큰술",
+     "req": true
+    },
+    {
+     "id": "sesame",
+     "label": "참기름",
+     "qty": "2큰술",
+     "req": true
+    },
+    {
+     "id": "salt",
+     "label": "밥 양념: 소금",
+     "qty": "1/2작은술",
+     "req": true,
+     "sub": true
+    },
+    {
+     "id": "sesame",
+     "label": "밥 양념: 참기름",
+     "qty": "1/2큰술",
+     "req": true,
+     "sub": true
+    }
+   ],
+   "steps": [
+    "깨끗이 씻은 당근은 채칼로 채를 썰어주세요.",
+    "달군 팬에 식용유 2큰술을 두르고 채 썬 당근을 넣어 볶다가 소금을 넣어 간을 해주세요. (많이 볶으면 식감이 사라지기 때문에 20초 이내로 볶아주세요!)",
+    "볼에 달걀 3개, 소금 한 꼬집을 넣고 풀어주세요.",
+    "달군 팬에 식용유를 얇게 두르고 풀어둔 달걀을 부쳐주고, 식힌 다음 얇고 길게 잘라주세요.",
+    "볼에 밥 2공기를 담아주고 소금 1/2작은술, 참기름 1/2큰술을 넣어서 눌리지 않게 섞어주세요.",
+    "김은 거친 면이 위로 오도록 두고(양면이 똑같다면 상관없어요), 밥을 전체적으로 얇고 넓게 깔아주세요.",
+    "그 위로 볶은 당근을 듬뿍 올려주고 단무지와 달걀지단을 올려주세요.",
+    "손안에 모든 재료가 들어오도록 잡고 돌돌 말아주세요. (모두 말아지기 전, 끝부분에 밥을 으깨고 참기름을 살짝 발라 풀처럼 접착력을 만들어 주고, 끝까지 말아 끝부분이 바닥에 오도록 잠시 두면 잘 붙습니다.)",
+    "칼로 먹기 좋은 크기로 자르면 완성!"
+   ],
+   "tip": "기호에 맞게 시금치나물 같은 다른 재료를 넣어주면 더 맛있습니다!",
+   "video": {
+    "id": "DRb3IIKUJSY",
+    "title": "당근 극혐하던 6살, 이 김밥은 두 줄먹음 - 당근 김밥",
+    "duration": "0:34"
+   },
+   "related": [
+    "riceball",
+    "friedrice"
+   ]
+  },
+  {
+   "id": "friedrice",
+   "name": "당근 달걀볶음밥",
+   "meal": "meal",
+   "source": "draft",
+   "desc": "잘게 썬 당근을 달걀과 함께 볶아 한 그릇에 담는 볶음밥이에요.",
+   "tags": [
+    "soft"
+   ],
+   "servings": "2인분",
+   "photo": "/media/zine/recipe-friedrice.webp",
+   "photoW": 720,
+   "photoH": 978,
+   "ingredients": [
+    {
+     "id": "carrot",
+     "label": "당근",
+     "qty": "1/2개 (잘게 다지기)",
+     "req": true
+    },
+    {
+     "id": "egg",
+     "label": "달걀",
+     "qty": "2개",
+     "req": true
+    },
+    {
+     "id": "rice",
+     "label": "밥",
+     "qty": "2공기",
+     "req": true
+    },
+    {
+     "id": "oil",
+     "label": "식용유",
+     "qty": "2큰술",
+     "req": true
+    },
+    {
+     "id": "salt",
+     "label": "소금",
+     "qty": "1/2작은술",
+     "req": true
+    },
+    {
+     "id": "scallion",
+     "label": "대파",
+     "qty": "1/2대 (선택)",
+     "req": false
+    },
+    {
+     "id": "sesame",
+     "label": "참기름",
+     "qty": "1작은술 (선택)",
+     "req": false
+    },
+    {
+     "id": "pepper",
+     "label": "후추",
+     "qty": "약간 (선택)",
+     "req": false
+    }
+   ],
+   "steps": [
+    "당근은 잘게 다지고, 대파를 쓴다면 송송 썰어 두세요.",
+    "달군 팬에 식용유 1큰술을 두르고 당근을 2~3분 볶아 부드럽게 익혀주세요.",
+    "당근을 팬 한쪽으로 밀고 남은 식용유를 두른 뒤, 풀어 둔 달걀을 부어 젓가락으로 저어 스크램블을 만들어주세요.",
+    "밥을 넣고 주걱으로 눌러 가며 밥알이 풀어지도록 3분 정도 볶아주세요.",
+    "소금으로 간을 하고, 대파·참기름·후추는 기호에 따라 마지막에 더해주세요."
+   ],
+   "tip": null,
+   "related": [
+    "eggroll",
+    "riceball"
+   ]
+  },
+  {
+   "id": "riceball",
+   "name": "당근 닭고기 주먹밥",
+   "meal": "meal",
+   "source": "draft",
+   "desc": "볶은 당근과 닭고기를 밥에 섞어 아이 손 크기로 뭉친 주먹밥이에요.",
+   "tags": [
+    "soft"
+   ],
+   "servings": "2인분 (작은 주먹밥 6~8개)",
+   "photo": "/media/zine/recipe-riceball.webp",
+   "photoW": 720,
+   "photoH": 978,
+   "ingredients": [
+    {
+     "id": "carrot",
+     "label": "당근",
+     "qty": "1/2개 (잘게 다지기)",
+     "req": true
+    },
+    {
+     "id": "chicken",
+     "label": "닭고기",
+     "qty": "150g (가슴살 또는 안심)",
+     "req": true
+    },
+    {
+     "id": "rice",
+     "label": "밥",
+     "qty": "2공기",
+     "req": true
+    },
+    {
+     "id": "oil",
+     "label": "식용유",
+     "qty": "1큰술",
+     "req": true
+    },
+    {
+     "id": "salt",
+     "label": "소금",
+     "qty": "1/2작은술",
+     "req": true
+    },
+    {
+     "id": "sesame",
+     "label": "참기름",
+     "qty": "1작은술 (선택)",
+     "req": false
+    },
+    {
+     "id": "seaweed",
+     "label": "김",
+     "qty": "1장 (잘게 부숴 선택)",
+     "req": false
+    }
+   ],
+   "steps": [
+    "닭고기는 끓는 물에 10분 정도 삶아 식힌 뒤 잘게 찢거나 다져주세요.",
+    "당근은 잘게 다져 식용유를 두른 팬에 2~3분 볶아주세요.",
+    "따뜻한 밥에 닭고기, 볶은 당근, 소금을 넣고 고루 섞어주세요. 참기름과 김가루는 기호에 따라 더해주세요.",
+    "손에 물을 살짝 묻히고 한 입 크기로 동그랗게 뭉쳐주세요."
+   ],
+   "tip": null,
+   "related": [
+    "gimbap",
+    "friedrice"
+   ]
+  },
+  {
+   "id": "creampasta",
+   "name": "당근 크림파스타",
+   "meal": "meal",
+   "source": "draft",
+   "desc": "얇게 썬 당근을 생크림에 부드럽게 익혀 면에 버무린 파스타예요.",
+   "tags": [
+    "soft"
+   ],
+   "servings": "2인분",
+   "photo": "/media/zine/recipe-creampasta.webp",
+   "photoW": 720,
+   "photoH": 978,
+   "ingredients": [
+    {
+     "id": "pasta",
+     "label": "파스타면",
+     "qty": "160g",
+     "req": true
+    },
+    {
+     "id": "carrot",
+     "label": "당근",
+     "qty": "1/2개 (얇게 채 썰기)",
+     "req": true
+    },
+    {
+     "id": "onion",
+     "label": "양파",
+     "qty": "1/4개",
+     "req": true
+    },
+    {
+     "id": "cream",
+     "label": "생크림",
+     "qty": "200ml",
+     "req": true
+    },
+    {
+     "id": "butter",
+     "label": "버터",
+     "qty": "1큰술",
+     "req": true
+    },
+    {
+     "id": "salt",
+     "label": "소금",
+     "qty": "면 삶는 물 1작은술 + 간 약간",
+     "req": true
+    },
+    {
+     "id": "garlic",
+     "label": "다진 마늘",
+     "qty": "1작은술 (선택)",
+     "req": false
+    },
+    {
+     "id": "pepper",
+     "label": "후추",
+     "qty": "약간 (선택)",
+     "req": false
+    }
+   ],
+   "steps": [
+    "끓는 물에 소금을 넣고 파스타면을 봉지 표기 시간보다 1분 짧게 삶아 건져주세요. 면수는 반 컵 남겨 두세요.",
+    "팬에 버터를 녹이고 얇게 썬 양파와 당근을 중불에서 4~5분 볶아 부드럽게 익혀주세요. 다진 마늘은 이때 함께 넣어요.",
+    "생크림을 붓고 약불에서 2~3분 끓여 살짝 걸쭉하게 만들어주세요.",
+    "삶은 면을 넣고 면수를 조금씩 더해 가며 버무린 뒤 소금으로 간을 맞춰주세요. 후추는 기호에 따라 뿌려요."
+   ],
+   "tip": null,
+   "related": [
+    "gnocchi",
+    "potatosoup"
+   ]
+  },
+  {
+   "id": "minipizza",
+   "name": "당근 미니피자",
+   "meal": "snack",
+   "source": "draft",
+   "desc": "또띠아 위에 토마토소스와 곱게 채 썬 당근, 치즈를 올려 굽는 작은 피자예요.",
+   "tags": [
+    "crispy"
+   ],
+   "servings": "또띠아 2장",
+   "photo": "/media/zine/recipe-minipizza.webp",
+   "photoW": 720,
+   "photoH": 978,
+   "ingredients": [
+    {
+     "id": "tortilla",
+     "label": "또띠아",
+     "qty": "2장",
+     "req": true
+    },
+    {
+     "id": "tomatosauce",
+     "label": "토마토소스",
+     "qty": "4큰술",
+     "req": true
+    },
+    {
+     "id": "carrot",
+     "label": "당근",
+     "qty": "1/3개 (곱게 채 썰기)",
+     "req": true
+    },
+    {
+     "id": "mozzarella",
+     "label": "모짜렐라 치즈",
+     "qty": "100g",
+     "req": true
+    },
+    {
+     "id": "onion",
+     "label": "양파",
+     "qty": "1/4개 (얇게 썰어 선택)",
+     "req": false
+    }
+   ],
+   "steps": [
+    "또띠아 위에 토마토소스를 얇게 펴 발라주세요.",
+    "곱게 채 썬 당근(과 양파)을 고루 올리고 모짜렐라 치즈를 덮어주세요.",
+    "마른 팬에 올려 뚜껑을 덮고 약불에서 5~6분, 치즈가 녹을 때까지 구워주세요. 오븐이나 에어프라이어는 180도에서 6~8분이에요.",
+    "먹기 좋게 잘라 식힌 뒤 내주세요."
+   ],
+   "tip": null,
+   "related": [
+    "jamtoast",
+    "jeon"
+   ]
+  },
+  {
+   "id": "eggroll",
+   "name": "당근 달걀말이",
+   "meal": "side",
+   "source": "draft",
+   "desc": "잘게 다진 당근을 달걀에 섞어 돌돌 마는 기본 반찬이에요.",
+   "tags": [
+    "soft"
+   ],
+   "servings": "2인분",
+   "photo": "/media/zine/recipe-eggroll.webp",
+   "photoW": 720,
+   "photoH": 978,
+   "ingredients": [
+    {
+     "id": "egg",
+     "label": "달걀",
+     "qty": "3개",
+     "req": true
+    },
+    {
+     "id": "carrot",
+     "label": "당근",
+     "qty": "1/4개 (잘게 다지기)",
+     "req": true
+    },
+    {
+     "id": "salt",
+     "label": "소금",
+     "qty": "1/3작은술",
+     "req": true
+    },
+    {
+     "id": "oil",
+     "label": "식용유",
+     "qty": "1큰술",
+     "req": true
+    },
+    {
+     "id": "scallion",
+     "label": "대파",
+     "qty": "약간 (선택)",
+     "req": false
+    }
+   ],
+   "steps": [
+    "달걀을 풀고 잘게 다진 당근과 소금을 넣어 섞어주세요. 대파를 쓴다면 송송 썰어 함께 넣어요.",
+    "달군 팬에 식용유를 얇게 두르고 약불로 줄인 뒤 달걀물의 1/3을 부어 얇게 펴주세요.",
+    "가장자리가 익으면 한쪽 끝부터 돌돌 말고, 빈 자리에 남은 달걀물을 부어 같은 방법으로 2~3번 말아주세요.",
+    "한 김 식힌 뒤 먹기 좋은 두께로 썰어주세요."
+   ],
+   "tip": null,
+   "related": [
+    "friedrice",
+    "tofupatty"
+   ]
+  },
+  {
+   "id": "tofupatty",
+   "name": "당근 두부동그랑땡",
+   "meal": "side",
+   "source": "draft",
+   "desc": "으깬 두부와 다진 당근을 뭉쳐 노릇하게 부치는 동그랑땡이에요.",
+   "tags": [
+    "soft"
+   ],
+   "servings": "2~3인분 (10개 정도)",
+   "photo": "/media/zine/recipe-tofupatty.webp",
+   "photoW": 720,
+   "photoH": 978,
+   "ingredients": [
+    {
+     "id": "tofu",
+     "label": "두부",
+     "qty": "1/2모 (약 150g)",
+     "req": true
+    },
+    {
+     "id": "carrot",
+     "label": "당근",
+     "qty": "1/3개 (잘게 다지기)",
+     "req": true
+    },
+    {
+     "id": "egg",
+     "label": "달걀",
+     "qty": "1개",
+     "req": true
+    },
+    {
+     "id": "flour",
+     "label": "밀가루",
+     "qty": "3큰술",
+     "req": true
+    },
+    {
+     "id": "salt",
+     "label": "소금",
+     "qty": "1/2작은술",
+     "req": true
+    },
+    {
+     "id": "oil",
+     "label": "식용유",
+     "qty": "2큰술",
+     "req": true
+    },
+    {
+     "id": "onion",
+     "label": "양파",
+     "qty": "1/4개 (다져서 선택)",
+     "req": false
+    },
+    {
+     "id": "pepper",
+     "label": "후추",
+     "qty": "약간 (선택)",
+     "req": false
+    }
+   ],
+   "steps": [
+    "두부는 면보나 키친타월로 감싸 물기를 꼭 짜고 으깨주세요.",
+    "으깬 두부에 다진 당근(과 양파), 달걀, 밀가루, 소금을 넣고 반죽이 뭉쳐질 때까지 섞어주세요. 질면 밀가루를 조금 더 넣어요.",
+    "한 입 크기로 동글납작하게 빚어주세요.",
+    "달군 팬에 식용유를 두르고 중약불에서 앞뒤로 3분씩 노릇하게 부쳐주세요."
+   ],
+   "tip": null,
+   "related": [
+    "eggroll",
+    "croquette"
+   ]
+  },
+  {
+   "id": "potatosoup",
+   "name": "당근 감자수프",
+   "meal": "meal",
+   "source": "draft",
+   "desc": "당근과 감자를 푹 익혀 우유와 함께 곱게 갈아 낸 포근한 수프예요.",
+   "tags": [
+    "soft"
+   ],
+   "servings": "2~3인분",
+   "photo": "/media/zine/recipe-potatosoup.webp",
+   "photoW": 720,
+   "photoH": 978,
+   "ingredients": [
+    {
+     "id": "carrot",
+     "label": "당근",
+     "qty": "1개",
+     "req": true
+    },
+    {
+     "id": "potato",
+     "label": "감자",
+     "qty": "1개 (중간 크기)",
+     "req": true
+    },
+    {
+     "id": "onion",
+     "label": "양파",
+     "qty": "1/2개",
+     "req": true
+    },
+    {
+     "id": "milk",
+     "label": "우유",
+     "qty": "300ml",
+     "req": true
+    },
+    {
+     "id": "butter",
+     "label": "버터",
+     "qty": "1큰술",
+     "req": true
+    },
+    {
+     "id": "salt",
+     "label": "소금",
+     "qty": "1/2작은술",
+     "req": true
+    },
+    {
+     "id": "water",
+     "label": "물",
+     "qty": "300ml",
+     "req": false
+    },
+    {
+     "id": "pepper",
+     "label": "후추",
+     "qty": "약간 (선택)",
+     "req": false
+    }
+   ],
+   "steps": [
+    "당근, 감자, 양파는 껍질을 벗기고 얇게 썰어주세요.",
+    "냄비에 버터를 녹이고 양파를 2분 볶은 뒤 당근과 감자를 넣어 1~2분 더 볶아주세요.",
+    "물을 붓고 뚜껑을 덮어 15분 정도, 감자가 완전히 무를 때까지 끓여주세요.",
+    "불을 끄고 핸드블렌더나 믹서로 곱게 간 다음 우유를 넣고 약불에서 2~3분 데워주세요.",
+    "소금으로 간을 맞추고, 후추는 기호에 따라 뿌려요."
+   ],
+   "tip": null,
+   "related": [
+    "creampasta",
+    "gnocchi"
+   ]
+  },
+  {
+   "id": "croquette",
+   "name": "당근 감자크로켓",
+   "meal": "snack",
+   "source": "draft",
+   "desc": "으깬 감자에 당근을 섞어 빵가루를 입혀 바삭하게 구운 크로켓이에요.",
+   "tags": [
+    "crispy",
+    "soft"
+   ],
+   "servings": "8개 정도",
+   "photo": "/media/zine/recipe-croquette.webp",
+   "photoW": 720,
+   "photoH": 978,
+   "ingredients": [
+    {
+     "id": "potato",
+     "label": "감자",
+     "qty": "2개 (약 300g)",
+     "req": true
+    },
+    {
+     "id": "carrot",
+     "label": "당근",
+     "qty": "1/3개 (잘게 다지기)",
+     "req": true
+    },
+    {
+     "id": "salt",
+     "label": "소금",
+     "qty": "1/2작은술",
+     "req": true
+    },
+    {
+     "id": "flour",
+     "label": "밀가루",
+     "qty": "3큰술 (튀김옷)",
+     "req": true
+    },
+    {
+     "id": "egg",
+     "label": "달걀",
+     "qty": "1개 (튀김옷)",
+     "req": true
+    },
+    {
+     "id": "breadcrumb",
+     "label": "빵가루",
+     "qty": "1컵 (튀김옷)",
+     "req": true
+    },
+    {
+     "id": "oil",
+     "label": "식용유",
+     "qty": "3큰술",
+     "req": true
+    },
+    {
+     "id": "pepper",
+     "label": "후추",
+     "qty": "약간 (선택)",
+     "req": false
+    }
+   ],
+   "steps": [
+    "감자는 삶거나 전자레인지에 익혀 뜨거울 때 으깨주세요.",
+    "다진 당근은 식용유 1큰술에 2분 볶아 으깬 감자와 섞고 소금으로 간해주세요.",
+    "한 입 크기로 둥글게 빚고 밀가루 → 달걀물 → 빵가루 순서로 옷을 입혀주세요.",
+    "팬에 남은 식용유를 두르고 중약불에서 굴려 가며 노릇하게 구워주세요. 에어프라이어는 180도에서 10~12분이에요."
+   ],
+   "tip": null,
+   "related": [
+    "jeon",
+    "tofupatty"
+   ]
+  },
+  {
+   "id": "pancake",
+   "name": "당근 팬케이크",
+   "meal": "snack",
+   "source": "draft",
+   "desc": "곱게 간 당근을 반죽에 섞어 은은한 주황빛이 도는 팬케이크예요.",
+   "tags": [
+    "soft"
+   ],
+   "servings": "작은 팬케이크 8장",
+   "photo": "/media/zine/recipe-pancake.webp",
+   "photoW": 720,
+   "photoH": 978,
+   "ingredients": [
+    {
+     "id": "carrot",
+     "label": "당근",
+     "qty": "1/2개 (곱게 갈기)",
+     "req": true
+    },
+    {
+     "id": "flour",
+     "label": "밀가루",
+     "qty": "1컵 (약 120g)",
+     "req": true
+    },
+    {
+     "id": "egg",
+     "label": "달걀",
+     "qty": "1개",
+     "req": true
+    },
+    {
+     "id": "milk",
+     "label": "우유",
+     "qty": "150ml",
+     "req": true
+    },
+    {
+     "id": "sugar",
+     "label": "설탕",
+     "qty": "1큰술",
+     "req": true
+    },
+    {
+     "id": "bakingpowder",
+     "label": "베이킹파우더",
+     "qty": "1작은술",
+     "req": true
+    },
+    {
+     "id": "oil",
+     "label": "식용유",
+     "qty": "약간 (굽기용)",
+     "req": true
+    },
+    {
+     "id": "butter",
+     "label": "버터",
+     "qty": "곁들임 (선택)",
+     "req": false
+    }
+   ],
+   "steps": [
+    "밀가루, 설탕, 베이킹파우더를 체에 내려 섞어주세요.",
+    "다른 볼에 달걀과 우유를 풀고 곱게 간 당근을 넣어 섞은 뒤 가루 재료에 부어 날가루가 없어질 정도로만 섞어주세요.",
+    "약불로 달군 팬에 식용유를 얇게 두르고 반죽을 한 국자씩 올려주세요.",
+    "표면에 기포가 올라오면 뒤집어 1분 더 구워주세요. 버터는 기호에 따라 곁들여요."
+   ],
+   "tip": null,
+   "related": [
+    "muffin",
+    "jamtoast"
+   ]
+  },
+  {
+   "id": "muffin",
+   "name": "당근 바나나머핀",
+   "meal": "snack",
+   "source": "draft",
+   "desc": "으깬 바나나의 단맛에 간 당근을 더해 촉촉하게 굽는 머핀이에요.",
+   "tags": [
+    "soft"
+   ],
+   "servings": "머핀 6개",
+   "photo": "/media/zine/recipe-muffin.webp",
+   "photoW": 720,
+   "photoH": 978,
+   "ingredients": [
+    {
+     "id": "banana",
+     "label": "바나나",
+     "qty": "1개 (잘 익은 것)",
+     "req": true
+    },
+    {
+     "id": "carrot",
+     "label": "당근",
+     "qty": "1/3개 (곱게 갈기)",
+     "req": true
+    },
+    {
+     "id": "flour",
+     "label": "밀가루",
+     "qty": "1컵 (약 120g)",
+     "req": true
+    },
+    {
+     "id": "egg",
+     "label": "달걀",
+     "qty": "1개",
+     "req": true
+    },
+    {
+     "id": "sugar",
+     "label": "설탕",
+     "qty": "2큰술",
+     "req": true
+    },
+    {
+     "id": "oil",
+     "label": "식용유",
+     "qty": "3큰술",
+     "req": true
+    },
+    {
+     "id": "bakingpowder",
+     "label": "베이킹파우더",
+     "qty": "1작은술",
+     "req": true
+    },
+    {
+     "id": "salt",
+     "label": "소금",
+     "qty": "한 꼬집 (선택)",
+     "req": false
+    }
+   ],
+   "steps": [
+    "오븐을 180도로 예열하고 머핀틀에 유산지를 깔아주세요.",
+    "바나나를 포크로 으깨고 달걀, 설탕, 식용유를 넣어 섞은 뒤 간 당근을 더해주세요.",
+    "밀가루와 베이킹파우더를 체에 내려 넣고 가볍게 섞어주세요.",
+    "틀에 2/3 높이까지 채워 18~20분 굽고, 꼬치로 찔러 반죽이 묻어나지 않으면 꺼내 식혀주세요."
+   ],
+   "tip": null,
+   "related": [
+    "pancake",
+    "oatcookie"
+   ]
+  },
+  {
+   "id": "oatcookie",
+   "name": "당근 오트쿠키",
+   "meal": "snack",
+   "source": "draft",
+   "desc": "오트밀과 바나나, 간 당근을 뭉쳐 굽는 설탕 적은 쿠키예요.",
+   "tags": [
+    "chewy"
+   ],
+   "servings": "쿠키 10개 정도",
+   "photo": "/media/zine/recipe-oatcookie.webp",
+   "photoW": 720,
+   "photoH": 978,
+   "ingredients": [
+    {
+     "id": "oats",
+     "label": "오트밀",
+     "qty": "1컵",
+     "req": true
+    },
+    {
+     "id": "banana",
+     "label": "바나나",
+     "qty": "1개 (잘 익은 것)",
+     "req": true
+    },
+    {
+     "id": "carrot",
+     "label": "당근",
+     "qty": "1/3개 (곱게 갈기)",
+     "req": true
+    },
+    {
+     "id": "butter",
+     "label": "버터",
+     "qty": "2큰술 (녹여서)",
+     "req": true
+    },
+    {
+     "id": "sugar",
+     "label": "설탕",
+     "qty": "1큰술",
+     "req": true
+    },
+    {
+     "id": "salt",
+     "label": "소금",
+     "qty": "한 꼬집 (선택)",
+     "req": false
+    }
+   ],
+   "steps": [
+    "오븐을 170도로 예열하고 팬에 유산지를 깔아주세요.",
+    "바나나를 으깨고 간 당근, 녹인 버터, 설탕을 넣어 섞어주세요.",
+    "오트밀을 넣고 반죽이 뭉쳐질 때까지 섞은 뒤 10분 두어 수분을 흡수시켜주세요.",
+    "한 숟가락씩 떠서 납작하게 올리고 15~18분, 가장자리가 노릇해질 때까지 구워주세요."
+   ],
+   "tip": null,
+   "related": [
+    "muffin",
+    "pancake"
+   ]
+  },
+  {
+   "id": "jamtoast",
+   "name": "당근잼 토스트",
+   "meal": "snack",
+   "source": "draft",
+   "desc": "노릇하게 구운 식빵에 당근잼을 발라 내는 가장 간단한 당근 간식이에요.",
+   "tags": [
+    "crispy"
+   ],
+   "servings": "1인분",
+   "photo": "/media/zine/recipe-jamtoast.webp",
+   "photoW": 720,
+   "photoH": 978,
+   "ingredients": [
+    {
+     "id": "bread",
+     "label": "식빵",
+     "qty": "2장",
+     "req": true
+    },
+    {
+     "id": "carrotjam",
+     "label": "당근잼",
+     "qty": "2큰술",
+     "req": true
+    },
+    {
+     "id": "butter",
+     "label": "버터",
+     "qty": "1작은술 (선택)",
+     "req": false
+    },
+    {
+     "id": "creamcheese",
+     "label": "크림치즈",
+     "qty": "1큰술 (선택)",
+     "req": false
+    }
+   ],
+   "steps": [
+    "식빵을 토스터나 마른 팬에 앞뒤로 노릇하게 구워주세요.",
+    "뜨거울 때 버터를 바르면 더 고소해요. 크림치즈를 쓴다면 먼저 얇게 펴 발라주세요.",
+    "당근잼을 고루 바르고 먹기 좋게 잘라주세요."
+   ],
+   "tip": "당근잼은 생당근으로 대신할 수 없어요. 마노아의 당근잼처럼 시판 잼을 준비하세요.",
+   "related": [
+    "pancake",
+    "minipizza"
+   ]
+  }
+ ]
+}

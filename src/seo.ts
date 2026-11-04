@@ -69,6 +69,7 @@ function blockHtml(block: WzBlock, first: boolean): string {
   case 'menu': return dl([block.menu]);
   case 'menus': return dl(block.items);
   case 'caption': return dl(block.items);
+  case 'prices': return `<dl>${block.items.map(item => `<dt>${escape([item.name, item.price].filter(Boolean).join(' '))}</dt><dd>${escape(item.text ?? '')}</dd>`).join('')}</dl>`;
   case 'hero': case 'cutout': case 'rule': return '';
  }
 }
@@ -214,6 +215,7 @@ function wzMarkdown(block: WzBlock, first: boolean): string[] {
   case 'rows': return [...block.items.map(item => `- ${[item.n, item.term].filter(Boolean).join(' ')}: ${item.text}`), ''];
   case 'menu': return pairs([block.menu]);
   case 'menus': case 'caption': return pairs(block.items);
+  case 'prices': return [...block.items.map(item => `- ${[item.name, item.price].filter(Boolean).join(' ')}${item.text ? `: ${item.text}` : ''}`), ''];
   case 'hero': case 'cutout': case 'rule': return [];
  }
 }

@@ -108,6 +108,7 @@ GTM 코드는 모든 빌드에 같이 들어 있지만, **GTM이 주소를 보�
 | **`story_scroll`** | **이야기를 25·50·75·100%까지 내렸을 때** (휴대폰에서 웹진·포스터 북은 한 장의 긴 페이지) | 이야기 ID, 도달한 % |
 | **`ui_click`** | **어떤 버튼·링크든 눌렀을 때** | 버튼 글자(`ui_label`, 영어·중국어 화면에서도 한국어로), **버튼 고유 이름**(`ui_id`: reader-next · lang-switch · pb-shorts-cover … 언어와 상관없이 같음), 종류, **화면 위치**(`ui_area`: header · settings · contents · prologue · guide · poster_book · webzine · story_book · story_panel · ending …), 누르기 전 상태(열림/닫힘·선택됨) |
 | `story_link_click` | 바깥 링크를 눌렀을 때 | 링크 주소, 글자, 위치 |
+| **`engaged_read`** | **방문당 한 번, 화면을 켠 채 10초가 지나고 스스로 한 번 움직였을 때** (이야기 열기·책장 넘기기·이야기 내리기·"책장 속으로"·쇼츠 재생. 링크로 저절로 열린 이야기는 빼요) | 그때까지 화면에 있던 시간(`engaged_seconds`). Meta 픽셀에 `EngagedRead`로 보내 광고 최적화 목표로 써요 |
 | `language_change` | 언어를 바꿨을 때 | 새 언어, 이전 언어 |
 | `shorts_play` · `shorts_open` | 쇼츠 재생 버튼 / "YouTube에서 보기"를 눌렀을 때 | 레시피 ID |
 | **`video_start` · `video_progress` · `video_complete` · `video_pause`** | **쇼츠를 실제로 본 정도** (시작, 25·50·75%, 끝까지, 멈춤) | 영상 제목·주소·길이, 본 위치(초), 비율(%) |

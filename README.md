@@ -73,6 +73,7 @@ React 19 + TypeScript + Vite + Three.js / React Three Fiber / Drei + GSAP + Zust
 - `scripts/create-pages.mjs`: 장마다 장면 색에 맞춘 책장 인쇄면 SVG 생성. `scripts/make-social.mjs`: 링크 미리보기 이미지(`og-image.jpg`)와 홈 화면 아이콘 생성.
 - `scripts/prepare-gpt-art.mjs`: GPT로 그린 판(`art-src/gpt/page-1~3/*.png`)을 오림 테두리를 두른 WebP 카드로 변환.
 - `_archive/`: 지금은 쓰지 않는 첫 버전 장면 그림·글, 옛 그림 생성기, 누적 검증 기록.
+- `game/index.html`, `src/game/`: 책 아래 `…/game/` 주소의 미니 게임 ‘당근밭을 지켜라!’(메뚜기 떼 서바이벌). `content.ts`(무기·도구·진화·적·웨이브·가게·영구 강화 데이터), `engine.ts`(DOM 없는 게임 규칙, `tests/game.test.mjs`가 Node에서 한 판을 끝까지 돌려 봄), `render.ts`(캔버스 그리기), `sprites.ts`(시작할 때 한 번 굽는 그림: 농부·여행자·세 가게는 책의 그림을 그대로 씀), `Game.tsx`(타이틀·캐릭터·농사 수첩·레벨 업·상자·가게·결과 화면), `save.ts`(코인과 영구 강화, 이 브라우저의 localStorage). 링크는 항상 끝에 `/`를 붙여 `game/`로 건다(하위 경로에 올렸을 때 상대 경로가 맞도록).
 - `tests/*.test.mjs`: `node --experimental-strip-types --test tests/*.test.mjs`로 종이 기하·입력·사물 부착·초기 렌더 준비 로직 검사(Node.js 22.18+).
 
 ## 에셋 및 라이선스
