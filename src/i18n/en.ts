@@ -5,7 +5,7 @@ const words:Record<string,string>={
  "01 · FARMER — 랜턴과 파리채를 든 밤":"01 · FARMER — Nights with a Lantern and a Fly Swatter",
  "01 · FARMER — 밤의 밭고랑":"01 · FARMER — Furrows at night",
  "01 · FARMER — 수확하는 날":"01 · FARMER — Harvest day",
- "01 · FARMER — 영상 인터뷰":"01 · FARMER — Video interview",
+ "01 · FARMER":"01 · FARMER",
  "01. 피부":"01. Skin",
  "02 · PEOPLE WHO COOK — 식당 A":"02 · PEOPLE WHO COOK — Restaurant A",
  "02 · PEOPLE WHO COOK — 식당 B":"02 · PEOPLE WHO COOK — Restaurant B",

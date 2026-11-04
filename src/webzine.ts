@@ -36,7 +36,7 @@ const img=(name:string)=>url(`/media/webzine/${name}.webp`);
 export const webzines:Record<string,Webzine>={
  // The farmer's interview (gujwa_farmer_interview_webzine_final_vertical_epilogue.html): the farmer Yu Do-gyun on growing carrots in
  // Gujwa, ending with an epilogue.
- 'farmer':{kicker:'01 · FARMER — 영상 인터뷰',label:['Farmer','Interview'],spreads:[
+ 'farmer':{kicker:'01 · FARMER',label:['Farmer','Interview'],spreads:[
   {left:[
     {t:'h1',lines:['구좌에서 당근 농부로','살아간다는 것']},
     {t:'sub',text:'구좌 당근과 농부 이야기 | 유기농 당근 농부 유도균 대표'},

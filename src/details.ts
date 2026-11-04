@@ -30,7 +30,7 @@ import { SHARE } from './site.ts';
 import { url } from './base.ts';
 const draft='매거진 원고를 준비하고 있어요. 자세한 이야기는 매거진에서 이어집니다.';
 export const details:Record<string,Detail>={
- farmer:{id:'farmer',kicker:'01 · FARMER — 영상 인터뷰',title:'당근밭에서 시작되는 이야기',
+ farmer:{id:'farmer',kicker:'01 · FARMER',title:'당근밭에서 시작되는 이야기',
   lead:'제주 구좌에서 당근을 키우는 유도균 농부님. 23년간 광고 회사에서 일하다 2014년 제주로 내려와, “이 동네는 당근과 콩이다”라는 이웃 할머니의 말 한마디로 당근 농사를 시작했습니다.',
   quote:'겨울을 제대로 맞아야 진짜 맛이 들어요.',facts:[['농부','유도균'],['지역','제주 구좌']],
   list:{title:'인터뷰에서 다루는 이야기',items:['구좌의 흙과 바람','당근이 자라는 시간','수확하는 날','밭에서 식탁까지'],ordered:true},
