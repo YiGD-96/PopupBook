@@ -48,6 +48,7 @@
 | 공유 링크로 들어옴 (`#cooks/cook-02`) | `page_turn` (method `link`) + `select_content` (source `link`) | ✅ |
 | **3D 책 속 그림** (농부, 가게, 냉장고 메모, 레시피 책) | `select_content` (source `object`) | ✅ |
 | 이야기 안의 "관련 이야기" 버튼 | `ui_click` + `select_content` (source `related`) | 코드 확인 |
+| 마무리 카드의 "아직 안 본 이야기" 목록 | `select_content` (source `ending`) · 기사 링크는 `story_link_click` (link_location `ending`) | 코드 확인 |
 | 이야기 창 다음/이전 쪽 `.wz-nav button` | `ui_click` (`content_id` = 보고 있는 이야기) | ✅ |
 | 이야기 창 닫기 `.wz-close` `.detail-close` `.detail-book-close` | `ui_click` + `story_close` (열어 둔 시간, 가장 많이 내린 %) | ✅ |
 | **이야기 안에서 아래로 내리기** (휴대폰 웹진 `.wz-sheet`, 포스터 북 `.pb-sheet`, 이야기 패널·책) | `story_scroll` 25·50·75·100% (한 번 열 때마다 각 1번) | ✅ 휴대폰 |

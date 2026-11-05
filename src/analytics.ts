@@ -122,7 +122,7 @@ export function parseHash(hash: string): { chapter: number | null; detail: strin
 // Which input caused the next turn or story, noted just before it happens (the store change carries no cause of its own).
 let turnMethod = 'arrow', detailSource = 'object';
 export const noteTurn = (method: 'arrow' | 'key' | 'drag' | 'wheel' | 'link') => { turnMethod = method; };
-export const noteStory = (source: 'object' | 'button' | 'related' | 'link') => { detailSource = source; };
+export const noteStory = (source: 'object' | 'button' | 'related' | 'link' | 'ending') => { detailSource = source; };
 
 function pageTitle(chapter: number, detail: string | null, ending: boolean) {
  const base = document.title.split(' — ')[0];

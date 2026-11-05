@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { posters } from './posters.ts';
 import data from './zine-data.json' with { type: 'json' };
 import { url } from './base.ts';
 /**
@@ -17,7 +18,10 @@ export const CATEGORIES=data.categories as {id:string;name:string;basic?:boolean
 export const INGREDIENTS=data.ingredients as Record<string,Ingredient>;
 export const PREFS=data.prefs as {id:string;label:string}[];
 export const MEALS=data.meals as Record<string,string>;
-export const RECIPES=(data.recipes as Recipe[]).map(recipe=>({...recipe,photo:url(recipe.photo)}));
+// A dish with a hand-drawn recipe poster (src/posters.ts) takes its steps from the poster's words, so the text view says what the picture does.
+export const POSTER_OF:Record<string,string>={gnocchi:'poster-gnocchi',gimbap:'poster-gimbap',jeon:'poster-jeon'};
+export const RECIPES=(data.recipes as Recipe[]).map(recipe=>{const drawn=posters[POSTER_OF[recipe.id]]?.recipe;
+ return {...recipe,photo:url(recipe.photo),...(drawn?{steps:drawn.steps,tip:drawn.tip??recipe.tip}:{})};});
 export const PREF_LABEL=Object.fromEntries(PREFS.map(pref=>[pref.id,pref.label]));
 export const findRecipe=(id:string)=>RECIPES.find(recipe=>recipe.id===id)??null;
 export const PONY=url('/media/zine/pony.webp');

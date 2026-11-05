@@ -6,7 +6,6 @@ import { useLocale, type Lang } from './locale';
 import { photoSrc, posterSrc, posters, shortsEmbed, shortsThumb, shortsUrl } from './posters';
 import { useLocalized, useT } from './i18n';
 import './poster.css';
-import { tappedOutside } from './outsideTap';
 import { measureShort, measuredEmbed } from './youtube';
 
 /**
@@ -44,7 +43,8 @@ export default function PosterBook({id,onClose,onOpen}:{id:string;onClose:()=>vo
  };window.addEventListener('keydown',key,true);return()=>window.removeEventListener('keydown',key,true);});
  if(!detail||!poster)return null;
  const title=poster.title[lang],caption=poster.caption[lang],shorts=poster.shorts;
- return <div className={'detail-book-backdrop'+(open?' is-open':'')} onClick={e=>{if(tappedOutside(e))close();}}>
+ // Only the X (or Escape) closes it, as the fridge's recipe book (src/FridgeBook.tsx): a tap beside the page closed it by accident.
+ return <div className={'detail-book-backdrop'+(open?' is-open':'')}>
   <div className="poster-book" role="dialog" aria-modal="true" aria-labelledby="pb-title">
    <button className="wz-close" onClick={close} aria-label={t('책 닫기')}><X size={20}/></button>
    <article className="pb-sheet" ref={sheet} tabIndex={-1}>

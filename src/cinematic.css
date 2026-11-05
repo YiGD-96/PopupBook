@@ -106,7 +106,17 @@
    drawing (public/media/ending-card.jpg cut to its outline by ending-card-mask.png), which never takes a click. Everything inside
    scales with the card width (cqw: 1% of the width inside the padding, 2.192px on the 250px card). */
 .reader-mode .is-ending .hero-copy{width:250px;container-type:inline-size;padding:163px 15.8px 13.5px 15px;border:0;border-radius:0;text-align:center;backdrop-filter:none;background:none;box-shadow:none}
-.reader-mode .is-ending .hero-copy::before{content:'';position:absolute;inset:0;z-index:-1;background:url(/media/ending-card.jpg) 0 0/100% 100% no-repeat;-webkit-mask:url(/media/ending-card-mask.png) 0 0/100% 100% no-repeat;mask:url(/media/ending-card-mask.png) 0 0/100% 100% no-repeat;pointer-events:none}
+.reader-mode .is-ending .hero-copy::before{content:'';position:absolute;inset:0;z-index:-1;box-sizing:border-box;border-style:solid;border-width:165px 15px 22px 15px;border-image:url(/media/ending-card.webp) 330 30 44 30 fill stretch;pointer-events:none}
+/* The paper is a border image (scripts/ending-card.mjs: the picture with its outline cut out): the pin and the carrot (top 165px) and the
+   torn foot keep their shape, and only the plain paper between them stretches as the list of unread stories grows the card. */
+/* The unread stories (App.tsx ENDING_STORIES), each a button that opens it, and the article as a quiet link under them. */
+.reader-mode .is-ending .ending-stories{list-style:none;margin:3.2cqw 0 0;padding:0;display:grid;gap:1.8cqw}
+.reader-mode .is-ending .ending-stories button{display:flex;width:100%;align-items:center;justify-content:space-between;gap:2cqw;padding:1.6cqw 3.2cqw;border:max(1px,.5cqw) dashed #c79a6c;border-radius:2.4cqw 1.2cqw 2.6cqw 1.4cqw/1.4cqw 2.6cqw 1.2cqw 2.4cqw;background:#fbf3e3cc;font:400 8.2cqw/1.25 'Gamja Flower','Gowun Batang','Noto Sans SC',serif;color:#4f3a2b;text-align:left;cursor:pointer}
+.reader-mode .is-ending .ending-stories button:hover{background:#f3e2c4;border-style:solid}
+.reader-mode .is-ending .ending-stories svg{flex:none;width:6.4cqw;height:6.4cqw;color:#b9563a}
+.reader-mode .is-ending .ending-article{display:inline-flex;align-items:center;gap:1cqw;margin-top:3.6cqw;font:400 8cqw 'Gamja Flower','Gowun Batang','Noto Sans SC',serif;color:#8a5a36;text-decoration:underline dotted;text-underline-offset:1cqw}
+.reader-mode .is-ending .ending-article:hover{color:#b9563a}
+.reader-mode .is-ending .ending-article svg{width:6cqw;height:6cqw}
 /* Its words in the book's hand (as on the recipe posters): a handwritten title with its key words on an orange crayon highlight, handwritten lines, and
    buttons with hand-drawn edges in the posters' terracotta and dark brown. Yeon Sung (title, buttons) and Gamja Flower (the line below) come with the page's other web fonts (index.html). */
 .reader-mode .is-ending h1{margin:0;font-family:'Yeon Sung','Gowun Batang','Noto Sans SC',serif;font-size:13.6cqw;font-weight:400;line-height:15.4cqw;letter-spacing:0;color:#4f3a2b}
@@ -327,6 +337,17 @@ html,body{background:#e2d2b5}
 .guide-bubble{position:fixed;display:flex;flex-direction:column;gap:5px;padding:15px 18px;border-radius:14px;background:#2a1a10;border:1px solid rgba(255,214,140,.35);color:#f1e2c6;text-align:center;pointer-events:none}
 .guide-bubble strong{font-family:var(--serif);font-size:18px;font-weight:400;color:#ffe2ad;word-break:keep-all}
 .guide-bubble span{font-size:13px;color:#d9c4a0;word-break:keep-all}
+/* Between the steps (src/Guide.tsx GuidePeek): the card's real story window as a preview, scaled down and risen halfway from the bottom,
+   with the bubble above it. The window's transform makes it the frame of the story's own fixed backdrop, so the whole window moves as one. */
+.guide-peek-window{position:fixed;inset:0;transform:translateY(46%) scale(.84);transform-origin:50% 0;overflow:hidden;pointer-events:none;animation:guide-peek-up .55s cubic-bezier(.2,.8,.25,1) both}
+.guide-peek.is-leaving .guide-peek-window{animation:guide-peek-down .36s ease-in both}
+.guide-peek.is-leaving .guide-peek-bubble,.guide-peek.is-leaving .guide-dim{opacity:0;transition:opacity .3s}
+.guide-peek-bubble{left:50%;top:max(84px,calc(23% - 70px));width:min(300px,calc(100% - 32px));transform:translate(-50%,-50%)}
+/* Only the story's own window shows: its backdrop's dimming is left to the guide's. */
+.guide-peek-window .detail-book-backdrop{background:none}
+@keyframes guide-peek-up{from{transform:translateY(100%) scale(.84)}}
+@keyframes guide-peek-down{from{transform:translateY(46%) scale(.84)}to{transform:translateY(100%) scale(.84)}}
+@media(prefers-reduced-motion:reduce){.guide-peek-window,.guide-peek.is-leaving .guide-peek-window{animation:none}}
 /* Which step: two small dots, the current one lit. */
 .guide-dots{display:flex;justify-content:center;gap:7px;margin-top:8px}
 
@@ -344,13 +365,6 @@ html,body{background:#e2d2b5}
 /* Each step's arrow and words fade in where they belong (the dim and the spotlight stay). */
 .guide-step{animation:guide-in .22s ease-out both}
 /* The small page that opens out of the card on a phone's first guide tap (src/Guide.tsx): up from the card, held a moment, then gone. */
-.guide.is-peeking .guide-bubble,.guide.is-peeking .guide-arrow{opacity:0;transition:opacity .15s}
-.guide-peek{position:fixed;width:min(60vw,220px);aspect-ratio:3/4;box-sizing:border-box;padding:12px;display:flex;flex-direction:column;gap:8px;border-radius:8px;background:#fbf4e4;box-shadow:0 14px 36px rgba(0,0,0,.5),0 0 0 1px rgba(255,214,140,.5);pointer-events:none;transform:translate(-50%,-50%) scale(.2);opacity:0;animation:guide-peek 1.1s cubic-bezier(.2,.8,.25,1) both}
-.guide-peek-photo{flex:1;border-radius:4px;background:#e5d3b3}
-.guide-peek-bar{height:7px;border-radius:4px;background:#cdb995}
-.guide-peek-bar.is-title{height:11px;width:70%;background:#8a6a45}.guide-peek-bar.is-short{width:55%}
-@keyframes guide-peek{0%{transform:translate(-50%,-50%) scale(.2);opacity:0}28%{transform:translate(-50%,-50%) scale(.64);opacity:1}78%{transform:translate(-50%,-50%) scale(.64);opacity:1}100%{transform:translate(-50%,-50%) scale(.36);opacity:0}}
-@media(prefers-reduced-motion:reduce){.guide-peek{animation:none;opacity:1;transform:translate(-50%,-50%) scale(.64)}}
 @keyframes guide-bob-up{from{transform:translateY(0)}to{transform:translateY(-7px)}}
 @keyframes guide-bob-down{from{transform:translateY(0)}to{transform:translateY(7px)}}
 @media (prefers-reduced-motion:reduce){.guide,.guide-arrow g{animation:none}}
@@ -499,6 +513,9 @@ html,body{background:#e2d2b5}
     same space either side. The desktop's other lines (rules between blocks, the caption cards' dividers, the border between the two
     pages and between spreads) go. */
  .wz-spread+.wz-spread{margin-top:0;padding-top:0;border-top:0}
+ /* Where one spread ends and the next begins (the shops: the menu's last note, then the story's title), the same line and space as
+    above a section; the menu's small print used to run straight into the title. A spread opening on a section heading has its line already. */
+ .wz-spread+.wz-spread>.wz-page.is-left>:first-child:not(.wz-h2,.wz-eyebrow){margin-top:var(--section);padding-top:var(--section);border-top:1px solid #cdb995}
  .wz-rule{display:none}
  .wz-captions>div,.wz-captions>div+div,.wz-captions.is-cards>div,.wz-captions.is-cards>div+div{border:0;padding-top:0;padding-left:0}
  .wz-h2,.wz-eyebrow{margin-top:var(--section);padding-top:var(--section);border-top:1px solid #cdb995}
@@ -592,7 +609,7 @@ html:lang(en) .wz-h1 span+span::before{content:' '}
    the next's side by side, plain arrows with a soft shadow over the painting (laid out with no transform, so hover never moves them). */
 @media(max-width:760px) and (orientation:portrait){
  .cinematic-reader .reader-prev,.cinematic-reader .reader-next{display:none}
- .cinematic-reader .reader-vnav{display:flex;position:fixed;left:0;right:0;bottom:max(32px,calc(env(safe-area-inset-bottom) + 18px));z-index:5;justify-content:center;gap:36px;pointer-events:none}
+ .cinematic-reader .reader-vnav{display:flex;position:fixed;left:0;right:0;bottom:max(14px,calc(env(safe-area-inset-bottom) + 4px));z-index:5;justify-content:center;gap:36px;pointer-events:none}
  .cinematic-reader .book-stage .reader-vnav .reader-arrow{position:static;pointer-events:auto;width:48px;height:48px;border-radius:0;background:none;box-shadow:none;color:#fff3dc}
  .cinematic-reader .book-stage .reader-vnav .reader-arrow svg{width:30px;height:30px;stroke-width:2.2;filter:drop-shadow(0 1px 2px rgba(20,10,4,.8)) drop-shadow(0 0 6px rgba(20,10,4,.5))}
  .cinematic-reader .book-stage .reader-vnav .reader-arrow:hover:not(:disabled){background:none;color:#f5a25a}

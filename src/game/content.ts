@@ -157,8 +157,9 @@ export const EVENTS:GameEventDef[]=[
  {t:RUN_SECONDS,kind:'king',banner:'메뚜기 대왕이 나타났다!'},
 ];
 
-/** Experience needed to go from `level` to the next. */
-export const xpToNext=(level:number)=>level<20?6+(level-1)*5:level<40?100+(level-20)*12:340+(level-40)*20;
+/** Experience needed to go from `level` to the next. Past level 20 each level asks for more than the last by a growing step (quadratic),
+ *  so late levels slow down more and more. */
+export const xpToNext=(level:number)=>level<20?8+(level-1)*7:Math.round(140+(level-20)*17+(level-20)**2*.7);
 
 export type CharId='farmer'|'traveler';
 export type CharDef={id:CharId;name:string;desc:string;weapon:WeaponId;bonus:Partial<Stats>;bonusText:string;img:string};
