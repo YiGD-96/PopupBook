@@ -92,8 +92,12 @@
 .fb-verdict{align-self:flex-start;padding:6px 12px;border-radius:999px;font-size:13.5px!important;font-weight:600}
 .fb-verdict.is-ready{background:#e5ecd9;color:#4d6a3c!important}
 .fb-verdict.is-almost,.fb-verdict.is-other{background:#fbe0cf;color:#a4472e!important}
-.fb-poster{align-self:flex-start;display:inline-flex;align-items:center;gap:6px;margin-top:4px;padding:8px 14px;border:1.5px solid var(--ink);border-radius:8px 14px 7px 13px/13px 7px 14px 8px;background:#f7ecd7;font:400 17px var(--hand);color:var(--ink);cursor:pointer}
-.fb-poster:hover{background:#efe0c4}
+/* 만드는 법 with a hand-drawn recipe: the poster, and the switch to the steps as text beside the heading. */
+.fb-recipe h4.fb-steps-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.fb-view{flex:none;padding:5px 12px;border:1.5px solid var(--ink);border-radius:8px 14px 7px 13px/13px 7px 14px 8px;background:#f7ecd7;font:400 16px var(--hand);color:var(--ink);cursor:pointer}
+.fb-view:hover{background:#efe0c4}
+.fb-steps-poster{margin:0}
+.fb-steps-poster img{display:block;width:100%;height:auto;border-radius:6px;box-shadow:0 2px 10px rgba(70,40,15,.18)}
 .fb-note{margin:-4px 0 10px;font:400 16px/1.4 var(--note);color:#7a5d44}
 .fb-ingredients{list-style:none;margin:0;padding:0;border-top:1px dashed #dcc6a2}
 .fb-ingredients li{display:flex;align-items:center;gap:8px;padding:9px 4px;border-bottom:1px dashed #dcc6a2;font-size:14.5px}
@@ -116,6 +120,7 @@
 @media(prefers-reduced-motion:reduce){.fridge-book{transition:none}.fb-pony.is-cheer{animation:none}.fb-card,.fb-cards>li .fb-card{transition:none}}
 /* Phones: one page that scrolls; the left page becomes its head. */
 @media(max-width:760px){
+ .fb-recipe h4.fb-steps-head{padding-right:44px} /* the switch keeps clear of the X in the corner */
  .detail-book-backdrop:has(.fridge-book){padding:8px}
  .fridge-book{width:100%}
  .fb-sheet{display:block;height:calc(100svh - 16px);overflow-y:auto;overscroll-behavior:contain;border-radius:6px}

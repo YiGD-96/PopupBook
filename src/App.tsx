@@ -1,5 +1,5 @@
 import { Component, lazy, Suspense, useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
-import { ArrowRight, ArrowLeft, X, RotateCcw, MousePointer2, Check, LoaderCircle, ChevronsRight, ChevronDown, ChevronUp } from 'lucide-react';
+import { ArrowRight, ArrowLeft, ArrowUpRight, X, RotateCcw, MousePointer2, Check, LoaderCircle, ChevronsRight, ChevronDown, ChevronUp } from 'lucide-react';
 import {SITE} from './site';
 import { type Director, scenes, useStory, playSound, unlockAudio } from './story';
 import { useBookGestures } from './useBookGestures';
@@ -18,7 +18,7 @@ import FridgeBook from './FridgeBook';
 import { zineView } from './zine';
 import { posters } from './posters';
 import Prologue from './Prologue';
-import Guide from './Guide';
+import Guide,{GuidePeek} from './Guide';
 import TopControls from './TopControls';
 import { useT } from './i18n';
 import type { Lang } from './locale';
@@ -93,14 +93,31 @@ function Modal({title,children,onClose,className=''}:{title:string;children:Reac
 /** The closing note's words, whole per language (their line breaks and order differ); the key words carry the crayon highlight. */
 // Each line says something of its own (the title invites, the line below says what the article holds, the button only goes): "article"
 // and "read" appear once. `goLabel` is the button's full name for screen readers, since the visible word alone (바로 가기) says less.
-const ENDING:Record<Lang,{title:ReactNode;from:ReactNode;go:string;goLabel:string;restart:string}>={
- ko:{title:<><span className="ending-mark">구좌 당근</span> 이야기를<br/><span className="ending-mark">기사</span>로 만나보세요.</>,from:<>밭에서 식탁까지,<br/>한 편에 담았어요.</>,go:'바로 가기',goLabel:'기사 바로 가기',restart:'처음으로'},
- en:{title:<>Read the story<br/>as an <span className="ending-mark">article</span>.</>,from:<>From field to table,<br/>all in one piece.</>,go:'Go now',goLabel:'Go to the article',restart:'Start over'},
- zh:{title:<><span className="ending-mark">旧左胡萝卜</span>的故事<br/>请在<span className="ending-mark">报道</span>中阅读。</>,from:<>从田间到餐桌，<br/>都写在这一篇里。</>,go:'立即前往',goLabel:'前往报道',restart:'回到开头'},
+/**
+ * The closing card: the stories this visit has not opened yet, each a button that opens it (and comes back to the card when it is closed),
+ * and below them a quiet link to the newspaper article. The article used to be the card's big button, and readers left the book through it
+ * (average time on page fell), so it now comes after what is left to read; once everything is read it is the card's button again.
+ */
+const ENDING:Record<Lang,{left:ReactNode;done:ReactNode;doneLine:ReactNode;article:string;articleLabel:string;restart:string}>={
+ ko:{left:<>아직 안 본<br/><span className="ending-mark">이야기</span>가 있어요</>,done:<><span className="ending-mark">모든 이야기</span>를<br/>다 읽었어요</>,doneLine:<>밭에서 식탁까지,<br/>함께해 줘서 고마워요.</>,article:'구좌 당근 기사 읽기',articleLabel:'구좌 당근 기사 읽기',restart:'처음으로'},
+ en:{left:<>Stories you<br/>haven’t <span className="ending-mark">read</span> yet</>,done:<>You’ve read<br/><span className="ending-mark">every story</span></>,doneLine:<>From field to table,<br/>thank you for coming along.</>,article:'Read the Gujwa carrot article',articleLabel:'Read the Gujwa carrot article',restart:'Start over'},
+ zh:{left:<>还有<span className="ending-mark">没看过</span><br/>的故事</>,done:<><span className="ending-mark">所有故事</span><br/>都看完了</>,doneLine:<>从田间到餐桌，<br/>谢谢你一路相伴。</>,article:'阅读旧左胡萝卜报道',articleLabel:'阅读旧左胡萝卜报道',restart:'回到开头'},
 };
+/** One line per clickable card, in book order: what the closing card lists while it is still unread. */
+const ENDING_STORIES:{id:string;label:Record<Lang,string>}[]=[
+ {id:'farmer',label:{ko:'농부 인터뷰',en:'The farmer’s interview',zh:'农夫访谈'}},
+ {id:'harvest',label:{ko:'겨울을 견딘 당근',en:'Carrots that braved winter',zh:'熬过冬天的胡萝卜'}},
+ {id:'night-watch',label:{ko:'랜턴과 파리채를 든 밤',en:'A night of lanterns and swatters',zh:'提灯拿苍蝇拍的夜晚'}},
+ {id:'cook-01',label:{ko:'소농로드',en:'Sonongroad',zh:'Sonongroad'}},
+ {id:'cook-02',label:{ko:'마노아',en:'Manoa',zh:'Manoa'}},
+ {id:'cook-03',label:{ko:'버거캐럿',en:'Burger Carrot',zh:'Burger Carrot'}},
+ {id:'recipes',label:{ko:'냉장고 레시피 15가지',en:'15 fridge recipes',zh:'冰箱食谱15道'}},
+];
+/** The card a story belongs to: the fridge's recipe pages and the recipe posters count as the fridge. */
+const storyCard=(id:string)=>zineView(id)||id.startsWith('poster-')||id==='recipe-share'?'recipes':id;
 /** The ending card's paper and its cut-out mask (src/cinematic.css), fetched and decoded once the last chapter is reached, so the card
  *  comes up whole: before, its words could show a moment before the picture behind them. True once both are ready (or have failed). */
-const ENDING_ART=['/media/ending-card.jpg','/media/ending-card-mask.png'];
+const ENDING_ART=['/media/ending-card.webp'];
 function useEndingArt(wanted:boolean){
   const [ready,setReady]=useState(false);
   useEffect(()=>{
@@ -149,6 +166,12 @@ const SOURCE_SKIPS_OPENING=(()=>{
  * (still skipped by 다음부터 보지 않기, a story link or an ad source, like the rest of the opening). Judged once, as the page loads.
  */
 const PHONE=typeof matchMedia==='function'&&matchMedia(STANDING_QUERY).matches;
+/** The window a story opens in, by its id: the fridge's recipe book, a shop or farm web magazine, a recipe poster, a picture story, or the side panel. */
+function storyView(id:string,onClose:()=>void,onOpen:(id:string)=>void){
+  return zineView(id)?<FridgeBook key="fridge" id={id} onClose={onClose} onOpen={onOpen}/>:webzines[id]?<WebzineBook key={id} id={id} onClose={onClose} onOpen={onOpen}/>
+   :posters[id]?<PosterBook key={id} id={id} onClose={onClose} onOpen={onOpen}/>:details[id]?.spread?<DetailBook key={id} id={id} onClose={onClose} onOpen={onOpen}/>
+   :<DetailPanel id={id} onClose={onClose} onOpen={onOpen}/>;
+}
 export default function App() {
   const state=useStory();const {lang,t}=useT();
   const {phase,chapter,audioReady}=state;
@@ -205,6 +228,16 @@ export default function App() {
   const closeModal=useCallback(()=>setModal(null),[]);
   const closeDetail=useCallback(()=>useStory.getState().set({detail:null}),[]);
   const openDetail=useCallback((id:string)=>{noteStory('related');useStory.getState().set({detail:id});},[]);
+  // The stories opened this visit (by card), for the closing card's list of what is left.
+  const [readStories,setReadStories]=useState<string[]>([]);
+  useEffect(()=>{if(state.detail){const card=storyCard(state.detail);setReadStories(list=>list.includes(card)?list:[...list,card]);}},[state.detail]);
+  const unread=ENDING_STORIES.filter(story=>!readStories.includes(story.id));
+  // A story opened from the closing card: the card comes back (one line shorter) once it is closed.
+  const fromEnding=useRef(false);
+  const openFromEnding=useCallback((id:string)=>{const s=useStory.getState();if(s.phase!=='ENDING')return;fromEnding.current=true;noteStory('ending');
+   s.set({phase:'EXPLORING',dialog:true,detail:id,visited:[...new Set([...s.visited,s.chapter])]});playSound('hello');},[]);
+  useEffect(()=>{if(state.detail||!fromEnding.current)return;fromEnding.current=false;
+   if(useStory.getState().phase==='EXPLORING'&&useStory.getState().chapter===scenes.length-1)api.current?.finish();},[state.detail]);
   // A shared link (#cooks, #recipes/recipe-02, #ending) opens that spread or story once the intro has handed over to the book.
   // The book as text (built into index.html by src/seo.ts): for reading without the pictures, for screen readers and for crawlers.
   useEffect(()=>{
@@ -300,7 +333,14 @@ export default function App() {
   // Step 2's swipe on a phone turns the page the way it shows (up: the next spread or the closing card; down: the previous one).
   const guideSwipe=useCallback((direction:1|-1)=>{const s=useStory.getState();noteTurn('drag');
    if(direction>0){if(s.chapter===scenes.length-1)api.current?.finish();else api.current?.go(s.chapter+1);}else if(s.chapter>0)api.current?.go(s.chapter-1);},[]);
-  const nextGuide=useCallback(()=>setGuide(step=>{if(step===1)return 2;track('guide_done');window.setTimeout(()=>api.current?.highlight?.(),150);return 0;}),[]);
+  // Step 1's tap shows the spotlit card's real story window as a preview (Guide.tsx GuidePeek: the chapter's main story, the card Guide
+  // points at), half risen and scaled down; it is not opened (no hash, no select_content, not counted as read). The next tap: step 2.
+  const [guidePeek,setGuidePeek]=useState<string|null>(null);
+  const nextGuide=useCallback(()=>{
+   if(guide===1){setGuidePeek(scenes[useStory.getState().chapter].detail);return;}
+   setGuide(0);track('guide_done');window.setTimeout(()=>api.current?.highlight?.(),150);
+  },[guide]);
+  const peekDone=useCallback(()=>{setGuidePeek(null);setGuide(2);},[]);
   // "책장 속으로": the prologue fades, the reader UI arrives and the cards stand up.
   const startReading=useCallback(()=>{
     if(useStory.getState().phase!=='PROLOGUE')return;
@@ -380,10 +420,12 @@ export default function App() {
 
   const introText=t(phase==='INIT'?'책을 준비하고 있어요':'당신의 작은 여행을 펼쳐요');
   const detailOpen=!!state.detail&&!introVisible&&!ending;
+  // The guide steps aside while the story its first step opened is up.
+  const guideShown=guide!==0&&!state.detail&&!guidePeek;
   return <div className={"app-shell reader-mode cinematic-reader"+(introVisible?" intro-active":"")+(detailOpen?" has-detail":"")}>
     {!introVisible&&<a className="skip-link" href="#main">{t('이야기로 바로 가기')}</a>}
     {/* While the film plays and while the reading guide shows, not over the prologue (its own button goes on into the book). */}
-    {(PHONE?guide!==0:(introVisible||guide!==0)&&!skipOpening)&&<div className="opening-skip">
+    {(PHONE?guideShown:(introVisible||guideShown)&&!skipOpening)&&<div className="opening-skip">
       <label className="opening-remember"><input type="checkbox" checked={rememberSkip} onChange={e=>setRememberSkip(e.target.checked)}/><i aria-hidden="true"><Check size={11} strokeWidth={3}/></i>{t('다음부터 보지 않기')}</label>
       <span className="opening-skip-rule" aria-hidden="true"/>
       <button type="button" className="opening-skip-button" onClick={skipNow}>{t('건너뛰기')}<ChevronsRight size={15} aria-hidden="true"/></button>
@@ -401,7 +443,11 @@ export default function App() {
     <main id="main"><section className={'hero '+(intro?'is-cover':'is-open')+(ending?' is-ending':'')} aria-label={t(SITE.title)+' — '+t('팝업북')}>
       {chromeVisible&&<div className={'hero-copy'+(ending&&!endingArt?' is-waiting':'')}>
         {coverMode?<div className="cover-intro"><span>{SITE.label}</span><h1>{SITE.title}</h1><p role="status"><LoaderCircle size={14} className="spin"/>{introText}</p></div>:
-        ending?<><h1>{ENDING[lang].title}</h1><p className="hero-description">{ENDING[lang].from}</p><a className="primary-button ending-link" href={SITE.article} target="_blank" rel="noreferrer" aria-label={`${ENDING[lang].goLabel} ${t('(새 창에서 열림)')}`}>{ENDING[lang].go}<ArrowRight size={21}/></a><button className="secondary-button ending-restart" onClick={beginIntro}><RotateCcw size={18}/>{ENDING[lang].restart}</button></>:
+        ending?(()=>{const copy=ENDING[lang],article=<a className={unread.length?'ending-article':'primary-button ending-link'} href={SITE.article} target="_blank" rel="noreferrer" aria-label={`${copy.articleLabel} ${t('(새 창에서 열림)')}`}>{copy.article}{unread.length?<ArrowUpRight size={14}/>:<ArrowRight size={21}/>}</a>;
+          return unread.length?<><h1>{copy.left}</h1>
+           <ul className="ending-stories">{unread.map(story=><li key={story.id}><button type="button" onClick={()=>openFromEnding(story.id)}>{story.label[lang]}<ArrowRight size={15}/></button></li>)}</ul>
+           {article}<button className="secondary-button ending-restart" onClick={beginIntro}><RotateCcw size={18}/>{copy.restart}</button></>
+          :<><h1>{copy.done}</h1><p className="hero-description">{copy.doneLine}</p>{article}<button className="secondary-button ending-restart" onClick={beginIntro}><RotateCcw size={18}/>{copy.restart}</button></>;})():
         <><h1 className="sr-only" aria-label={t(scene.title)} ref={storyRef} tabIndex={-1}>{t(scene.title)}</h1>
 
         </>}
@@ -431,8 +477,9 @@ export default function App() {
       </div>
     </section></main>
     {prologue!=='none'&&<Prologue ready={phase==='PROLOGUE'||prologue==='closing'} closing={prologue==='closing'} onStart={startReading}/>}
-    {guide!==0&&<Guide step={guide} locate={guide===1?locateCard:locateArrow} onNext={nextGuide} onSwipe={guideSwipe}/>}
-    {detailOpen&&state.detail&&(zineView(state.detail)?<FridgeBook key="fridge" id={state.detail} onClose={closeDetail} onOpen={openDetail}/>:webzines[state.detail]?<WebzineBook key={state.detail} id={state.detail} onClose={closeDetail} onOpen={openDetail}/>:posters[state.detail]?<PosterBook key={state.detail} id={state.detail} onClose={closeDetail} onOpen={openDetail}/>:details[state.detail]?.spread?<DetailBook key={state.detail} id={state.detail} onClose={closeDetail} onOpen={openDetail}/>:<DetailPanel id={state.detail} onClose={closeDetail} onOpen={openDetail}/>)}
+    {guideShown&&<Guide step={guide} locate={guide===1?locateCard:locateArrow} onNext={nextGuide} onSwipe={guideSwipe}/>}
+    {detailOpen&&state.detail&&storyView(state.detail,closeDetail,openDetail)}
+    {guidePeek&&<GuidePeek onDone={peekDone}>{storyView(guidePeek,peekDone,()=>{})}</GuidePeek>}
     {/* The contents ("목차" in the header): the three chapters, each one a way in; the one being read is marked. */}
     {modal==='about'&&<Modal title={t('목차')} className="contents-modal" onClose={closeModal}>
       <p className="contents-lead">{t(SITE.title)} · {t('세 장면')}</p>

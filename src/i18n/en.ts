@@ -233,6 +233,8 @@ const words:Record<string,string>={
  "비타민 A는 정상 시력 유지에 필요합니다.":"Vitamin A is needed to maintain normal vision.",
  "비타민 A는 피부와 점막을 정상적으로 유지하는 데 필요합니다.":"Vitamin A helps keep skin and mucous membranes healthy.",
  "빛나는 그림을 눌러 보세요":"Tap the glowing pictures",
+ "그림을 누르면 이렇게 열려요":"Tap a picture and this opens",
+ "화면을 누르면 다음 안내로 넘어가요":"Tap anywhere for the next tip",
  "빵과 여러 재료 사이에 당근을 더해 구좌의 맛을 담아낸 메뉴. 아삭함과 은은한 단맛이 조화를 이룬다.":"Carrots tucked between bread and other fillings bring the taste of Gujwa to this panini, with a satisfying crunch and subtle sweetness in perfect balance.",
  "뿌리가 곧고 깊게":"Roots that grow straight and deep",
  "사과":"Apple",

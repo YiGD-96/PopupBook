@@ -1,29 +1,21 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { STANDING_QUERY } from './standingMedia';
 import { useT } from './i18n';
 /**
  * The reading guide, in two steps right after the prologue (each time the reader presses "책장 속으로"). Step 1 spotlights a glowing card with an arrow ("press
- * the glowing pictures"); one tap anywhere and step 2 points at the page arrow ("turn the page") — on a phone it shows the page being swiped
+ * the glowing pictures"); one tap anywhere shows that card's real story window as a preview (GuidePeek below), and the next tap points step 2 at the page arrow ("turn the page") — on a phone it shows the page being swiped
  * up instead (the arrows are the second way there); another tap and it is gone. It only
  * dims and points: the spotlight is a box-shadow and the arrow bobs with a CSS transform, so the book underneath keeps still.
  */
 export type GuideRect={x:number;y:number;width:number;height:number};
 
-const PAD=12,GAP=58,BUBBLE_H=92,PEEK_MS=1100;
+const PAD=12,GAP=58,BUBBLE_H=92;
 /** `onSwipe`: on a phone, step 2's own gesture (a swipe up, or down to go back) closes the guide and turns the page, as it shows. */
 export default function Guide({step,locate,onNext,onSwipe}:{step:1|2;locate:()=>GuideRect|null;onNext:()=>void;onSwipe?:(direction:1|-1)=>void}){
  const {t}=useT();
  const phone=typeof matchMedia==='function'&&matchMedia(STANDING_QUERY).matches;
- // On a phone the first tap does not just move on: a small page opens out of the glowing card for a moment (a hint of the story a press
- // opens) and the guide goes on to step 2 as it closes.
- const [peek,setPeek]=useState(false);const peeking=useRef(false);
- const advance=useCallback(()=>{
-  if(peeking.current)return;
-  if(phone&&step===1){peeking.current=true;setPeek(true);window.setTimeout(onNext,PEEK_MS);return;}
-  onNext();
- },[onNext,phone,step]);
- // The peek belongs to step 1: once step 2 is up, a tap moves on again (the flag used to stay set, so step 2 never went away).
- useEffect(()=>{peeking.current=false;setPeek(false);},[step]);
+ // Step 1's tap brings up the spotlit card's real story as a preview (src/App.tsx, GuidePeek); step 2's ends the guide.
+ const advance=onNext;
  const start=useRef<{x:number;y:number}|null>(null);
  const swipeEnd=(e:React.PointerEvent)=>{const from=start.current;start.current=null;if(!from||!onSwipe||!phone||step!==2)return false;
   const dy=e.clientY-from.y;if(Math.abs(dy)<48||Math.abs(dy)<Math.abs(e.clientX-from.x))return false;
@@ -63,7 +55,7 @@ export default function Guide({step,locate,onNext,onSwipe}:{step:1|2;locate:()=>
  const from={x:Math.max(bubble.x+24,Math.min(bubble.x+width-24,centre)),y:below?bubble.y-6:bubble.y+bubbleH+6};
  const to=spot&&{x:centre,y:below?spot.y+spot.height+4:spot.y-4};
  const bend=to?Math.max(-60,Math.min(60,(to.x-from.x)*.5+(to.x>view.w/2?-28:28))):0;
- return <div className={'guide'+(peek?' is-peeking':'')} role="dialog" aria-modal="true" aria-live="polite" aria-label={copy.title} onPointerDown={e=>{start.current={x:e.clientX,y:e.clientY};}} onPointerUp={e=>{if(swipeEnd(e))e.preventDefault();}} onClick={e=>{if(e.defaultPrevented)return;advance();}}>
+ return <div className="guide" role="dialog" aria-modal="true" aria-live="polite" aria-label={copy.title} onPointerDown={e=>{start.current={x:e.clientX,y:e.clientY};}} onPointerUp={e=>{if(swipeEnd(e))e.preventDefault();}} onClick={e=>{if(e.defaultPrevented)return;advance();}}>
   {spot?<div className="guide-spot" style={{left:spot.x,top:spot.y,width:spot.width,height:spot.height}}/>:<div className="guide-dim"/>}
   {to&&<svg key={`arrow-${step}`} className="guide-arrow guide-step" width={view.w} height={view.h} aria-hidden="true">
    <defs><marker id="guide-head" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z"/></marker></defs>
@@ -72,10 +64,32 @@ export default function Guide({step,locate,onNext,onSwipe}:{step:1|2;locate:()=>
   {swipe&&<div key="swipe" className="guide-swipe guide-step" style={{top:view.h*.3}} aria-hidden="true">
    <svg className="guide-swipe-chevron" viewBox="0 0 24 12"><path d="M3 10L12 3l9 7"/></svg><span className="guide-swipe-track"/><span className="guide-swipe-dot"/>
   </div>}
-  {peek&&spot&&<div className="guide-peek" style={{left:spot.x+spot.width/2,top:spot.y+spot.height/2}} aria-hidden="true"><i className="guide-peek-bar is-title"/><i className="guide-peek-photo"/><i className="guide-peek-bar"/><i className="guide-peek-bar is-short"/></div>}
   <div key={`bubble-${step}`} ref={bubbleRef} className="guide-bubble guide-step" style={{left:bubble.x,top:bubble.y,width,minHeight:BUBBLE_H}}>
    <strong>{copy.title}</strong><span>{copy.text}</span>
    <span className="guide-dots" aria-label={`${step} / 2`}><i className={step===1?'is-on':''}/><i className={step===2?'is-on':''}/></span>
+  </div>
+ </div>;
+}
+
+/**
+ * Between the guide's steps: the real story window of the card it pointed at (`children`, the same view a press opens), shown as a preview
+ * rather than opened: scaled down and risen only halfway from the bottom of the screen, so it reads as "this is what opens" while the guide
+ * stays in charge. It takes no clicks (inert); one tap anywhere, or Enter / Space / Escape, slides it back down and the guide goes on.
+ * It used to open the story for real, covering the screen, and readers found it hard to get back out of the guide.
+ */
+export function GuidePeek({children,onDone}:{children:ReactNode;onDone:()=>void}){
+ const {t}=useT();const [leaving,setLeaving]=useState(false);const left=useRef(false);
+ const done=useCallback(()=>{if(left.current)return;left.current=true;setLeaving(true);
+  window.setTimeout(onDone,matchMedia('(prefers-reduced-motion: reduce)').matches?0:360);},[onDone]);
+ useEffect(()=>{const key=(e:KeyboardEvent)=>{if(['Enter',' ','Escape'].includes(e.key)){e.preventDefault();e.stopImmediatePropagation();done();}};
+  window.addEventListener('keydown',key,true);return()=>window.removeEventListener('keydown',key,true);},[done]);
+ const title=t('그림을 누르면 이렇게 열려요');
+ return <div className={'guide guide-peek'+(leaving?' is-leaving':'')} role="dialog" aria-modal="true" aria-label={title} onClick={done}>
+  <div className="guide-dim"/>
+  <div className="guide-peek-window" aria-hidden="true" inert>{children}</div>
+  <div className="guide-bubble guide-step guide-peek-bubble">
+   <strong>{title}</strong><span>{t('화면을 누르면 다음 안내로 넘어가요')}</span>
+   <span className="guide-dots" aria-label="1 / 2"><i className="is-on"/><i/></span>
   </div>
  </div>;
 }

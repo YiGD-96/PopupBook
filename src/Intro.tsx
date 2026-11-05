@@ -66,7 +66,10 @@ export default function Intro({onFinished,onUnfolding,onBuffered,onNearEnd,leavi
  const unfolded=useRef(false);
  const [coverReady,setCoverReady]=useState(false);
  const [holdFinished,setHoldFinished]=useState(false);
- const [stage,setStage]=useState<'cover'|'opening'|'ready'>('cover');
+ // Skipped from the start (a phone, a link, an ad, 다음부터 보지 않기): the cover and the film are never drawn or fetched, not even for the
+ // first frame, so only the plain paper shows until the book is ready (the closed book used to flash on a phone before it went away).
+ const [skipped]=useState(skip);
+ const [stage,setStage]=useState<'cover'|'opening'|'ready'>(skip?'ready':'cover');
  const [failed,setFailed]=useState(false);
  const [waiting,setWaiting]=useState(false);
  const [holdDuration,setHoldDuration]=useState(0);
@@ -130,11 +133,11 @@ export default function Intro({onFinished,onUnfolding,onBuffered,onNearEnd,leavi
   started.current=true;play();
  },[holdFinished,src,failed,finish,play]);
  return <div className={'intro-screen'+(standing?' is-standing':'')+(dropped||failed||stage==='ready'?' is-dropped':'')+(leaving?' is-leaving':'')} data-stage={stage} data-cover-hold-ms={holdDuration} aria-label={t(SITE.title)+' — '+t('책을 펼치는 중')}>
-  <img className="intro-cover intro-media" src={url(`/media/book-cover${media}.webp`)} alt={t(SITE.title)+' — '+t(SITE.coverAlt)} onLoad={()=>setCoverReady(true)} onError={e=>{if(!e.currentTarget.src.endsWith('/art-raster/cover.webp'))e.currentTarget.src=url('/art-raster/cover.webp');else setCoverReady(true);}} hidden={stage!=='cover'}/>
-  <video className={'intro-media intro-video'+(stage==='cover'?' is-waiting':'')} ref={video} src={src??undefined} muted playsInline preload="auto" tabIndex={-1} aria-hidden="true"
+  {!skipped&&<img className="intro-cover intro-media" src={url(`/media/book-cover${media}.webp`)} alt={t(SITE.title)+' — '+t(SITE.coverAlt)} onLoad={()=>setCoverReady(true)} onError={e=>{if(!e.currentTarget.src.endsWith('/art-raster/cover.webp'))e.currentTarget.src=url('/art-raster/cover.webp');else setCoverReady(true);}} hidden={stage!=='cover'}/>}
+  {!skipped&&<video className={'intro-media intro-video'+(stage==='cover'?' is-waiting':'')} ref={video} src={src??undefined} muted playsInline preload="auto" tabIndex={-1} aria-hidden="true"
    onPlaying={()=>{actualHold.current||=Math.round(performance.now()-(shownAt.current??performance.now()));setHoldDuration(actualHold.current);setStage('opening');}}
    onTimeUpdate={e=>{buffered(e);const element=e.currentTarget,time=element.currentTime;if(!nearEnd.current&&bufferedOnce.current&&time>=uiAt-MOUNT_LEAD){nearEnd.current=true;onNearEnd?.();}if(time>=uiAt-HOLD_BEFORE&&!unfolded.current){hold(element,time);return;}riffle(time);drop(time);}}
-   onProgress={buffered} onCanPlayThrough={buffered} onEnded={finish} onError={()=>{setFailed(true);if(!bufferedOnce.current){bufferedOnce.current=true;onBuffered?.();}}}/>
+   onProgress={buffered} onCanPlayThrough={buffered} onEnded={finish} onError={()=>{setFailed(true);if(!bufferedOnce.current){bufferedOnce.current=true;onBuffered?.();}}}/>}
   {waiting&&<p className="intro-touch" role="status">{t('화면을 누르면 시작해요')}</p>}
   {failed&&stage==='ready'&&<img className="intro-media" src={url(`/media/book-open${media}.webp`)} alt={t(SITE.title)+' — '+t('펼쳐진 그림책')}/>}
  </div>;

@@ -23,8 +23,14 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 <!-- Fonts load without holding up the first paint (the cover is a picture; the first text appears ~3 s into the film). -->
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gamja+Flower&amp;family=Yeon+Sung&amp;family=Gowun+Batang:wght@400;700&amp;family=Noto+Sans+KR:wght@400;500;600;700&amp;display=swap" media="print" onload="this.media='all'"/>
 <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gamja+Flower&amp;family=Yeon+Sung&amp;family=Gowun+Batang:wght@400;700&amp;family=Noto+Sans+KR:wght@400;500;600;700&amp;display=swap"/></noscript>
-<link rel="preload" as="image" href="/media/book-cover.webp" fetchpriority="high" media="not all and (max-width: 760px) and (orientation: portrait)"/>
-<link rel="preload" as="image" href="/media/book-cover-standing.webp" fetchpriority="high" media="(max-width: 760px) and (orientation: portrait)"/>
+<!-- The closed cover (the intro film's first frame) is fetched first only when the opening will play: never on a phone held upright (it
+     has no film), nor for a story or later-spread link, an ad's utm_source, or "다음부터 보지 않기" (the same rules as src/App.tsx). -->
+<script>(function(){try{
+var h=location.hash.slice(1),s=(new URLSearchParams(location.search).get('utm_source')||'').trim().toLowerCase();
+if(matchMedia('(max-width: 760px) and (orientation: portrait)').matches||(h&&h!=='farmer')||(s&&['kakao','direct','threads','blog'].indexOf(s)<0))return;
+try{if(localStorage.getItem('gujwa:skip-opening')==='1')return;}catch(e){}
+var l=document.createElement('link');l.rel='preload';l.as='image';l.href='media/book-cover.webp';l.setAttribute('fetchpriority','high');document.head.appendChild(l);
+}catch(e){}})();</script>
 </head>
 <body>
 <!-- Google Tag Manager (noscript) -->

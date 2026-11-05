@@ -2,10 +2,9 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, ArrowRight, ArrowUpRight, Check, ChevronDown, Play, X } from 'lucide-react';
 import { track } from './analytics';
 import { useT } from './i18n';
-import { tappedOutside } from './outsideTap';
-import { shortsEmbed, shortsThumb, shortsUrl } from './posters';
+import { posterSrc, posters, shortsEmbed, shortsThumb, shortsUrl } from './posters';
 import { measureShort, measuredEmbed } from './youtube';
-import { CATEGORIES, INGREDIENTS, MEALS, PONY, PREFS, PREF_LABEL, RECIPES, evaluate, evaluateAll, findRecipe, frequentIds, idsInCategory,
+import { CATEGORIES, INGREDIENTS, MEALS, PONY, POSTER_OF, PREFS, PREF_LABEL, RECIPES, evaluate, evaluateAll, findRecipe, frequentIds, idsInCategory,
  useFridge, zineView, type Recipe, type Verdict } from './zine';
 import './fridge.css';
 
@@ -17,9 +16,8 @@ import './fridge.css';
  * Its views are the webzine's pages, kept as the story part of the link (#recipes/recipes, #recipes/recipe-<id>, #recipes/planner): moving
  * between them goes through `onOpen`, so the address and the back-link follow, and the book stays up (App keeps one FridgeBook mounted).
  * The planner and each recipe's ingredient list share one fridge, kept in this browser (useFridge). The three recipes made for real keep
- * their Shorts (a still until pressed, as in src/PosterBook.tsx) and lead to their hand-drawn posters.
+ * their Shorts (a still until pressed, as in src/PosterBook.tsx); the three with a hand-drawn poster show it as their 만드는 법.
  */
-const POSTER:Record<string,string>={gnocchi:'poster-gnocchi',gimbap:'poster-gimbap',jeon:'poster-jeon'};
 export default function FridgeBook({id,onClose,onOpen}:{id:string;onClose:()=>void;onOpen:(id:string)=>void}){
  const {t}=useT();const view=zineView(id);
  const [open,setOpen]=useState(false);const closing=useRef(0);const page=useRef<HTMLElement>(null);const heading=useRef<HTMLHeadingElement>(null);
@@ -39,7 +37,8 @@ export default function FridgeBook({id,onClose,onOpen}:{id:string;onClose:()=>vo
  if(!view)return null;
  const tab=view.kind==='planner'?'planner':'recipes';
  const filter=(kind:'meal'|'pref',value:string)=>{setFridge(kind==='meal'?{meal:value}:{pref:value});track('recipe_filter',{filter_type:kind,filter_value:value});if(view.kind!=='recipes')onOpen('recipes');};
- return <div className={'detail-book-backdrop'+(open?' is-open':'')} onClick={e=>{if(tappedOutside(e))close();}}>
+ // Only the X (or Escape) closes it: a tap beside the page used to close it too, and readers lost their place by accident.
+ return <div className={'detail-book-backdrop'+(open?' is-open':'')}>
   <div className="fridge-book" role="dialog" aria-modal="true" aria-labelledby="fb-title">
    <button className="wz-close" onClick={close} aria-label={t('책 닫기')}><X size={20}/></button>
    <article className="fb-sheet">
@@ -132,10 +131,12 @@ function Planner({onOpen}:{onOpen:(id:string)=>void}){
 }
 
 function RecipePage({recipe,onOpen}:{recipe:Recipe;onOpen:(id:string)=>void}){
- const {t}=useT();
+ const {t,lang}=useT();
  const fridge=useFridge(s=>s.fridge),toggle=useFridge(s=>s.toggle);const verdict=evaluate(recipe,fridge);
+ // A dish with a hand-drawn recipe (src/posters.ts) shows it as its 만드는 법, in the reader's language; 글로만 보기 switches to the steps as text.
+ const poster=POSTER_OF[recipe.id]?posters[POSTER_OF[recipe.id]]:undefined;const [textOnly,setTextOnly]=useState(false);
  const [playing,setPlaying]=useState(false);const player=useRef<HTMLIFrameElement>(null);
- useEffect(()=>{setPlaying(false);},[recipe.id]);
+ useEffect(()=>{setPlaying(false);setTextOnly(false);},[recipe.id]);
  useEffect(()=>{const frame=player.current;if(!playing||!frame||!recipe.video)return;return measureShort(frame,{videoId:recipe.video.id,title:recipe.video.title,contentId:'recipe-'+recipe.id});},[playing,recipe]);
  const seen=new Set<string>();
  return <section className="fb-recipe">
@@ -148,7 +149,6 @@ function RecipePage({recipe,onOpen}:{recipe:Recipe;onOpen:(id:string)=>void}){
     <p className="fb-meta">{t('분량')} {t(recipe.servings)} · {t('필수 재료')} {verdict.required.length}{t('가지')}{recipe.video?<> · {t('영상')} {recipe.video.duration}</>:null}</p>
     {fridge.length===0?<p className="fb-verdict">{t('있는 재료에 체크하면, 없는 재료를 바로 알려 드려요.')}</p>
      :<p className={'fb-verdict is-'+verdict.group}>{verdict.missing.length===0?t('지금 만들 수 있어요'):<>{t('없는 재료')} {verdict.missing.length}{t('개')}: {verdict.missing.map(id=>t(INGREDIENTS[id].name)).join(', ')}</>}</p>}
-    {POSTER[recipe.id]&&<button type="button" className="fb-poster" onClick={()=>onOpen(POSTER[recipe.id])}>{t('그림 레시피 포스터로 보기')}<ArrowRight size={15}/></button>}
    </div>
   </div>
   <h4>{t('필요한 재료와 분량')}</h4>
@@ -162,9 +162,10 @@ function RecipePage({recipe,onOpen}:{recipe:Recipe;onOpen:(id:string)=>void}){
     {!ing.req&&<em>{t('선택')}</em>}{missing&&first&&<em className="is-missing">{t('없음')}</em>}{verdict.via[ing.id]&&first&&<em>{t(INGREDIENTS[verdict.via[ing.id]].name)} {t('대신')}</em>}
     <span className="fb-qty">{t(ing.qty)}</span></li>;})}
   </ul>
-  <h4>{t('만드는 법')}</h4>
-  <ol className="fb-steps">{recipe.steps.map((step,i)=><li key={i}><b>{i+1}</b><span>{t(step)}</span></li>)}</ol>
-  {recipe.tip&&<p className="fb-tip"><strong>{t('팁')}</strong> {t(recipe.tip)}</p>}
+  <h4 className="fb-steps-head">{t('만드는 법')}{poster&&<button type="button" className="fb-view" aria-pressed={textOnly} onClick={()=>setTextOnly(v=>!v)}>{textOnly?t('그림으로 보기'):t('글로만 보기')}</button>}</h4>
+  {poster&&!textOnly?<figure className="fb-steps-poster"><img src={posterSrc(poster,lang)} alt={t(recipe.name)+' — '+t('그림 레시피')} width={1024} height={1536} loading="lazy" decoding="async" draggable={false}/></figure>
+   :<ol className="fb-steps">{recipe.steps.map((step,i)=><li key={i}><b>{i+1}</b><span>{t(step)}</span></li>)}</ol>}
+  {recipe.tip&&(!poster||textOnly)&&<p className="fb-tip"><strong>{t('팁')}</strong> {t(recipe.tip)}</p>}
   {recipe.video&&<><h4>{t('영상으로 보기')} <small>{recipe.video.duration}</small></h4>
    <figure className="fb-video"><div className="pb-shorts-frame">
     {playing?<iframe ref={player} src={measuredEmbed(shortsEmbed(recipe.video.id))} title={`${recipe.video.title} — YouTube Shorts`} allow="autoplay; encrypted-media; picture-in-picture; fullscreen" referrerPolicy="strict-origin-when-cross-origin" allowFullScreen/>

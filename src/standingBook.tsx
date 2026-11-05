@@ -153,15 +153,17 @@ type StandingCardProps={layer:Layer;texture:Texture;hinges:RefObject<Map<string,
  */
 let carrotTexture:Texture|null=null;
 function tapCarrotTexture(){if(!carrotTexture){carrotTexture=new TextureLoader().load(url('/media/zine/carrot.webp'));carrotTexture.colorSpace=SRGBColorSpace;}return carrotTexture;}
+/** How many times the tap hint sways, one a second (user: 1초에 1번, 총 3번). */
+const SWAYS=3;
 function TapCarrot({id,width,height}:{id:string;width:number;height:number}){
- const hop=useRef<Group>(null!),sway=useRef<Group>(null!);const detail=useStory(s=>s.detail),press=useTapHints(s=>s.press);
+ const hop=useRef<Group>(null!),sway=useRef<Group>(null!),begun=useRef<number|null>(null);const detail=useStory(s=>s.detail),press=useTapHints(s=>s.press);
  useEffect(()=>{if(detail===id)press(id);},[detail,id,press]);
  const still=useMemo(()=>typeof matchMedia==='function'&&matchMedia('(prefers-reduced-motion: reduce)').matches,[]);
  // About a third of the card's width (readable on small cards, modest on big ones), its tip on the card's upper right.
  const w=Math.min(.5,Math.max(.34,width*.3)),h=w*411/268,foot:[number,number,number]=[width*.34,height*.6,.12];
  useFrame(({clock})=>{if(still)return;const t=clock.elapsedTime;
-  // A wobble on its tip, and every so often a small hop, as if calling to be pressed.
-  sway.current.rotation.z=Math.sin(t*6)*.22*(.6+.4*Math.max(0,Math.sin(t*1.7)));hop.current.position.y=Math.max(0,Math.sin(t*3.4))**3*.09;});
+  // Three sways left and right on its tip, one a second, as the spread opens, then it stands still (each time the spread is shown).
+  begun.current??=t;const e=t-begun.current;sway.current.rotation.z=e<SWAYS?Math.sin(e*Math.PI*2)*.14:0;});
  return <group position={foot}><group ref={hop}><group ref={sway}>
   <mesh position={[0,h/2,0]} renderOrder={12} raycast={()=>null}><planeGeometry args={[w,h]}/><meshBasicMaterial map={tapCarrotTexture()} transparent depthWrite={false} depthTest={false} toneMapped={false}/></mesh>
  </group></group></group>;
